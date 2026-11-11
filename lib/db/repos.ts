@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { getDb, hasDatabaseUrl } from "@/lib/db/index";
 import { getMemoryDb, newId, now } from "@/lib/db/memory";
 import {
@@ -68,6 +68,54 @@ export async function getStoreById(id: string): Promise<Store | null> {
   const db = getDb();
   const rows = await db.select().from(stores).where(eq(stores.id, id)).limit(1);
   return rows[0] ?? null;
+}
+
+/** Lista tenants/tiendas (un registro por teléfono) para el panel admin. */
+export async function listStores(): Promise<Store[]> {
+  if (!hasDatabaseUrl()) {
+    return [...getMemoryDb().stores.values()].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+  }
+  const db = getDb();
+  return db.select().from(stores).orderBy(desc(stores.createdAt));
+}
+
+export async function deleteProduct(id: string): Promise<boolean> {
+  if (!hasDatabaseUrl()) {
+    return getMemoryDb().products.delete(id);
+  }
+  const db = getDb();
+  const rows = await db.delete(products).where(eq(products.id, id)).returning();
+  return rows.length > 0;
+}
+
+/**
+ * Borra una tienda solo si es demo (simulador). Incluye sus productos.
+ * Las tiendas reales no se eliminan desde el MVP del panel.
+ */
+export async function deleteDemoStore(
+  id: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const store = await getStoreById(id);
+  if (!store) return { ok: false, error: "Tienda no encontrada" };
+  if (!store.isDemo) {
+    return { ok: false, error: "Solo se pueden borrar tiendas demo" };
+  }
+
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    for (const [pid, product] of mem.products) {
+      if (product.storeId === id) mem.products.delete(pid);
+    }
+    mem.stores.delete(id);
+    return { ok: true };
+  }
+
+  const db = getDb();
+  await db.delete(products).where(eq(products.storeId, id));
+  await db.delete(stores).where(eq(stores.id, id));
+  return { ok: true };
 }
 
 export async function slugExists(slug: string): Promise<boolean> {
