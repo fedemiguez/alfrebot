@@ -1,41 +1,30 @@
-# Tía Norma
+# alfrebot
 
-Scaffold Next.js (App Router + TypeScript + Tailwind) para el catálogo de cerámica de Tía Norma.
+Armá tu tienda por WhatsApp. Dominio: [alfrebot.com.ar](https://alfrebot.com.ar). **Tía Norma** (`/ceramicas-de-norma`) es la tienda demo.
 
-Repo: [github.com/fedemiguez/tia-norma](https://github.com/fedemiguez/tia-norma)
+## Stack
 
-## Correr en local
+- Next.js 16 (Cache Components) + Tailwind 4
+- Drizzle + Neon Postgres (con fallback en memoria si no hay `DATABASE_URL`)
+- Motor de bot + adaptadores `simulator` / `meta`
+- Vercel Blob para fotos (placeholder local si no hay token)
+- AI SDK / Gateway opcional (Gemini Flash) para texto libre
 
-Requisitos: Node.js 20+ y npm.
+## Desarrollo
 
 ```bash
+cp .env.example .env.local
 npm install
 npm run dev
 ```
 
-Abrí [http://localhost:3000](http://localhost:3000).
+Abrí [http://localhost:3000/probar](http://localhost:3000/probar) y tocá **Empezar**.
 
-Otros scripts:
+## Scripts
 
-```bash
-npm run build   # build de producción
-npm run start   # servir el build
-npm run lint    # ESLint
-```
+- `npm run build` — build de producción
+- `npm run db:generate` / `npm run db:push` — esquema Drizzle → Neon (requiere `DATABASE_URL`)
 
-## Deploy en Vercel
+## Meta WhatsApp
 
-1. Entrá a [vercel.com/new](https://vercel.com/new).
-2. **Import Git Repository** → elegí `fedemiguez/tia-norma` (autorizá GitHub si hace falta).
-3. Framework Preset: **Next.js** (autodetectado). Root Directory: `.`
-4. Dejá Build Command `next build` / Output vacío (default).
-5. **Deploy**.
-
-Después de la primera importación, cada push a `main` redeploya automático.
-
-## Stack
-
-- Next.js App Router
-- TypeScript
-- Tailwind CSS
-- ESLint
+Ver `.env.example`. Webhook: `GET/POST /api/whatsapp/meta`. Mientras `META_TEST_MODE=true`, el registro deriva números no verificados a `/probar`.

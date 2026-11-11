@@ -1,0 +1,103 @@
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { formatPhoneDisplay, formatPriceArs } from "@/lib/format";
+import { getCachedProduct } from "@/lib/store-data";
+
+export async function generateMetadata({
+  params,
+}: PageProps<"/[slug]/producto/[productId]">): Promise<Metadata> {
+  const { slug, productId } = await params;
+  const { product, store } = await getCachedProduct(slug, productId);
+  if (!product) return { title: "Pieza" };
+  return {
+    title: `${product.title} · ${store?.name ?? "Tienda"}`,
+    description: product.description || undefined,
+    openGraph: product.imageUrl ? { images: [{ url: product.imageUrl }] } : undefined,
+  };
+}
+
+async function ProductBody({
+  params,
+}: {
+  params: PageProps<"/[slug]/producto/[productId]">["params"];
+}) {
+  const { slug, productId } = await params;
+  const { store, product } = await getCachedProduct(slug, productId);
+  if (!store || !product) notFound();
+
+  return (
+    <div className="fade-in mx-auto w-full max-w-3xl px-5 py-10">
+      <Link
+        href={`/${slug}`}
+        className="btn btn-secondary mb-8 inline-flex min-h-12"
+      >
+        Volver
+      </Link>
+
+      <div className="relative aspect-square overflow-hidden border border-[var(--border)] bg-white">
+        {product.imageUrl ? (
+          <Image
+            src={product.imageUrl}
+            alt={product.title}
+            fill
+            priority
+            sizes="(max-width: 768px) 100vw, 768px"
+            className="object-cover"
+            unoptimized={
+              product.imageUrl.startsWith("/") || product.imageUrl.startsWith("data:")
+            }
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-[var(--muted)]">
+            Sin foto
+          </div>
+        )}
+        {!product.inStock && (
+          <span className="absolute bottom-4 left-4 bg-[var(--soldout-bg)] px-3 py-1 text-[16px] font-medium text-[var(--soldout)]">
+            Agotado
+          </span>
+        )}
+      </div>
+
+      <h1 className="mt-6 font-[family-name:var(--font-display)] text-[1.75rem] font-semibold text-[var(--ink)] sm:text-4xl">
+        {product.title}
+      </h1>
+      <p className="mt-3 font-[family-name:var(--font-display)] text-[2rem] font-bold text-[var(--primary)]">
+        {formatPriceArs(product.priceCents)}
+      </p>
+      {product.description && (
+        <p className="mt-5 text-[1.15rem] leading-relaxed text-[var(--ink)]">
+          {product.description}
+        </p>
+      )}
+
+      {store.showPhone && (
+        <p className="mt-10 border-t border-[var(--border)] pt-6 text-[18px]">
+          ¿Te gustó? Escribile a {store.ownerName || "la dueña"} al{" "}
+          {formatPhoneDisplay(store.phone)}.
+        </p>
+      )}
+    </div>
+  );
+}
+
+export default function ProductPage(
+  props: PageProps<"/[slug]/producto/[productId]">,
+) {
+  return (
+    <main className="flex-1">
+      <Suspense
+        fallback={
+          <div className="mx-auto max-w-3xl px-5 py-16 text-[var(--muted)]">
+            Cargando pieza…
+          </div>
+        }
+      >
+        <ProductBody params={props.params} />
+      </Suspense>
+    </main>
+  );
+}
