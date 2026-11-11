@@ -79,7 +79,7 @@ export async function transcribeAudio(
     if (process.env.AI_GATEWAY_API_KEY?.trim()) {
       const { gateway } = await import("@ai-sdk/gateway");
       const result = await generateText({
-        model: gateway("google/gemini-2.0-flash"),
+        model: gateway("google/gemini-3.8-flash"),
         messages: [
           {
             role: "user",
@@ -97,7 +97,7 @@ export async function transcribeAudio(
         apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!.trim(),
       });
       const result = await generateText({
-        model: google("gemini-2.0-flash"),
+        model: google("gemini-3.8-flash"),
         messages: [
           {
             role: "user",

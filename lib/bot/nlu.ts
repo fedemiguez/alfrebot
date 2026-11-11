@@ -295,7 +295,7 @@ export async function interpretFreeText(
     const { generateObject } = await import("ai");
     const { gateway } = await import("@ai-sdk/gateway");
     const result = await generateObject({
-      model: gateway("google/gemini-2.0-flash"),
+      model: gateway("google/gemini-3.8-flash"),
       schema: freeTextActionSchema,
       prompt: `Sos el NLU de un bot de tienda por WhatsApp para personas mayores en Argentina.
 Del mensaje, devolvé una acción tipada. No inventes. Mensaje: """${text}"""`,

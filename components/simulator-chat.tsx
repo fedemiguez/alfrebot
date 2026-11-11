@@ -221,13 +221,31 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
     setSendingAudio(true);
     setError(null);
     try {
-      const dataUrl = await blobToDataUrl(blob);
+      const type = mime.split(";")[0] || "audio/webm";
+      const ext = type.includes("ogg")
+        ? "ogg"
+        : type.includes("mp4")
+          ? "m4a"
+          : "webm";
+      const file = new File([blob], `audio-${Date.now()}.${ext}`, { type });
+      const form = new FormData();
+      form.append("file", file);
+
+      const up = await fetch("/api/upload", {
+        method: "POST",
+        body: form,
+      });
+      const json = (await up.json()) as { url?: string; error?: string };
+      if (!up.ok || !json.url) {
+        throw new Error(json.error || "No se pudo subir el audio");
+      }
+
       sendPayload(
         {
           media: {
             kind: "audio",
-            mime: mime.split(";")[0] || "audio/webm",
-            dataUrl,
+            mime: type,
+            url: json.url,
           },
         },
         {
@@ -612,15 +630,6 @@ function linkifyMessageText(text: string | undefined): ReactNode {
       <span key={`t_${i}`}>{seg.value}</span>
     ),
   );
-}
-
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("No se pudo leer el audio"));
-    reader.readAsDataURL(blob);
-  });
 }
 
 /** Reduce phone photos so multipart upload stays under Vercel body limits. */
