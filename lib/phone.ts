@@ -49,15 +49,18 @@ export function isWhatsAppContactPhone(
 
 /**
  * Número a mostrar en catálogo / Lo quiero:
- * `contactPhone` si es válido; si no, `phone` si es válido.
+ * `contactPhone` si es válido; si no, `channelIdentity` cuando es un móvil AR.
  */
 export function resolveStoreContactPhone(store: {
-  phone: string;
+  channelIdentity?: string;
+  /** @deprecated alias de channelIdentity */
+  phone?: string;
   contactPhone?: string | null;
 }): string | null {
+  const identity = store.channelIdentity ?? store.phone;
   return (
     normalizeArMobileE164(store.contactPhone) ??
-    normalizeArMobileE164(store.phone)
+    normalizeArMobileE164(identity)
   );
 }
 

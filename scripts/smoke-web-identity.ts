@@ -5,7 +5,7 @@
  */
 import { handleMessage } from "../lib/bot/engine";
 import { getMemoryDb } from "../lib/db/memory";
-import { getConversation, getStoreByPhone } from "../lib/db/repos";
+import { getConversation, getStoreForChannelIdentity } from "../lib/db/repos";
 
 const caps = { buttons: true, maxButtons: 3, maxListRows: 10 };
 const from = "clerk:user_smoke_web_identity";
@@ -58,7 +58,7 @@ async function main() {
   await say(undefined, "stock_pause_mode");
   const done = await say(undefined, "checkout_whatsapp");
 
-  const store = await getStoreByPhone(from);
+  const store = await getStoreForChannelIdentity(from);
   assert(store, "store created");
   assert(store.isDemo === false, "clerk identity must not be demo");
   assert(store.clerkUserId === "user_smoke_web_identity", "clerkUserId set");

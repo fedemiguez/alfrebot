@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { formatChannelIdentityLabel } from "@/lib/channel-identity";
 import {
   formatPhoneDisplay,
   formatPriceArs,
@@ -70,8 +71,10 @@ async function AdminStoreBody({
         </h1>
         <dl className="mt-4 grid gap-2 text-[17px] text-[var(--muted)] sm:grid-cols-2">
           <div>
-            <dt className="text-[14px] uppercase tracking-wide">Teléfono</dt>
-            <dd className="text-[var(--ink)]">{formatPhoneDisplay(store.phone)}</dd>
+            <dt className="text-[14px] uppercase tracking-wide">Identidad</dt>
+            <dd className="text-[var(--ink)]">
+              {formatChannelIdentityLabel(store)}
+            </dd>
           </div>
           <div>
             <dt className="text-[14px] uppercase tracking-wide">Alta</dt>

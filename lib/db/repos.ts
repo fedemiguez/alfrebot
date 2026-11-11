@@ -1,4 +1,8 @@
 import { and, asc, desc, eq } from "drizzle-orm";
+import {
+  clerkUserIdFromIdentity,
+  isClerkIdentity,
+} from "@/lib/channel-identity";
 import { getDb, hasDatabaseUrl } from "@/lib/db/index";
 import { getMemoryDb, newId, now } from "@/lib/db/memory";
 import {
@@ -52,16 +56,61 @@ function touchStore(store: Store): Store {
   return { ...store, updatedAt: now() };
 }
 
-export async function getStoreByPhone(phone: string): Promise<Store | null> {
+export async function getStoreByChannelIdentity(
+  channelIdentity: string,
+): Promise<Store | null> {
   if (!hasDatabaseUrl()) {
     for (const s of getMemoryDb().stores.values()) {
-      if (s.phone === phone) return s;
+      if (s.channelIdentity === channelIdentity) return s;
     }
     return null;
   }
   const db = getDb();
-  const rows = await db.select().from(stores).where(eq(stores.phone, phone)).limit(1);
+  const rows = await db
+    .select()
+    .from(stores)
+    .where(eq(stores.channelIdentity, channelIdentity))
+    .limit(1);
   return rows[0] ?? null;
+}
+
+/** @deprecated Usar getStoreByChannelIdentity */
+export async function getStoreByPhone(phone: string): Promise<Store | null> {
+  return getStoreByChannelIdentity(phone);
+}
+
+export async function getStoreByClerkUserId(
+  clerkUserId: string,
+): Promise<Store | null> {
+  if (!clerkUserId) return null;
+  if (!hasDatabaseUrl()) {
+    for (const s of getMemoryDb().stores.values()) {
+      if (s.clerkUserId === clerkUserId) return s;
+    }
+    return null;
+  }
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(stores)
+    .where(eq(stores.clerkUserId, clerkUserId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/**
+ * Resuelve la tienda para un `msg.from`:
+ * 1) match exacto de `channel_identity`
+ * 2) si es `clerk:{id}`, match por `clerk_user_id` (vínculo con tienda WA)
+ */
+export async function getStoreForChannelIdentity(
+  from: string,
+): Promise<Store | null> {
+  const direct = await getStoreByChannelIdentity(from);
+  if (direct) return direct;
+  const clerkUserId = clerkUserIdFromIdentity(from);
+  if (clerkUserId) return getStoreByClerkUserId(clerkUserId);
+  return null;
 }
 
 export async function getStoreBySlug(slug: string): Promise<Store | null> {
@@ -85,7 +134,7 @@ export async function getStoreById(id: string): Promise<Store | null> {
   return rows[0] ?? null;
 }
 
-/** Lista tenants/tiendas (un registro por teléfono) para el panel admin. */
+/** Lista tenants/tiendas (un registro por identidad de canal) para el panel admin. */
 export async function listStores(): Promise<Store[]> {
   if (!hasDatabaseUrl()) {
     return [...getMemoryDb().stores.values()].sort(
@@ -138,7 +187,7 @@ export async function slugExists(slug: string): Promise<boolean> {
 }
 
 export async function upsertStore(input: {
-  phone: string;
+  channelIdentity: string;
   contactPhone?: string | null;
   clerkUserId?: string | null;
   ownerEmail?: string | null;
@@ -151,17 +200,23 @@ export async function upsertStore(input: {
   isDemo?: boolean;
   status?: string;
 }): Promise<Store> {
-  const existing = await getStoreByPhone(input.phone);
+  const clerkUserId =
+    input.clerkUserId ?? clerkUserIdFromIdentity(input.channelIdentity);
+  const existing =
+    (await getStoreByChannelIdentity(input.channelIdentity)) ??
+    (clerkUserId ? await getStoreByClerkUserId(clerkUserId) : null);
+
   if (!hasDatabaseUrl()) {
     const mem = getMemoryDb();
     if (existing) {
       const updated = touchStore({
         ...existing,
+        // No pisar la identidad canónica (p.ej. WA) si llegamos por clerk:…
         contactPhone:
           input.contactPhone !== undefined
             ? input.contactPhone
             : existing.contactPhone,
-        clerkUserId: input.clerkUserId ?? existing.clerkUserId,
+        clerkUserId: clerkUserId ?? existing.clerkUserId,
         ownerEmail: input.ownerEmail ?? existing.ownerEmail,
         ownerName: input.ownerName ?? existing.ownerName,
         name: input.name ?? existing.name,
@@ -177,9 +232,9 @@ export async function upsertStore(input: {
     }
     const created: Store = {
       id: newId(),
-      phone: input.phone,
+      channelIdentity: input.channelIdentity,
       contactPhone: input.contactPhone ?? null,
-      clerkUserId: input.clerkUserId ?? null,
+      clerkUserId: clerkUserId ?? null,
       ownerEmail: input.ownerEmail ?? null,
       ownerName: input.ownerName ?? null,
       name: input.name ?? null,
@@ -205,7 +260,7 @@ export async function upsertStore(input: {
           input.contactPhone !== undefined
             ? input.contactPhone
             : existing.contactPhone,
-        clerkUserId: input.clerkUserId ?? existing.clerkUserId,
+        clerkUserId: clerkUserId ?? existing.clerkUserId,
         ownerEmail: input.ownerEmail ?? existing.ownerEmail,
         ownerName: input.ownerName ?? existing.ownerName,
         name: input.name ?? existing.name,
@@ -224,9 +279,9 @@ export async function upsertStore(input: {
   const rows = await db
     .insert(stores)
     .values({
-      phone: input.phone,
+      channelIdentity: input.channelIdentity,
       contactPhone: input.contactPhone ?? null,
-      clerkUserId: input.clerkUserId ?? null,
+      clerkUserId: clerkUserId ?? null,
       ownerEmail: input.ownerEmail ?? null,
       ownerName: input.ownerName ?? null,
       name: input.name ?? null,
@@ -239,6 +294,72 @@ export async function upsertStore(input: {
     })
     .returning();
   return rows[0]!;
+}
+
+async function countProductsForStore(storeId: string): Promise<number> {
+  if (!hasDatabaseUrl()) {
+    let n = 0;
+    for (const p of getMemoryDb().products.values()) {
+      if (p.storeId === storeId) n += 1;
+    }
+    return n;
+  }
+  const db = getDb();
+  const rows = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(eq(products.storeId, storeId));
+  return rows.length;
+}
+
+/** Borra un stub de tienda (sin productos) — p.ej. huérfano clerk: tras vincular. */
+async function deleteEmptyStore(storeId: string): Promise<boolean> {
+  if ((await countProductsForStore(storeId)) > 0) return false;
+  if (!hasDatabaseUrl()) {
+    return getMemoryDb().stores.delete(storeId);
+  }
+  const db = getDb();
+  const rows = await db.delete(stores).where(eq(stores.id, storeId)).returning();
+  return rows.length > 0;
+}
+
+/**
+ * Vincula una sesión Clerk a una tienda que nació por WhatsApp (misma fila).
+ * Si el número de pedidos coincide con `channel_identity` WA y no hay otro Clerk,
+ * escribe `clerk_user_id` / email y limpia el stub `clerk:…` vacío.
+ */
+export async function linkClerkToWaStore(input: {
+  clerkChannelIdentity: string;
+  ownerEmail?: string | null;
+  waE164: string;
+}): Promise<{ store: Store | null; linked: boolean; detail: string }> {
+  const clerkUserId = clerkUserIdFromIdentity(input.clerkChannelIdentity);
+  if (!clerkUserId || !isClerkIdentity(input.clerkChannelIdentity)) {
+    return { store: null, linked: false, detail: "not_clerk" };
+  }
+
+  const waStore = await getStoreByChannelIdentity(input.waE164);
+  if (!waStore) {
+    return { store: null, linked: false, detail: "no_wa_store" };
+  }
+  if (waStore.clerkUserId && waStore.clerkUserId !== clerkUserId) {
+    return { store: waStore, linked: false, detail: "wa_store_has_other_clerk" };
+  }
+
+  const linked = await upsertStore({
+    channelIdentity: waStore.channelIdentity,
+    clerkUserId,
+    ownerEmail: input.ownerEmail ?? waStore.ownerEmail,
+    contactPhone: input.waE164,
+    showPhone: true,
+  });
+
+  const stub = await getStoreByChannelIdentity(input.clerkChannelIdentity);
+  if (stub && stub.id !== linked.id) {
+    await deleteEmptyStore(stub.id);
+  }
+
+  return { store: linked, linked: true, detail: "linked" };
 }
 
 export async function updateStoreCheckoutMode(
@@ -436,43 +557,45 @@ export async function updateProduct(
   return rows[0] ?? null;
 }
 
-export async function getConversation(phone: string): Promise<Conversation | null> {
+export async function getConversation(
+  channelIdentity: string,
+): Promise<Conversation | null> {
   if (!hasDatabaseUrl()) {
-    return getMemoryDb().conversations.get(phone) ?? null;
+    return getMemoryDb().conversations.get(channelIdentity) ?? null;
   }
   const db = getDb();
   const rows = await db
     .select()
     .from(conversations)
-    .where(eq(conversations.phone, phone))
+    .where(eq(conversations.channelIdentity, channelIdentity))
     .limit(1);
   return rows[0] ?? null;
 }
 
 export async function saveConversation(input: {
-  phone: string;
+  channelIdentity: string;
   channel: string;
   state: string;
   draft?: ConversationDraft;
 }): Promise<Conversation> {
-  if (!input.phone) {
-    throw new Error("saveConversation: phone requerido");
+  if (!input.channelIdentity) {
+    throw new Error("saveConversation: channelIdentity requerido");
   }
   if (!hasDatabaseUrl()) {
     const mem = getMemoryDb();
-    const existing = mem.conversations.get(input.phone);
+    const existing = mem.conversations.get(input.channelIdentity);
     const saved: Conversation = {
-      phone: input.phone,
+      channelIdentity: input.channelIdentity,
       channel: input.channel,
       state: input.state,
       draft: (input.draft ?? existing?.draft ?? {}) as Record<string, unknown>,
       lastInboundAt: now(),
     };
-    mem.conversations.set(input.phone, saved);
+    mem.conversations.set(input.channelIdentity, saved);
     return saved;
   }
   const db = getDb();
-  const existing = await getConversation(input.phone);
+  const existing = await getConversation(input.channelIdentity);
   if (existing) {
     const rows = await db
       .update(conversations)
@@ -482,14 +605,14 @@ export async function saveConversation(input: {
         draft: (input.draft ?? existing.draft) as Record<string, unknown>,
         lastInboundAt: now(),
       })
-      .where(eq(conversations.phone, input.phone))
+      .where(eq(conversations.channelIdentity, input.channelIdentity))
       .returning();
     return rows[0]!;
   }
   const rows = await db
     .insert(conversations)
     .values({
-      phone: input.phone,
+      channelIdentity: input.channelIdentity,
       channel: input.channel,
       state: input.state,
       draft: (input.draft ?? {}) as Record<string, unknown>,
@@ -550,7 +673,7 @@ export async function ensureDemoStore(): Promise<Store> {
   if (existing) return existing;
 
   const store = await upsertStore({
-    phone: "+5491100000001",
+    channelIdentity: "+5491100000001",
     contactPhone: "+5491100000001",
     ownerName: "Norma",
     name: "Cerámicas de Norma",

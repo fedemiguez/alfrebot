@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { adminSecretConfigured, isAdminAuthenticated } from "@/lib/admin-auth";
-import { formatPhoneDisplay } from "@/lib/format";
+import { formatChannelIdentityLabel } from "@/lib/channel-identity";
 import { listStores } from "@/lib/db/repos";
 import { AdminLoginForm } from "./login-form";
 import { logoutAdminAction } from "./actions";
@@ -100,7 +100,7 @@ async function AdminBody() {
                   ) : null}
                 </p>
                 <p className="truncate text-[16px] text-[var(--muted)]">
-                  {formatPhoneDisplay(store.phone)}
+                  {formatChannelIdentityLabel(store)}
                   {store.name ? ` · ${store.name}` : ""}
                 </p>
               </div>

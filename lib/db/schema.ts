@@ -13,14 +13,21 @@ export type CheckoutMode = "whatsapp" | "cart";
 
 export const stores = pgTable("stores", {
   id: uuid("id").defaultRandom().primaryKey(),
-  /** Identidad del canal (Meta, clerk:userId o simulador). No siempre es el WA público. */
-  phone: text("phone").notNull().unique(),
+  /**
+   * Identidad de canal (única tabla de dueña/tienda).
+   * WhatsApp: E.164 `+549…`. Web: `clerk:{userId}`.
+   * No es necesariamente el WhatsApp público de pedidos.
+   */
+  channelIdentity: text("channel_identity").notNull().unique(),
   /**
    * WhatsApp público para catálogo / Lo quiero.
-   * Si es null, se usa `phone` cuando es un móvil AR válido.
+   * Si es null, se usa `channelIdentity` cuando es un móvil AR válido.
    */
   contactPhone: text("contact_phone"),
-  /** Dueña registrada por email (Clerk). */
+  /**
+   * Alias del camino web. Permite encontrar la misma fila si la dueña
+   * empezó por WhatsApp y después entró con email (o al revés).
+   */
   clerkUserId: text("clerk_user_id").unique(),
   ownerEmail: text("owner_email"),
   ownerName: text("owner_name"),
@@ -65,7 +72,8 @@ export const products = pgTable("products", {
 });
 
 export const conversations = pgTable("conversations", {
-  phone: text("phone").primaryKey(),
+  /** Misma key que `stores.channel_identity` / `msg.from`. */
+  channelIdentity: text("channel_identity").primaryKey(),
   channel: text("channel").notNull(),
   state: text("state").notNull().default("NEW"),
   draft: jsonb("draft").$type<Record<string, unknown>>().default({}).notNull(),
@@ -74,6 +82,7 @@ export const conversations = pgTable("conversations", {
     .notNull(),
 });
 
+/** Intentos de alta por WhatsApp (`/registro`). `phone` acá sí es celular. */
 export const signupIntents = pgTable("signup_intents", {
   code: text("code").primaryKey(),
   phone: text("phone").notNull(),

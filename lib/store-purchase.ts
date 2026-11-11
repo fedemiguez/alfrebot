@@ -23,7 +23,7 @@ export function storePurchaseProps(store: {
   slug: string | null;
   name: string | null;
   ownerName: string | null;
-  phone: string;
+  channelIdentity: string;
   contactPhone?: string | null;
   showPhone: boolean;
   checkoutMode?: CheckoutMode | string | null;
