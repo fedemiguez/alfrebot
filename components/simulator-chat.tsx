@@ -425,7 +425,7 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
 
         <form
           onSubmit={onSendText}
-          className="flex items-end gap-2 border-t border-black/5 bg-[#F0F0F0] p-3"
+          className="flex min-w-0 items-end gap-1.5 border-t border-black/5 bg-[#F0F0F0] p-3 sm:gap-2"
         >
           {/*
             Inputs fuera de display:none: en varios Android/iOS el capture
@@ -463,7 +463,7 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
           />
           <button
             type="button"
-            className="min-h-12 rounded bg-white px-3 text-[1.2rem]"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-white text-[1.2rem]"
             onClick={() => setPickSourceOpen(true)}
             aria-label="Adjuntar foto"
             aria-haspopup="dialog"
@@ -473,7 +473,7 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
           </button>
           <button
             type="button"
-            className={`min-h-12 min-w-12 rounded px-3 text-[1.2rem] ${
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded text-[1.2rem] ${
               recording
                 ? "bg-[#DC2626] text-white"
                 : "bg-white text-[var(--ink)]"
@@ -494,10 +494,14 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Escribí o grabá un audio"
-            className="min-h-12 flex-1 rounded-full border border-[var(--border)] bg-white px-4 text-[17px] outline-none"
+            className="min-h-12 min-w-0 flex-1 rounded-full border border-[var(--border)] bg-white px-3 text-[17px] outline-none sm:px-4"
             disabled={busy}
           />
-          <button type="submit" className="btn btn-primary rounded-full px-4" disabled={busy}>
+          <button
+            type="submit"
+            className="btn btn-primary shrink-0 whitespace-nowrap rounded-full px-3 sm:px-4"
+            disabled={busy}
+          >
             Enviar
           </button>
         </form>
