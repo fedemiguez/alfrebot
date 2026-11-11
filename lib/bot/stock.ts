@@ -117,17 +117,59 @@ export function confirmStockMessage(
   );
 }
 
+const SPOKEN_QTY: Record<string, number> = {
+  cero: 0,
+  un: 1,
+  uno: 1,
+  una: 1,
+  dos: 2,
+  tres: 3,
+  cuatro: 4,
+  cinco: 5,
+  seis: 6,
+  siete: 7,
+  ocho: 8,
+  nueve: 9,
+  diez: 10,
+  once: 11,
+  doce: 12,
+  trece: 13,
+  catorce: 14,
+  quince: 15,
+  veinte: 20,
+  treinta: 30,
+};
+
+/** Acepta "3", "tres", "quedan 3", "ponele dos unidades". */
 export function parseQuantityInput(raw: string): number | null {
   const t = raw
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/unidades?|u\.?/g, "")
+    .replace(/unidades?|u\.?/g, " ")
+    .replace(/\b(quedan|queda|hay|ponele|pone|pon|son|tengo)\b/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
-  if (!/^\d+$/.test(t)) return null;
-  const n = Number(t);
-  if (!Number.isFinite(n) || n < 0 || n > 99999) return null;
-  return n;
+
+  if (/^\d+$/.test(t)) {
+    const n = Number(t);
+    if (!Number.isFinite(n) || n < 0 || n > 99999) return null;
+    return n;
+  }
+
+  if (SPOKEN_QTY[t] != null) return SPOKEN_QTY[t]!;
+
+  const digit = t.match(/\b(\d{1,5})\b/);
+  if (digit) {
+    const n = Number(digit[1]);
+    if (Number.isFinite(n) && n >= 0 && n <= 99999) return n;
+  }
+
+  for (const [word, value] of Object.entries(SPOKEN_QTY)) {
+    if (new RegExp(`\\b${word}\\b`).test(t)) return value;
+  }
+
+  return null;
 }
 
 export function resolveChoiceId(

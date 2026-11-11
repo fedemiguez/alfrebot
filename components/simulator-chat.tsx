@@ -30,12 +30,17 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [sendingAudio, setSendingAudio] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pickSourceOpen, setPickSourceOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const busy = pending || uploading;
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const busy = pending || uploading || recording || sendingAudio;
 
   useEffect(() => {
     setPhone((prev) => {
@@ -146,6 +151,98 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
       { choiceId, text: label },
       { id: `u_${Date.now()}`, role: "user", text: label },
     );
+  }
+
+  function stopMicTracks() {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  }
+
+  async function onToggleRecord() {
+    if (uploading || pending || sendingAudio) return;
+
+    if (recording && mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      return;
+    }
+
+    if (typeof window === "undefined" || typeof MediaRecorder === "undefined") {
+      setError("Este navegador no permite grabar audio. Probá en WhatsApp real o en Chrome/Safari.");
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("No hay acceso al micrófono en este navegador.");
+      return;
+    }
+
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const mimeCandidates = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+        "audio/mp4",
+      ];
+      const mime =
+        mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m)) ?? "";
+      const recorder = mime
+        ? new MediaRecorder(stream, { mimeType: mime })
+        : new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (ev) => {
+        if (ev.data.size > 0) audioChunksRef.current.push(ev.data);
+      };
+      recorder.onstop = () => {
+        setRecording(false);
+        stopMicTracks();
+        const type = recorder.mimeType || mime || "audio/webm";
+        const blob = new Blob(audioChunksRef.current, { type });
+        audioChunksRef.current = [];
+        mediaRecorderRef.current = null;
+        if (blob.size < 64) {
+          setError("El audio quedó vacío. Tocá el micrófono, hablá y tocá de nuevo para enviar.");
+          return;
+        }
+        void sendAudioBlob(blob, type);
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+    } catch {
+      stopMicTracks();
+      setRecording(false);
+      setError("No pude usar el micrófono. Revisá el permiso del navegador.");
+    }
+  }
+
+  async function sendAudioBlob(blob: Blob, mime: string) {
+    setSendingAudio(true);
+    setError(null);
+    try {
+      const dataUrl = await blobToDataUrl(blob);
+      sendPayload(
+        {
+          media: {
+            kind: "audio",
+            mime: mime.split(";")[0] || "audio/webm",
+            dataUrl,
+          },
+        },
+        {
+          id: `u_${Date.now()}`,
+          role: "user",
+          text: "🎙️ Audio",
+        },
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "No se pudo enviar el audio";
+      setError(message);
+    } finally {
+      setSendingAudio(false);
+    }
   }
 
   async function onPickImage(file: File) {
@@ -304,6 +401,20 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
               </div>
             </div>
           )}
+          {recording && (
+            <div className="flex justify-end">
+              <div className="rounded-lg bg-[#DCF8C6]/80 px-3 py-2 text-[15px] text-[#9A3412]">
+                Grabando… tocá el micrófono otra vez para enviar
+              </div>
+            </div>
+          )}
+          {sendingAudio && (
+            <div className="flex justify-end">
+              <div className="rounded-lg bg-[#DCF8C6]/80 px-3 py-2 text-[15px] text-[var(--muted)]">
+                Enviando audio…
+              </div>
+            </div>
+          )}
           {error && (
             <p className="text-center text-[14px] text-[#9A3412]" role="alert">
               {error}
@@ -360,10 +471,29 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
           >
             📎
           </button>
+          <button
+            type="button"
+            className={`min-h-12 min-w-12 rounded px-3 text-[1.2rem] ${
+              recording
+                ? "bg-[#DC2626] text-white"
+                : "bg-white text-[var(--ink)]"
+            }`}
+            onClick={() => void onToggleRecord()}
+            aria-label={recording ? "Detener y enviar audio" : "Grabar audio"}
+            aria-pressed={recording}
+            disabled={!phone || uploading || pending || sendingAudio}
+            title={
+              recording
+                ? "Tocá para enviar el audio"
+                : "Grabar un audio para el bot"
+            }
+          >
+            {recording ? "■" : "🎤"}
+          </button>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Escribí un mensaje"
+            placeholder="Escribí o grabá un audio"
             className="min-h-12 flex-1 rounded-full border border-[var(--border)] bg-white px-4 text-[17px] outline-none"
             disabled={busy}
           />
@@ -478,6 +608,15 @@ function linkifyMessageText(text: string | undefined): ReactNode {
       <span key={`t_${i}`}>{seg.value}</span>
     ),
   );
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("No se pudo leer el audio"));
+    reader.readAsDataURL(blob);
+  });
 }
 
 /** Reduce phone photos so multipart upload stays under Vercel body limits. */

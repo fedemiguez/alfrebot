@@ -8,7 +8,7 @@ Armá tu tienda por WhatsApp. Dominio: [alfrebot.com.ar](https://alfrebot.com.ar
 - Drizzle + Neon Postgres (con fallback en memoria si no hay `DATABASE_URL`)
 - Motor de bot + adaptadores `simulator` / `meta`
 - Vercel Blob para fotos (placeholder local si no hay token)
-- AI SDK / Gateway opcional (Gemini Flash) para texto libre
+- AI SDK / Gateway opcional (Gemini Flash) para texto libre y **audios** (STT)
 
 ## Desarrollo
 
@@ -88,3 +88,35 @@ Dueña: Sí, guardar
 ```
 
 Si pone `0`, queda agotado. Siempre hay confirmación antes de guardar. Con botones/listas de Meta (o del simulador); si no hay botones, respondé con el número de la opción.
+
+## Audios (WhatsApp / `/probar`)
+
+Podés **dictar** nombre, precio, descripción, cantidad o pedidos de stock. El bot transcribe con Gemini (AI Gateway o `GOOGLE_GENERATIVE_AI_API_KEY`) y sigue el mismo flujo de siempre, con un eco `Te escuché: «…»` antes de la respuesta.
+
+- En `/probar`: botón 🎤 → hablá → tocá de nuevo para enviar.
+- En WhatsApp real: mandá un audio como siempre (ogg/opus).
+- Sin API key: el bot responde *No pude escuchar el audio…* y sigue usable por texto/botones.
+- El audio **no** reemplaza la foto al cargar un producto.
+
+### Ejemplo: precio por audio
+
+```
+Bot:    ¿A cómo la vendés? Podés decir 15 mil o 15000 (texto o audio).
+Dueña:  [audio] "quince mil"
+Bot:    Te escuché: «quince mil»
+Bot:    ¿Querés contar algo del producto? …
+```
+
+### Ejemplo: pausar / listado
+
+```
+Dueña:  [audio] "mostrame el stock"
+Bot:    Te escuché: «mostrame el stock»
+Bot:    Tus productos: …
+```
+
+Smoke local (mock STT, sin Gemini):
+
+```bash
+npx tsx --env-file=.env.local scripts/smoke-audio.ts
+```
