@@ -124,7 +124,7 @@ export default function ProductPage(
       <Suspense
         fallback={
           <div className="mx-auto max-w-3xl px-5 py-16 text-[var(--muted)]">
-            Cargando pieza…
+            Cargando producto…
           </div>
         }
       >

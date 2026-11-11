@@ -123,7 +123,7 @@ function menuMessage(caps: ChannelCapabilities): OutboundMessage {
   return withOptions(
     "¿Qué querés hacer?",
     [
-      { id: CHOICE.MENU_ADD, label: "Cargar pieza" },
+      { id: CHOICE.MENU_ADD, label: "Cargar producto" },
       { id: CHOICE.MENU_STORE, label: "Ver mi tienda" },
       { id: CHOICE.MENU_STOCK, label: "Stock / pausa" },
       { id: CHOICE.MENU_CONTACT, label: "WhatsApp pedidos" },
@@ -137,7 +137,7 @@ function helpMessage(): OutboundMessage {
   return {
     kind: "text",
     text:
-      "Soy tu ayudante para armar la tienda. Podés mandarme fotos de tus piezas y te voy guiando.\n\n" +
+      "Soy tu ayudante para armar la tienda. Podés mandarme fotos de tus productos y te voy guiando.\n\n" +
       "Stock: escribí menú → Stock / pausa, o pedime el listado, pausar, reactivar o cambiar cantidad.\n" +
       "WhatsApp de pedidos: el número donde te escriben los clientes (puede ser distinto al que usás para gestionar la tienda).\n" +
       "Escribí menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
@@ -164,10 +164,10 @@ function afterContactPhoneOnboarding(
     setState,
     "ASK_STOCK_MODE",
     withOptions(
-      "¿Cómo querés manejar el stock?\n\n• Llevar cantidades: vas anotando cuántas unidades quedan de cada pieza.\n• Solo pausar: marcás agotado / volvió, sin números.",
+      "¿Querés llevar la cuenta de cuántos productos te quedan?\n\n• Con números: anotás las unidades de cada producto. En 0 se muestra Agotado.\n• Sin números: solo marcás Agotado o Disponible.",
       [
-        { id: CHOICE.STOCK_QTY_MODE, label: "Llevar cantidades" },
-        { id: CHOICE.STOCK_PAUSE_MODE, label: "Solo pausar" },
+        { id: CHOICE.STOCK_QTY_MODE, label: "Con números" },
+        { id: CHOICE.STOCK_PAUSE_MODE, label: "Sin números" },
       ],
       caps,
     ),
@@ -564,11 +564,14 @@ export async function handleMessage(
   if (state === "ASK_STOCK_MODE") {
     const text = msg.text?.trim() ?? "";
     let tracksQuantity: boolean | null = null;
-    if (choice === CHOICE.STOCK_QTY_MODE || /cantidad/.test(text.toLowerCase())) {
+    if (
+      choice === CHOICE.STOCK_QTY_MODE ||
+      /cantidad|con n[uú]meros/.test(text.toLowerCase())
+    ) {
       tracksQuantity = true;
     } else if (
       choice === CHOICE.STOCK_PAUSE_MODE ||
-      /pausar|solo pausa|sin cantidad/.test(text.toLowerCase())
+      /pausar|solo pausa|sin cantidad|sin n[uú]meros/.test(text.toLowerCase())
     ) {
       tracksQuantity = false;
     }
@@ -578,10 +581,10 @@ export async function handleMessage(
         setState,
         "ASK_STOCK_MODE",
         withOptions(
-          "Elegí cómo manejar el stock:",
+          "¿Cómo querés marcar si hay productos?\n\n• Con números: anotás las unidades de cada producto.\n• Sin números: solo marcás Agotado o Disponible.",
           [
-            { id: CHOICE.STOCK_QTY_MODE, label: "Llevar cantidades" },
-            { id: CHOICE.STOCK_PAUSE_MODE, label: "Solo pausar" },
+            { id: CHOICE.STOCK_QTY_MODE, label: "Con números" },
+            { id: CHOICE.STOCK_PAUSE_MODE, label: "Sin números" },
           ],
           caps,
         ),
@@ -594,7 +597,7 @@ export async function handleMessage(
       setState,
       "ASK_CHECKOUT_MODE",
       withOptions(
-        "¿Cómo querés que te pidan? Por defecto cada pieza tiene un botón Lo quiero que te escribe por WhatsApp. También podés armar un carrito y mandar el pedido junto (igual por WhatsApp, sin cobro online).",
+        "¿Cómo querés que te pidan? Por defecto cada producto tiene un botón Lo quiero que te escribe por WhatsApp. También podés armar un carrito y mandar el pedido junto (igual por WhatsApp, sin cobro online).",
         [
           { id: CHOICE.CHECKOUT_WA, label: "Lo quiero" },
           { id: CHOICE.CHECKOUT_CART, label: "Con carrito" },
@@ -661,13 +664,13 @@ export async function handleMessage(
     const checkoutHint =
       checkoutMode === "cart"
         ? "En tu catálogo van a poder armar un pedido y mandártelo por WhatsApp."
-        : "En tu catálogo cada pieza tiene Lo quiero para escribirte por WhatsApp.";
+        : "En tu catálogo cada producto tiene Lo quiero para escribirte por WhatsApp.";
     const stockHint = tracksQuantity
       ? "Podés anotar cantidades desde el menú → Stock / pausa."
-      : "Podés pausar piezas (Agotado) desde el menú → Stock / pausa.";
+      : "Podés marcar productos como Agotado desde el menú → Stock / pausa.";
     replies.push({
       kind: "text",
-      text: `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${checkoutHint} ${stockHint}\n\nMandame una foto de tu primera pieza.`,
+      text: `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${checkoutHint} ${stockHint}\n\nMandame una foto de tu primer producto.`,
     });
     return replies;
   }
@@ -678,7 +681,7 @@ export async function handleMessage(
   if (state === "IDLE") {
     if (choice === CHOICE.MENU_ADD || msg.choiceId === CHOICE.MENU_ADD) {
       await setState("PRODUCT_PHOTO", { ...draft, product: {} });
-      replies.push({ kind: "text", text: "Mandame la foto de la pieza." });
+      replies.push({ kind: "text", text: "Mandame la foto del producto." });
       return replies;
     }
     if (choice === CHOICE.MENU_STORE || msg.choiceId === CHOICE.MENU_STORE) {
@@ -754,7 +757,7 @@ export async function handleMessage(
     }
     if (action.intent === "create_product") {
       await setState("PRODUCT_PHOTO", { ...draft, product: {} });
-      replies.push({ kind: "text", text: "Mandame la foto de la pieza." });
+      replies.push({ kind: "text", text: "Mandame la foto del producto." });
       return replies;
     }
     if ((action.intent === "list_stock" || action.intent === "manage_stock") && store) {
@@ -781,7 +784,7 @@ export async function handleMessage(
       replies.push(menuMessage(caps));
       replies.unshift({
         kind: "text",
-        text: "Para cambiar el precio decime cuál pieza, o usá el menú.",
+        text: "Para cambiar el precio decime cuál producto, o usá el menú.",
       });
       return replies;
     }
@@ -789,14 +792,14 @@ export async function handleMessage(
       return openStockHub(store, draft, setState, caps, [
         {
           kind: "text",
-          text: "Para marcar agotado elegí la pieza y confirmamos antes de guardar.",
+          text: "Para marcar agotado elegí el producto y confirmamos antes de guardar.",
         },
       ]);
     }
 
     replies.push({
       kind: "text",
-      text: "Mandame una foto para cargar una pieza, o pedime el menú.",
+      text: "Mandame una foto para cargar un producto, o pedime el menú.",
     });
     replies.push(menuMessage(caps));
     return replies;
@@ -830,14 +833,14 @@ export async function handleMessage(
           setState,
           "STOCK_HUB",
           stockHubMessage(store, caps),
-          [{ kind: "text", text: "Todavía no hay piezas. Mandame una foto para cargar una." }],
+          [{ kind: "text", text: "Todavía no hay productos. Mandame una foto para cargar uno." }],
         );
       }
       return replyWithChoices(
         draft,
         setState,
         "STOCK_PICK",
-        withOptions("¿Cuál pieza?", productPickOptions(products), caps),
+        withOptions("¿Cuál producto?", productPickOptions(products), caps),
       );
     }
     if (choice === CHOICE.STOCK_MODE) {
@@ -867,12 +870,12 @@ export async function handleMessage(
         draft,
         setState,
         "STOCK_PICK",
-        withOptions("Elegí una pieza de la lista:", productPickOptions(products), caps),
+        withOptions("Elegí un producto de la lista:", productPickOptions(products), caps),
       );
     }
     const product = await getProduct(productId);
     if (!product || product.storeId !== store.id) {
-      replies.push({ kind: "text", text: "No encontré esa pieza." });
+      replies.push({ kind: "text", text: "No encontré ese producto." });
       return openStockHub(store, draft, setState, caps);
     }
     draft = { ...draft, stockProductId: product.id };
@@ -894,7 +897,7 @@ export async function handleMessage(
       : null;
     if (!product || product.storeId !== store.id) {
       return openStockHub(store, clearStockDraft(draft), setState, caps, [
-        { kind: "text", text: "No encontré esa pieza." },
+        { kind: "text", text: "No encontré ese producto." },
       ]);
     }
     if (choice === CHOICE.CHANGE) {
@@ -904,7 +907,7 @@ export async function handleMessage(
         draft,
         setState,
         "STOCK_PICK",
-        withOptions("¿Cuál pieza?", productPickOptions(products), caps),
+        withOptions("¿Cuál producto?", productPickOptions(products), caps),
       );
     }
     if (choice === CHOICE.STOCK_PAUSE) {
@@ -1034,14 +1037,14 @@ export async function handleMessage(
     if (msg.media?.kind === "image") {
       return startProductFromImage(msg, draft, caps, setState);
     }
-    replies.push({ kind: "text", text: "Necesito la foto de la pieza. Mandamela cuando puedas." });
+    replies.push({ kind: "text", text: "Necesito la foto del producto. Mandamela cuando puedas." });
     return replies;
   }
 
   if (state === "PRODUCT_TITLE") {
     const title = msg.text?.trim();
     if (!title) {
-      replies.push({ kind: "text", text: "¿Cómo se llama la pieza?" });
+      replies.push({ kind: "text", text: "¿Cómo se llama el producto?" });
       return replies;
     }
     const product = { ...productDraft(draft), title };
@@ -1056,7 +1059,7 @@ export async function handleMessage(
       setState,
       "PRODUCT_DESC",
       withOptions(
-        "¿Querés contar algo de la pieza? Podés escribir o saltar.",
+        "¿Querés contar algo del producto? Podés escribir o saltar.",
         [{ id: CHOICE.SKIP, label: "Saltar" }],
         caps,
       ),
@@ -1079,7 +1082,7 @@ export async function handleMessage(
       setState,
       "PRODUCT_DESC",
       withOptions(
-        "¿Querés contar algo de la pieza? Podés escribir o saltar.",
+        "¿Querés contar algo del producto? Podés escribir o saltar.",
         [{ id: CHOICE.SKIP, label: "Saltar" }],
         caps,
       ),
@@ -1105,7 +1108,7 @@ export async function handleMessage(
     const text = msg.text?.trim() ?? "";
     if (choice === CHOICE.CHANGE || /cambiar/.test(text.toLowerCase())) {
       await setState("PRODUCT_TITLE", draft);
-      replies.push({ kind: "text", text: "¿Cómo se llama la pieza?" });
+      replies.push({ kind: "text", text: "¿Cómo se llama el producto?" });
       return replies;
     }
     if (choice === CHOICE.PUBLISH || isAffirmative(text) || choice === CHOICE.YES) {
@@ -1182,15 +1185,15 @@ async function applyStockAction(store: Store, draft: ConversationDraft): Promise
       tracksQuantity,
     });
     return tracksQuantity
-      ? "Listo: ahora llevás cantidades. Podés ponerle número a cada pieza."
-      : "Listo: ahora solo pausás. Las piezas agotadas se ven como Agotado.";
+      ? "Listo: ahora llevás cantidades. Podés ponerle número a cada producto."
+      : "Listo: ahora solo pausás. Los productos agotados se ven como Agotado.";
   }
 
   const product = draft.stockProductId
     ? await getProduct(draft.stockProductId)
     : null;
   if (!product || product.storeId !== store.id) {
-    return "No encontré la pieza.";
+    return "No encontré el producto.";
   }
 
   if (draft.stockAction === "pause") {
@@ -1251,7 +1254,7 @@ async function startProductFromImage(
       }
     } catch (err) {
       console.warn("[bot] image upload failed, using placeholder", err);
-      imageUrl = "/api/placeholder?name=pieza";
+      imageUrl = "/api/placeholder?name=producto";
     }
   }
 
@@ -1266,7 +1269,7 @@ async function startProductFromImage(
 
   if (!product.title) {
     await setState("PRODUCT_TITLE", nextDraft);
-    return [{ kind: "text", text: "¿Cómo se llama la pieza?" }];
+    return [{ kind: "text", text: "¿Cómo se llama el producto?" }];
   }
   if (product.priceCents == null) {
     await setState("PRODUCT_PRICE", nextDraft);
@@ -1280,7 +1283,7 @@ async function startProductFromImage(
   const { draft: withChoices, message } = withPendingChoices(
     nextDraft,
     withOptions(
-      "¿Querés contar algo de la pieza? Podés escribir o saltar.",
+      "¿Querés contar algo del producto? Podés escribir o saltar.",
       [{ id: CHOICE.SKIP, label: "Saltar" }],
       caps,
     ),

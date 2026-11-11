@@ -23,9 +23,9 @@ export function formatProductList(
   products: Product[],
   store: Pick<Store, "tracksQuantity">,
 ): string {
-  if (products.length === 0) return "Todavía no cargaste piezas.";
+  if (products.length === 0) return "Todavía no cargaste productos.";
   const lines = products.map((p, i) => `${i + 1}. ${productStatusLine(p, store)}`);
-  return `Tus piezas:\n${lines.join("\n")}`;
+  return `Tus productos:\n${lines.join("\n")}`;
 }
 
 export function stockHubMessage(
@@ -34,16 +34,16 @@ export function stockHubMessage(
 ): OutboundMessage {
   const options: Option[] = [
     { id: CHOICE.STOCK_LIST, label: "Ver listado" },
-    { id: CHOICE.STOCK_PICK, label: "Elegir pieza" },
+    { id: CHOICE.STOCK_PICK, label: "Elegir producto" },
     {
       id: CHOICE.STOCK_MODE,
-      label: store.tracksQuantity ? "Solo pausar" : "Llevar cantidades",
+      label: store.tracksQuantity ? "Sin números" : "Con números",
     },
     { id: CHOICE.MENU_HELP, label: "Volver al menú" },
   ];
   const mode = store.tracksQuantity
-    ? "Tu tienda lleva cantidades numéricas."
-    : "Tu tienda solo pausa piezas (se ven como Agotado).";
+    ? "Tu tienda lleva cantidades con números."
+    : "Tu tienda solo marca Agotado o Disponible, sin números.";
   return withOptions(`${mode}\n¿Qué querés hacer?`, options, caps);
 }
 
@@ -72,7 +72,7 @@ export function productActionOptions(
   } else {
     options.push({ id: CHOICE.STOCK_HIDE, label: "Ocultar" });
   }
-  options.push({ id: CHOICE.CHANGE, label: "Otra pieza" });
+  options.push({ id: CHOICE.CHANGE, label: "Otro producto" });
   return options;
 }
 
@@ -86,8 +86,8 @@ export function confirmStockMessage(
   let text = "¿Confirmamos?";
   if (action === "set_mode") {
     text = draft.stockModePending
-      ? "¿Pasamos a llevar cantidades numéricas por pieza?"
-      : "¿Pasamos a solo pausar (sin cantidades)?";
+      ? "¿Pasamos a llevar cantidades con números por producto?"
+      : "¿Pasamos a solo marcar Agotado o Disponible, sin números?";
   } else if (product) {
     if (action === "pause") {
       text = `¿Marcamos "${product.title}" como agotado?`;

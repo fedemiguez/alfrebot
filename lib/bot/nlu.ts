@@ -107,7 +107,7 @@ const NAME_TRAILING_NOISE_RE =
   /[,!.]+(?:\s*(?:mucho\s+gusto|un\s+placer|para\s+servirte|gracias|eh|che))?$/i;
 
 const NAME_REJECT_RE =
-  /\b(tienda|pieza|foto|precio|armar|quiero|necesito|ayuda|menu|men[uú]|whatsapp|hola|buenas)\b/i;
+  /\b(tienda|pieza|producto|foto|precio|armar|quiero|necesito|ayuda|menu|men[uú]|whatsapp|hola|buenas)\b/i;
 
 function titleCaseName(raw: string): string {
   return raw
@@ -212,7 +212,7 @@ export async function interpretFreeText(
     return { intent: "help" };
   }
   if (
-    /\b(listado|listar|ver stock|mi stock|mis piezas|que tengo|qué tengo)\b/.test(
+    /\b(listado|listar|ver stock|mi stock|mis piezas|mis productos|que tengo|qué tengo)\b/.test(
       lowered,
     ) ||
     /ver (mis )?productos/.test(lowered)
