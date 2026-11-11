@@ -37,6 +37,14 @@ export function createSimulatorAdapter(
             mime: body.media.mime,
             url: body.media.url,
             fetch: async () => {
+              // Prefer a stable http(s) / relative URL. dataUrl is legacy fallback only.
+              if (body.media?.url && !body.media.url.startsWith("data:")) {
+                const absolute = body.media.url.startsWith("http")
+                  ? body.media.url
+                  : new URL(body.media.url, process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").href;
+                const res = await fetch(absolute);
+                return res.blob();
+              }
               if (body.media?.dataUrl) {
                 const res = await fetch(body.media.dataUrl);
                 return res.blob();

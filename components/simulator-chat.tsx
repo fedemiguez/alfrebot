@@ -9,6 +9,9 @@ type ChatItem =
   | { id: string; role: "user"; text?: string; imageUrl?: string }
   | { id: string; role: "bot"; messages: OutboundMessage[] };
 
+const MAX_EDGE_PX = 1600;
+const JPEG_QUALITY = 0.85;
+
 function defaultSimPhone(): string {
   if (typeof window === "undefined") return "+01155550001";
   const key = "alfrebot_sim_phone";
@@ -25,34 +28,43 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
   const [items, setItems] = useState<ChatItem[]>([]);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const busy = pending || uploading;
 
   useEffect(() => {
-    if (!phone) setPhone(initialPhone || defaultSimPhone());
-  }, [initialPhone, phone]);
+    setPhone((prev) => {
+      if (prev) return prev;
+      if (initialPhone) return initialPhone;
+      return defaultSimPhone();
+    });
+  }, [initialPhone]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [items]);
+  }, [items, error]);
 
   const storePreviewUrl = useMemo(
     () => (storeSlug ? `/${storeSlug}` : null),
     [storeSlug],
   );
 
+  function resolvePhone(): string {
+    if (phone) return phone;
+    const next = initialPhone || defaultSimPhone();
+    setPhone(next);
+    return next;
+  }
+
   function extractSlug(replies: OutboundMessage[]) {
     for (const r of replies) {
       if (r.kind !== "text") continue;
-      const m = r.text.match(/\/([a-z0-9-]+)(?:\s|\.|$)/i);
-      // Prefer full URL matches
       const urlMatch = r.text.match(/https?:\/\/[^\s]+\/([a-z0-9-]+)/i);
       if (urlMatch?.[1] && urlMatch[1] !== "probar" && urlMatch[1] !== "registro") {
         setStoreSlug(urlMatch[1]);
         return;
-      }
-      if (m?.[1] && !["probar", "registro", "api"].includes(m[1])) {
-        // weaker heuristic — ignore
       }
     }
     const any = replies
@@ -63,39 +75,70 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
   }
 
   function sendPayload(payload: Record<string, unknown>, userBubble: ChatItem) {
+    const from = resolvePhone();
+    setError(null);
     startTransition(async () => {
       setItems((prev) => [...prev, userBubble]);
-      const res = await fetch("/api/simulator", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from: phone,
-          messageId: `sim_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-          ...payload,
-        }),
-      });
-      const data = (await res.json()) as { replies?: OutboundMessage[] };
-      const replies = data.replies ?? [];
-      extractSlug(replies);
-      setItems((prev) => [
-        ...prev,
-        { id: `bot_${Date.now()}`, role: "bot", messages: replies },
-      ]);
+      try {
+        const res = await fetch("/api/simulator", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            from,
+            messageId: `sim_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            ...payload,
+          }),
+        });
+        const data = (await res.json()) as {
+          replies?: OutboundMessage[];
+          error?: string;
+        };
+        if (!res.ok) {
+          throw new Error(data.error || "El simulador no respondió");
+        }
+        const replies = data.replies ?? [];
+        extractSlug(replies);
+        setItems((prev) => [
+          ...prev,
+          {
+            id: `bot_${Date.now()}`,
+            role: "bot",
+            messages: replies.length
+              ? replies
+              : [{ kind: "text", text: "No recibí respuesta. Probá de nuevo." }],
+          },
+        ]);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "No se pudo enviar el mensaje";
+        setError(message);
+        setItems((prev) => [
+          ...prev,
+          {
+            id: `bot_err_${Date.now()}`,
+            role: "bot",
+            messages: [
+              {
+                kind: "text",
+                text: `Uy, algo falló: ${message}. Probá de nuevo.`,
+              },
+            ],
+          },
+        ]);
+      }
     });
   }
 
   function onSendText(e: React.FormEvent) {
     e.preventDefault();
     const text = input.trim();
-    if (!text || !phone) return;
+    if (!text || busy) return;
     setInput("");
-    sendPayload(
-      { text },
-      { id: `u_${Date.now()}`, role: "user", text },
-    );
+    sendPayload({ text }, { id: `u_${Date.now()}`, role: "user", text });
   }
 
   function onChoice(choiceId: string, label: string) {
+    if (busy) return;
     sendPayload(
       { choiceId, text: label },
       { id: `u_${Date.now()}`, role: "user", text: label },
@@ -103,31 +146,67 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
   }
 
   async function onPickImage(file: File) {
-    const dataUrl = await readAsDataUrl(file);
-    // Upload first for a stable URL the store can render
-    let url = dataUrl;
+    if (busy) return;
+    setError(null);
+    setUploading(true);
+    const localPreview = URL.createObjectURL(file);
     try {
+      const prepared = await prepareImageFile(file);
+      const form = new FormData();
+      form.append("file", prepared);
+
       const up = await fetch("/api/upload", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dataUrl, filename: file.name }),
+        body: form,
       });
-      const json = (await up.json()) as { url?: string };
-      if (json.url) url = json.url;
-    } catch {
-      // keep dataUrl
+      const json = (await up.json()) as { url?: string; error?: string; ok?: boolean };
+      if (!up.ok || !json.url) {
+        throw new Error(json.error || "No se pudo subir la foto");
+      }
+
+      const caption = input.trim();
+      sendPayload(
+        {
+          text: caption || undefined,
+          media: {
+            kind: "image",
+            mime: prepared.type || "image/jpeg",
+            url: json.url,
+          },
+        },
+        {
+          id: `u_${Date.now()}`,
+          role: "user",
+          text: caption || "📷 Foto",
+          imageUrl: json.url,
+        },
+      );
+      setInput("");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "No se pudo adjuntar la foto";
+      setError(message);
+      setItems((prev) => [
+        ...prev,
+        {
+          id: `bot_err_${Date.now()}`,
+          role: "bot",
+          messages: [
+            {
+              kind: "text",
+              text: `No pude recibir la foto: ${message}. Probá con otra imagen más chica.`,
+            },
+          ],
+        },
+      ]);
+    } finally {
+      URL.revokeObjectURL(localPreview);
+      setUploading(false);
     }
-    sendPayload(
-      {
-        text: input.trim() || undefined,
-        media: { kind: "image", mime: file.type || "image/jpeg", url, dataUrl },
-      },
-      { id: `u_${Date.now()}`, role: "user", text: input.trim() || "📷 Foto", imageUrl: url },
-    );
-    setInput("");
   }
 
   function startConversation() {
+    if (busy) return;
     sendPayload(
       { text: "Hola! Quiero armar mi tienda. Código 4821" },
       { id: `u_${Date.now()}`, role: "user", text: "Hola! Quiero armar mi tienda." },
@@ -157,7 +236,7 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
                 type="button"
                 className="btn btn-primary mt-4"
                 onClick={startConversation}
-                disabled={pending || !phone}
+                disabled={busy || !phone}
               >
                 Empezar
               </button>
@@ -200,7 +279,7 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
                             <button
                               key={o.id}
                               type="button"
-                              disabled={pending}
+                              disabled={busy}
                               onClick={() => onChoice(o.id, o.label)}
                               className="min-h-12 rounded border border-[#25D366]/40 bg-[#F0FFF4] px-3 py-2 text-left font-semibold text-[#075E54]"
                             >
@@ -214,6 +293,18 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
                 ))}
               </div>
             ),
+          )}
+          {uploading && (
+            <div className="flex justify-end">
+              <div className="rounded-lg bg-[#DCF8C6]/80 px-3 py-2 text-[15px] text-[var(--muted)]">
+                Subiendo foto…
+              </div>
+            </div>
+          )}
+          {error && (
+            <p className="text-center text-[14px] text-[#9A3412]" role="alert">
+              {error}
+            </p>
           )}
           <div ref={bottomRef} />
         </div>
@@ -229,8 +320,8 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) void onPickImage(f);
               e.target.value = "";
+              if (f) void onPickImage(f);
             }}
           />
           <button
@@ -238,7 +329,7 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
             className="min-h-12 rounded bg-white px-3 text-[1.2rem]"
             onClick={() => fileRef.current?.click()}
             aria-label="Adjuntar foto"
-            disabled={pending}
+            disabled={busy || !phone}
           >
             📎
           </button>
@@ -247,9 +338,9 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Escribí un mensaje"
             className="min-h-12 flex-1 rounded-full border border-[var(--border)] bg-white px-4 text-[17px] outline-none"
-            disabled={pending}
+            disabled={busy}
           />
-          <button type="submit" className="btn btn-primary rounded-full px-4" disabled={pending}>
+          <button type="submit" className="btn btn-primary rounded-full px-4" disabled={busy}>
             Enviar
           </button>
         </form>
@@ -293,11 +384,37 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
   );
 }
 
-function readAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
+/** Reduce phone photos so multipart upload stays under Vercel body limits. */
+async function prepareImageFile(file: File): Promise<File> {
+  if (!file.type.startsWith("image/") && file.type !== "") {
+    return file;
+  }
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_EDGE_PX / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      bitmap.close();
+      return file;
+    }
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY),
+    );
+    if (!blob) return file;
+
+    const base = file.name.replace(/\.[^.]+$/, "") || "foto";
+    return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
 }
