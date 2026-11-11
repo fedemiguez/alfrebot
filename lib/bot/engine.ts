@@ -12,11 +12,23 @@ import {
   parsePriceToCents,
 } from "@/lib/bot/nlu";
 import { uniqueSlug } from "@/lib/bot/slug";
+import {
+  confirmStockMessage,
+  formatProductList,
+  parseQuantityInput,
+  productActionOptions,
+  productPickOptions,
+  productStatusLine,
+  resolveChoiceId,
+  stockHubMessage,
+  withPendingChoices,
+} from "@/lib/bot/stock";
 import { uploadDataUrl, uploadProductImage } from "@/lib/blob";
 import { appBaseUrl } from "@/lib/env";
 import {
   createProduct,
   getConversation,
+  getProduct,
   getSignupIntent,
   getStoreByPhone,
   listProductsByStore,
@@ -28,6 +40,7 @@ import {
   type ConversationDraft,
   type ProductDraft,
 } from "@/lib/db/repos";
+import type { Store } from "@/lib/db/schema";
 
 export type BotState =
   | "NEW"
@@ -36,13 +49,19 @@ export type BotState =
   | "ASK_STORE"
   | "CONFIRM_SLUG"
   | "ASK_SHOW_PHONE"
+  | "ASK_STOCK_MODE"
   | "ASK_CHECKOUT_MODE"
   | "IDLE"
   | "PRODUCT_PHOTO"
   | "PRODUCT_TITLE"
   | "PRODUCT_PRICE"
   | "PRODUCT_DESC"
-  | "PRODUCT_CONFIRM";
+  | "PRODUCT_CONFIRM"
+  | "STOCK_HUB"
+  | "STOCK_PICK"
+  | "STOCK_ACTIONS"
+  | "STOCK_QTY"
+  | "STOCK_CONFIRM";
 
 const DEFAULT_CAPS: ChannelCapabilities = {
   buttons: true,
@@ -71,6 +90,17 @@ function revalidateStore(slug: string | null | undefined) {
   }
 }
 
+function clearStockDraft(d: ConversationDraft): ConversationDraft {
+  return {
+    ...d,
+    stockProductId: undefined,
+    stockAction: undefined,
+    stockQtyPending: undefined,
+    stockModePending: undefined,
+    pendingChoices: undefined,
+  };
+}
+
 function globalCommands(text?: string, choiceId?: string): "menu" | "help" | "cancel" | null {
   if (choiceId === CHOICE.MENU_HELP || choiceId === "help") return "help";
   if (choiceId === CHOICE.MENU_ADD) return null;
@@ -88,6 +118,7 @@ function menuMessage(caps: ChannelCapabilities): OutboundMessage {
     [
       { id: CHOICE.MENU_ADD, label: "Cargar pieza" },
       { id: CHOICE.MENU_STORE, label: "Ver mi tienda" },
+      { id: CHOICE.MENU_STOCK, label: "Stock / pausa" },
       { id: CHOICE.MENU_HELP, label: "Ayuda" },
     ],
     caps,
@@ -97,8 +128,25 @@ function menuMessage(caps: ChannelCapabilities): OutboundMessage {
 function helpMessage(): OutboundMessage {
   return {
     kind: "text",
-    text: "Soy tu ayudante para armar la tienda. Podés mandarme fotos de tus piezas y te voy guiando. Escribí menú cuando quieras ver opciones, o cancelar para frenar lo que estemos haciendo.",
+    text:
+      "Soy tu ayudante para armar la tienda. Podés mandarme fotos de tus piezas y te voy guiando.\n\n" +
+      "Stock: escribí menú → Stock / pausa, o pedime el listado, pausar, reactivar o cambiar cantidad.\n" +
+      "Escribí menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
   };
+}
+
+type SetState = (next: BotState, nextDraft?: ConversationDraft) => Promise<void>;
+
+async function replyWithChoices(
+  draft: ConversationDraft,
+  setState: SetState,
+  state: BotState,
+  message: OutboundMessage,
+  extra?: OutboundMessage[],
+): Promise<OutboundMessage[]> {
+  const { draft: nextDraft, message: msg } = withPendingChoices(draft, message);
+  await setState(state, nextDraft);
+  return extra ? [...extra, msg] : [msg];
 }
 
 export async function handleMessage(
@@ -117,7 +165,7 @@ export async function handleMessage(
     return [helpMessage()];
   }
   if (cmd === "cancel") {
-    draft = { ...draft, product: undefined };
+    draft = clearStockDraft({ ...draft, product: undefined });
     await saveConversation({
       phone: msg.from,
       channel: msg.channel,
@@ -129,7 +177,14 @@ export async function handleMessage(
       menuMessage(caps),
     ];
   }
-  if (cmd === "menu" && state === "IDLE") {
+  if (cmd === "menu" && (state === "IDLE" || state.startsWith("STOCK_"))) {
+    draft = clearStockDraft(draft);
+    await saveConversation({
+      phone: msg.from,
+      channel: msg.channel,
+      state: "IDLE",
+      draft,
+    });
     return [menuMessage(caps)];
   }
 
@@ -144,7 +199,7 @@ export async function handleMessage(
 
   const replies: OutboundMessage[] = [];
 
-  const setState = async (next: BotState, nextDraft?: ConversationDraft) => {
+  const setState: SetState = async (next, nextDraft) => {
     state = next;
     if (nextDraft) draft = nextDraft;
     await saveConversation({
@@ -154,6 +209,8 @@ export async function handleMessage(
       draft,
     });
   };
+
+  const choice = resolveChoiceId(msg.choiceId, msg.text, draft.pendingChoices);
 
   // ——— State machine ———
   if (state === "NEW") {
@@ -180,12 +237,14 @@ export async function handleMessage(
       return replies;
     }
     draft = { ...draft, ownerName: extracted.name };
-    await setState("CONFIRM_NAME", draft);
     const prompt =
       extracted.confidence === "high"
         ? `Encantada, ${extracted.name}. ¿Usamos ese nombre?`
         : `¿Te llamás ${extracted.name}? Si no, tocá Cambiar nombre.`;
-    replies.push(
+    return replyWithChoices(
+      draft,
+      setState,
+      "CONFIRM_NAME",
       withOptions(
         prompt,
         [
@@ -195,11 +254,9 @@ export async function handleMessage(
         caps,
       ),
     );
-    return replies;
   }
 
   if (state === "CONFIRM_NAME") {
-    const choice = msg.choiceId;
     const text = msg.text?.trim() ?? "";
     if (choice === CHOICE.CHANGE || isNegative(text) || /cambiar/.test(text.toLowerCase())) {
       draft = { ...draft, ownerName: undefined };
@@ -218,12 +275,13 @@ export async function handleMessage(
       });
       return replies;
     }
-    // Si escribe otro nombre, lo tomamos como corrección
     const again = extractPersonName(text);
     if (again.name && again.confidence !== "none") {
       draft = { ...draft, ownerName: again.name };
-      await setState("CONFIRM_NAME", draft);
-      replies.push(
+      return replyWithChoices(
+        draft,
+        setState,
+        "CONFIRM_NAME",
         withOptions(
           `Encantada, ${again.name}. ¿Usamos ese nombre?`,
           [
@@ -233,9 +291,11 @@ export async function handleMessage(
           caps,
         ),
       );
-      return replies;
     }
-    replies.push(
+    return replyWithChoices(
+      draft,
+      setState,
+      "CONFIRM_NAME",
       withOptions(
         `¿Confirmamos tu nombre: ${draft.ownerName}?`,
         [
@@ -245,7 +305,6 @@ export async function handleMessage(
         caps,
       ),
     );
-    return replies;
   }
 
   if (state === "ASK_STORE") {
@@ -256,8 +315,10 @@ export async function handleMessage(
     }
     const slug = await uniqueSlug(storeName, slugExists);
     draft = { ...draft, storeName, slug };
-    await setState("CONFIRM_SLUG", draft);
-    replies.push(
+    return replyWithChoices(
+      draft,
+      setState,
+      "CONFIRM_SLUG",
       withOptions(
         `Tu tienda va a estar en ${appBaseUrl()}/${slug}. ¿Está bien?`,
         [
@@ -267,11 +328,9 @@ export async function handleMessage(
         caps,
       ),
     );
-    return replies;
   }
 
   if (state === "CONFIRM_SLUG") {
-    const choice = msg.choiceId;
     const text = msg.text?.trim() ?? "";
     if (choice === CHOICE.CHANGE || isNegative(text) || /cambiar/.test(text.toLowerCase())) {
       await setState("ASK_STORE", draft);
@@ -279,8 +338,10 @@ export async function handleMessage(
       return replies;
     }
     if (choice === CHOICE.YES || isAffirmative(text)) {
-      await setState("ASK_SHOW_PHONE", draft);
-      replies.push(
+      return replyWithChoices(
+        draft,
+        setState,
+        "ASK_SHOW_PHONE",
         withOptions(
           "¿Querés que en la tienda aparezca tu número para que te escriban?",
           [
@@ -290,9 +351,11 @@ export async function handleMessage(
           caps,
         ),
       );
-      return replies;
     }
-    replies.push(
+    return replyWithChoices(
+      draft,
+      setState,
+      "CONFIRM_SLUG",
       withOptions(
         "¿Confirmamos el nombre de la tienda?",
         [
@@ -302,16 +365,17 @@ export async function handleMessage(
         caps,
       ),
     );
-    return replies;
   }
 
   if (state === "ASK_SHOW_PHONE") {
-    const choice = msg.choiceId;
     const text = msg.text?.trim() ?? "";
     let showPhone = true;
     if (choice === CHOICE.NO || isNegative(text)) showPhone = false;
     else if (!(choice === CHOICE.YES || isAffirmative(text))) {
-      replies.push(
+      return replyWithChoices(
+        draft,
+        setState,
+        "ASK_SHOW_PHONE",
         withOptions(
           "¿Mostramos tu número en la tienda?",
           [
@@ -321,12 +385,56 @@ export async function handleMessage(
           caps,
         ),
       );
-      return replies;
     }
 
     draft = { ...draft, showPhone };
-    await setState("ASK_CHECKOUT_MODE", draft);
-    replies.push(
+    return replyWithChoices(
+      draft,
+      setState,
+      "ASK_STOCK_MODE",
+      withOptions(
+        "¿Cómo querés manejar el stock?\n\n• Llevar cantidades: vas anotando cuántas unidades quedan de cada pieza.\n• Solo pausar: marcás agotado / volvió, sin números.",
+        [
+          { id: CHOICE.STOCK_QTY_MODE, label: "Llevar cantidades" },
+          { id: CHOICE.STOCK_PAUSE_MODE, label: "Solo pausar" },
+        ],
+        caps,
+      ),
+    );
+  }
+
+  if (state === "ASK_STOCK_MODE") {
+    const text = msg.text?.trim() ?? "";
+    let tracksQuantity: boolean | null = null;
+    if (choice === CHOICE.STOCK_QTY_MODE || /cantidad/.test(text.toLowerCase())) {
+      tracksQuantity = true;
+    } else if (
+      choice === CHOICE.STOCK_PAUSE_MODE ||
+      /pausar|solo pausa|sin cantidad/.test(text.toLowerCase())
+    ) {
+      tracksQuantity = false;
+    }
+    if (tracksQuantity == null) {
+      return replyWithChoices(
+        draft,
+        setState,
+        "ASK_STOCK_MODE",
+        withOptions(
+          "Elegí cómo manejar el stock:",
+          [
+            { id: CHOICE.STOCK_QTY_MODE, label: "Llevar cantidades" },
+            { id: CHOICE.STOCK_PAUSE_MODE, label: "Solo pausar" },
+          ],
+          caps,
+        ),
+      );
+    }
+
+    draft = { ...draft, tracksQuantity };
+    return replyWithChoices(
+      draft,
+      setState,
+      "ASK_CHECKOUT_MODE",
       withOptions(
         "¿Cómo querés que te pidan? Por defecto cada pieza tiene un botón Lo quiero que te escribe por WhatsApp. También podés armar un carrito y mandar el pedido junto (igual por WhatsApp, sin cobro online).",
         [
@@ -336,31 +444,30 @@ export async function handleMessage(
         caps,
       ),
     );
-    return replies;
   }
 
   if (state === "ASK_CHECKOUT_MODE") {
-    const choice = msg.choiceId;
     const text = (msg.text?.trim() ?? "").toLowerCase();
     let checkoutMode: "whatsapp" | "cart" | null = null;
     if (
       choice === CHOICE.CHECKOUT_WA ||
       choice === CHOICE.YES ||
       /\blo quiero\b/.test(text) ||
-      text === "1" ||
       /whatsapp|directo|uno/.test(text)
     ) {
       checkoutMode = "whatsapp";
     } else if (
       choice === CHOICE.CHECKOUT_CART ||
-      text === "2" ||
       /carrito|pedido|junt/.test(text)
     ) {
       checkoutMode = "cart";
     }
 
     if (!checkoutMode) {
-      replies.push(
+      return replyWithChoices(
+        draft,
+        setState,
+        "ASK_CHECKOUT_MODE",
         withOptions(
           "Elegí cómo te piden en el catálogo:",
           [
@@ -370,9 +477,9 @@ export async function handleMessage(
           caps,
         ),
       );
-      return replies;
     }
 
+    const tracksQuantity = draft.tracksQuantity ?? false;
     const store = await upsertStore({
       phone: msg.from,
       ownerName: draft.ownerName,
@@ -380,33 +487,37 @@ export async function handleMessage(
       slug: draft.slug,
       showPhone: draft.showPhone ?? true,
       checkoutMode,
+      tracksQuantity,
       isDemo: msg.channel === "simulator",
       status: "active",
     });
-    draft = { ...draft, checkoutMode };
+    draft = clearStockDraft({ ...draft, checkoutMode, tracksQuantity });
     revalidateStore(store.slug);
     await setState("IDLE", draft);
-    const modeHint =
+    const checkoutHint =
       checkoutMode === "cart"
         ? "En tu catálogo van a poder armar un pedido y mandártelo por WhatsApp."
         : "En tu catálogo cada pieza tiene Lo quiero para escribirte por WhatsApp.";
+    const stockHint = tracksQuantity
+      ? "Podés anotar cantidades desde el menú → Stock / pausa."
+      : "Podés pausar piezas (Agotado) desde el menú → Stock / pausa.";
     replies.push({
       kind: "text",
-      text: `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${modeHint} Mandame una foto de tu primera pieza.`,
+      text: `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${checkoutHint} ${stockHint}\n\nMandame una foto de tu primera pieza.`,
     });
     return replies;
   }
 
-  // Ensure store exists when in idle/product flows
+  // Ensure store exists when in idle/product/stock flows
   let store = await getStoreByPhone(msg.from);
 
   if (state === "IDLE") {
-    if (msg.choiceId === CHOICE.MENU_ADD) {
+    if (choice === CHOICE.MENU_ADD || msg.choiceId === CHOICE.MENU_ADD) {
       await setState("PRODUCT_PHOTO", { ...draft, product: {} });
       replies.push({ kind: "text", text: "Mandame la foto de la pieza." });
       return replies;
     }
-    if (msg.choiceId === CHOICE.MENU_STORE) {
+    if (choice === CHOICE.MENU_STORE || msg.choiceId === CHOICE.MENU_STORE) {
       if (store?.slug) {
         replies.push({
           kind: "text",
@@ -416,6 +527,13 @@ export async function handleMessage(
         replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
       }
       return replies;
+    }
+    if (choice === CHOICE.MENU_STOCK || msg.choiceId === CHOICE.MENU_STOCK) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      return openStockHub(store, draft, setState, caps);
     }
     if (msg.media?.kind === "image") {
       return startProductFromImage(msg, draft, caps, setState);
@@ -429,6 +547,15 @@ export async function handleMessage(
       await setState("PRODUCT_PHOTO", { ...draft, product: {} });
       replies.push({ kind: "text", text: "Mandame la foto de la pieza." });
       return replies;
+    }
+    if ((action.intent === "list_stock" || action.intent === "manage_stock") && store) {
+      if (action.intent === "list_stock") {
+        const products = await listProductsByStore(store.id, { includeHidden: true });
+        replies.push({ kind: "text", text: formatProductList(products, store) });
+        replies.push(menuMessage(caps));
+        return replies;
+      }
+      return openStockHub(store, draft, setState, caps);
     }
     if (action.intent === "set_price" && store) {
       const products = await listProductsByStore(store.id);
@@ -450,16 +577,12 @@ export async function handleMessage(
       return replies;
     }
     if (action.intent === "mark_out_of_stock" && store) {
-      const products = await listProductsByStore(store.id);
-      if (products.length === 1) {
-        await updateProduct(products[0]!.id, { inStock: false });
-        revalidateStore(store.slug);
-        replies.push({
+      return openStockHub(store, draft, setState, caps, [
+        {
           kind: "text",
-          text: `Marqué ${products[0]!.title} como agotado.`,
-        });
-        return replies;
-      }
+          text: "Para marcar agotado elegí la pieza y confirmamos antes de guardar.",
+        },
+      ]);
     }
 
     replies.push({
@@ -468,6 +591,234 @@ export async function handleMessage(
     });
     replies.push(menuMessage(caps));
     return replies;
+  }
+
+  if (state === "STOCK_HUB" && store) {
+    if (choice === CHOICE.MENU_HELP) {
+      draft = clearStockDraft(draft);
+      await setState("IDLE", draft);
+      return [menuMessage(caps)];
+    }
+    if (choice === CHOICE.STOCK_LIST) {
+      const products = await listProductsByStore(store.id, { includeHidden: true });
+      const listMsg: OutboundMessage = {
+        kind: "text",
+        text: formatProductList(products, store),
+      };
+      return replyWithChoices(
+        draft,
+        setState,
+        "STOCK_HUB",
+        stockHubMessage(store, caps),
+        [listMsg],
+      );
+    }
+    if (choice === CHOICE.STOCK_PICK) {
+      const products = await listProductsByStore(store.id, { includeHidden: true });
+      if (products.length === 0) {
+        return replyWithChoices(
+          draft,
+          setState,
+          "STOCK_HUB",
+          stockHubMessage(store, caps),
+          [{ kind: "text", text: "Todavía no hay piezas. Mandame una foto para cargar una." }],
+        );
+      }
+      return replyWithChoices(
+        draft,
+        setState,
+        "STOCK_PICK",
+        withOptions("¿Cuál pieza?", productPickOptions(products), caps),
+      );
+    }
+    if (choice === CHOICE.STOCK_MODE) {
+      const nextMode = !store.tracksQuantity;
+      draft = {
+        ...clearStockDraft(draft),
+        stockAction: "set_mode",
+        stockModePending: nextMode,
+      };
+      return replyWithChoices(
+        draft,
+        setState,
+        "STOCK_CONFIRM",
+        confirmStockMessage(draft, null, store, caps),
+      );
+    }
+    return replyWithChoices(draft, setState, "STOCK_HUB", stockHubMessage(store, caps));
+  }
+
+  if (state === "STOCK_PICK" && store) {
+    const productId = choice?.startsWith(CHOICE.STOCK_PROD_PREFIX)
+      ? choice.slice(CHOICE.STOCK_PROD_PREFIX.length)
+      : undefined;
+    if (!productId) {
+      const products = await listProductsByStore(store.id, { includeHidden: true });
+      return replyWithChoices(
+        draft,
+        setState,
+        "STOCK_PICK",
+        withOptions("Elegí una pieza de la lista:", productPickOptions(products), caps),
+      );
+    }
+    const product = await getProduct(productId);
+    if (!product || product.storeId !== store.id) {
+      replies.push({ kind: "text", text: "No encontré esa pieza." });
+      return openStockHub(store, draft, setState, caps);
+    }
+    draft = { ...draft, stockProductId: product.id };
+    return replyWithChoices(
+      draft,
+      setState,
+      "STOCK_ACTIONS",
+      withOptions(
+        `${productStatusLine(product, store)}\n¿Qué hacemos?`,
+        productActionOptions(product, store),
+        caps,
+      ),
+    );
+  }
+
+  if (state === "STOCK_ACTIONS" && store) {
+    const product = draft.stockProductId
+      ? await getProduct(draft.stockProductId)
+      : null;
+    if (!product || product.storeId !== store.id) {
+      return openStockHub(store, clearStockDraft(draft), setState, caps, [
+        { kind: "text", text: "No encontré esa pieza." },
+      ]);
+    }
+    if (choice === CHOICE.CHANGE) {
+      const products = await listProductsByStore(store.id, { includeHidden: true });
+      draft = { ...draft, stockProductId: undefined, stockAction: undefined };
+      return replyWithChoices(
+        draft,
+        setState,
+        "STOCK_PICK",
+        withOptions("¿Cuál pieza?", productPickOptions(products), caps),
+      );
+    }
+    if (choice === CHOICE.STOCK_PAUSE) {
+      draft = { ...draft, stockAction: "pause" };
+      return replyWithChoices(
+        draft,
+        setState,
+        "STOCK_CONFIRM",
+        confirmStockMessage(draft, product, store, caps),
+      );
+    }
+    if (choice === CHOICE.STOCK_RESUME) {
+      if (store.tracksQuantity) {
+        draft = { ...draft, stockAction: "resume" };
+        await setState("STOCK_QTY", draft);
+        return [
+          {
+            kind: "text",
+            text: `¿Cuántas unidades de "${product.title}" quedan? Escribí un número (puede ser 0).`,
+          },
+        ];
+      }
+      draft = { ...draft, stockAction: "resume" };
+      return replyWithChoices(
+        draft,
+        setState,
+        "STOCK_CONFIRM",
+        confirmStockMessage(draft, product, store, caps),
+      );
+    }
+    if (choice === CHOICE.STOCK_SET_QTY) {
+      draft = { ...draft, stockAction: "set_qty" };
+      await setState("STOCK_QTY", draft);
+      return [
+        {
+          kind: "text",
+          text: `¿Cuántas unidades de "${product.title}" quedan? Escribí un número.`,
+        },
+      ];
+    }
+    if (choice === CHOICE.STOCK_HIDE) {
+      draft = { ...draft, stockAction: "hide" };
+      return replyWithChoices(
+        draft,
+        setState,
+        "STOCK_CONFIRM",
+        confirmStockMessage(draft, product, store, caps),
+      );
+    }
+    if (choice === CHOICE.STOCK_SHOW) {
+      draft = { ...draft, stockAction: "show" };
+      return replyWithChoices(
+        draft,
+        setState,
+        "STOCK_CONFIRM",
+        confirmStockMessage(draft, product, store, caps),
+      );
+    }
+    return replyWithChoices(
+      draft,
+      setState,
+      "STOCK_ACTIONS",
+      withOptions(
+        `${productStatusLine(product, store)}\n¿Qué hacemos?`,
+        productActionOptions(product, store),
+        caps,
+      ),
+    );
+  }
+
+  if (state === "STOCK_QTY" && store) {
+    const product = draft.stockProductId
+      ? await getProduct(draft.stockProductId)
+      : null;
+    if (!product || product.storeId !== store.id) {
+      return openStockHub(store, clearStockDraft(draft), setState, caps);
+    }
+    const qty = msg.text ? parseQuantityInput(msg.text) : null;
+    if (qty == null) {
+      replies.push({
+        kind: "text",
+        text: "Necesito un número entero (por ejemplo 0, 1 o 3).",
+      });
+      return replies;
+    }
+    draft = {
+      ...draft,
+      stockQtyPending: qty,
+      stockAction: draft.stockAction === "resume" ? "set_qty" : draft.stockAction ?? "set_qty",
+    };
+    return replyWithChoices(
+      draft,
+      setState,
+      "STOCK_CONFIRM",
+      confirmStockMessage(draft, product, store, caps),
+    );
+  }
+
+  if (state === "STOCK_CONFIRM" && store) {
+    const text = msg.text?.trim() ?? "";
+    if (choice === CHOICE.NO || isNegative(text)) {
+      return openStockHub(store, clearStockDraft(draft), setState, caps, [
+        { kind: "text", text: "No guardé nada." },
+      ]);
+    }
+    if (!(choice === CHOICE.YES || isAffirmative(text))) {
+      const product = draft.stockProductId
+        ? await getProduct(draft.stockProductId)
+        : null;
+      return replyWithChoices(
+        draft,
+        setState,
+        "STOCK_CONFIRM",
+        confirmStockMessage(draft, product, store, caps),
+      );
+    }
+
+    const applied = await applyStockAction(store, draft);
+    revalidateStore(store.slug);
+    store = (await getStoreByPhone(msg.from)) ?? store;
+    return openStockHub(store, clearStockDraft(draft), setState, caps, [
+      { kind: "text", text: applied },
+    ]);
   }
 
   if (state === "PRODUCT_PHOTO") {
@@ -491,15 +842,16 @@ export async function handleMessage(
       replies.push({ kind: "text", text: "¿A cómo la vendés? Podés decir 15 mil o 15000." });
       return replies;
     }
-    await setState("PRODUCT_DESC", draft);
-    replies.push(
+    return replyWithChoices(
+      draft,
+      setState,
+      "PRODUCT_DESC",
       withOptions(
         "¿Querés contar algo de la pieza? Podés escribir o saltar.",
         [{ id: CHOICE.SKIP, label: "Saltar" }],
         caps,
       ),
     );
-    return replies;
   }
 
   if (state === "PRODUCT_PRICE") {
@@ -513,19 +865,23 @@ export async function handleMessage(
     }
     const product = { ...productDraft(draft), priceCents: price };
     draft = { ...draft, product };
-    await setState("PRODUCT_DESC", draft);
-    replies.push(
+    return replyWithChoices(
+      draft,
+      setState,
+      "PRODUCT_DESC",
       withOptions(
         "¿Querés contar algo de la pieza? Podés escribir o saltar.",
         [{ id: CHOICE.SKIP, label: "Saltar" }],
         caps,
       ),
     );
-    return replies;
   }
 
   if (state === "PRODUCT_DESC") {
-    const skip = msg.choiceId === CHOICE.SKIP || /^saltar$/i.test(msg.text ?? "");
+    const skip =
+      choice === CHOICE.SKIP ||
+      msg.choiceId === CHOICE.SKIP ||
+      /^saltar$/i.test(msg.text ?? "");
     const product = {
       ...productDraft(draft),
       description: skip ? undefined : msg.text?.trim(),
@@ -537,7 +893,6 @@ export async function handleMessage(
   }
 
   if (state === "PRODUCT_CONFIRM") {
-    const choice = msg.choiceId;
     const text = msg.text?.trim() ?? "";
     if (choice === CHOICE.CHANGE || /cambiar/.test(text.toLowerCase())) {
       await setState("PRODUCT_TITLE", draft);
@@ -553,6 +908,7 @@ export async function handleMessage(
           slug: draft.slug,
           showPhone: draft.showPhone ?? true,
           checkoutMode: draft.checkoutMode ?? "whatsapp",
+          tracksQuantity: draft.tracksQuantity ?? false,
           isDemo: msg.channel === "simulator",
           status: "active",
         });
@@ -565,13 +921,17 @@ export async function handleMessage(
         priceCents: p.priceCents,
         imageUrl: p.imageUrl,
         imageBlobKey: p.imageBlobKey,
+        quantity: store.tracksQuantity ? 1 : null,
       });
       revalidateStore(store.slug);
       draft = { ...draft, product: undefined };
       await setState("IDLE", draft);
+      const qtyHint = store.tracksQuantity
+        ? " Quedó con 1 unidad (podés cambiarla en Stock / pausa)."
+        : "";
       replies.push({
         kind: "text",
-        text: `¡Publicado! Mirá cómo quedó: ${storeUrl(store.slug!)}. ¿Cargamos otra? Mandame la foto.`,
+        text: `¡Publicado! Mirá cómo quedó: ${storeUrl(store.slug!)}.${qtyHint} ¿Cargamos otra? Mandame la foto.`,
       });
       if (created.imageUrl) {
         replies.unshift({
@@ -587,6 +947,65 @@ export async function handleMessage(
 
   await setState("IDLE", draft);
   return [menuMessage(caps)];
+}
+
+async function openStockHub(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  extra?: OutboundMessage[],
+): Promise<OutboundMessage[]> {
+  const cleaned = clearStockDraft(draft);
+  return replyWithChoices(cleaned, setState, "STOCK_HUB", stockHubMessage(store, caps), extra);
+}
+
+async function applyStockAction(store: Store, draft: ConversationDraft): Promise<string> {
+  if (draft.stockAction === "set_mode") {
+    const tracksQuantity = Boolean(draft.stockModePending);
+    await upsertStore({
+      phone: store.phone,
+      tracksQuantity,
+    });
+    return tracksQuantity
+      ? "Listo: ahora llevás cantidades. Podés ponerle número a cada pieza."
+      : "Listo: ahora solo pausás. Las piezas agotadas se ven como Agotado.";
+  }
+
+  const product = draft.stockProductId
+    ? await getProduct(draft.stockProductId)
+    : null;
+  if (!product || product.storeId !== store.id) {
+    return "No encontré la pieza.";
+  }
+
+  if (draft.stockAction === "pause") {
+    await updateProduct(product.id, {
+      inStock: false,
+      ...(store.tracksQuantity ? { quantity: 0 } : {}),
+    });
+    return `Marqué "${product.title}" como agotado.`;
+  }
+  if (draft.stockAction === "resume") {
+    await updateProduct(product.id, { inStock: true });
+    return `Reactivé "${product.title}".`;
+  }
+  if (draft.stockAction === "set_qty") {
+    const qty = draft.stockQtyPending ?? 0;
+    await updateProduct(product.id, { quantity: qty });
+    return qty === 0
+      ? `"${product.title}" quedó en 0 → se ve Agotado.`
+      : `Guardé ${qty} unidades de "${product.title}".`;
+  }
+  if (draft.stockAction === "hide") {
+    await updateProduct(product.id, { hidden: true });
+    return `Oculté "${product.title}" de la tienda (no se borró).`;
+  }
+  if (draft.stockAction === "show") {
+    await updateProduct(product.id, { hidden: false });
+    return `Volví a mostrar "${product.title}" en la tienda.`;
+  }
+  return "Listo.";
 }
 
 async function startProductFromImage(
@@ -644,14 +1063,16 @@ async function startProductFromImage(
       },
     ];
   }
-  await setState("PRODUCT_DESC", nextDraft);
-  return [
+  const { draft: withChoices, message } = withPendingChoices(
+    nextDraft,
     withOptions(
       "¿Querés contar algo de la pieza? Podés escribir o saltar.",
       [{ id: CHOICE.SKIP, label: "Saltar" }],
       caps,
     ),
-  ];
+  );
+  await setState("PRODUCT_DESC", withChoices);
+  return [message];
 }
 
 function productConfirmMessages(

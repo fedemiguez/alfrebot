@@ -57,9 +57,15 @@ export async function toggleProductStockAction(formData: FormData): Promise<void
   const storeId = String(formData.get("storeId") ?? "");
   const product = await getProduct(productId);
   if (!product || product.storeId !== storeId) return;
-  await updateProduct(productId, { inStock: !product.inStock });
-  revalidatePath(`/admin/${storeId}`);
+  const nextInStock = !product.inStock;
   const store = await getStoreById(storeId);
+  await updateProduct(productId, {
+    inStock: nextInStock,
+    ...(store?.tracksQuantity
+      ? { quantity: nextInStock ? Math.max(product.quantity ?? 1, 1) : 0 }
+      : {}),
+  });
+  revalidatePath(`/admin/${storeId}`);
   bustStoreCache(store?.slug);
 }
 

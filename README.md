@@ -43,3 +43,45 @@ Sin Neon, el fallback en memoria ya incluye el campo.
 ## Meta WhatsApp
 
 Ver `.env.example`. Webhook: `GET/POST /api/whatsapp/meta`. Mientras `META_TEST_MODE=true`, el registro deriva números no verificados a `/probar`.
+
+## Stock y pausa (bot / `/probar`)
+
+En el alta, o después desde el menú, la dueña elige el modo de la tienda:
+
+| Modo | Qué hace |
+| --- | --- |
+| **Llevar cantidades** | Cada pieza tiene unidades (`quantity`). En 0 se muestra **Agotado**. |
+| **Solo pausar** | Sin números: pausar = agotado en la tienda; reactivar = disponible. |
+
+Comandos / menú (WhatsApp o simulador):
+
+- `menú` → **Stock / pausa**
+- Texto libre: `stock`, `listado`, `mis piezas`, `pausar`, `agotado`, `cantidad`
+
+### Ejemplo: solo pausar
+
+```
+Dueña: menú
+Bot:    [Cargar pieza] [Ver mi tienda] [Stock / pausa] [Ayuda]
+Dueña: Stock / pausa
+Bot:    Tu tienda solo pausa piezas…
+        [Ver listado] [Elegir pieza] [Llevar cantidades] …
+Dueña: Elegir pieza → Taza de café → Pausar (agotado)
+Bot:    ¿Marcamos "Taza de café" como agotado?
+Dueña: Sí, guardar
+Bot:    Marqué "Taza de café" como agotado.
+```
+
+En la tienda la pieza sigue visible con cartel **Agotado**. **Ocultar** la saca del catálogo (como el admin).
+
+### Ejemplo: cantidades
+
+```
+Dueña: Stock / pausa → Elegir pieza → Jarrón azul → Cambiar cantidad
+Bot:    ¿Cuántas unidades de "Jarrón azul" quedan?
+Dueña: 2
+Bot:    ¿Dejamos "Jarrón azul" con 2 unidades?
+Dueña: Sí, guardar
+```
+
+Si pone `0`, queda agotado. Siempre hay confirmación antes de guardar. Con botones/listas de Meta (o del simulador); si no hay botones, respondé con el número de la opción.
