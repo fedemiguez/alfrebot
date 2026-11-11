@@ -296,7 +296,7 @@ export async function handleMessage(
       return [
         {
           kind: "text",
-          text: "No pude escuchar el audio. Probá de nuevo o escribilo.",
+          text: "No pude entender el audio ahora (la IA a veces se satura). Probá de nuevo en un rato o escribilo.",
         },
       ];
     }

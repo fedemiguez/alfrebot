@@ -13,6 +13,7 @@
   "dependencies": {
     "@ai-sdk/gateway": "^3.0.77",
     "@ai-sdk/google": "^3.0.145",
+    "@ai-sdk/groq": "^4.0.81",
     "@neondatabase/serverless": "^1.0.2",
     "@vercel/blob": "^2.3.1",
     "ai": "^7.0.169",
