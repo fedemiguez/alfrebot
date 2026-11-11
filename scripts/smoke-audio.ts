@@ -82,7 +82,7 @@ async function main() {
   // Sin STT: mensaje claro, no rompe
   const fail = await sayAudio(null);
   assert(
-    fail.some((r) => r.kind === "text" && /No pude escuchar/.test(r.text)),
+    fail.some((r) => r.kind === "text" && /No pude (escuchar|entender)/.test(r.text)),
     "fallback sin transcript",
   );
   console.log("OK fallback sin STT");

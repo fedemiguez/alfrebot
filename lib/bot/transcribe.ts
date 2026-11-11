@@ -16,17 +16,20 @@ export function setTranscribeImplForTests(fn: TranscribeFn | null) {
   testImpl = fn;
 }
 
-/** Preferidos primero; si uno está caído/saturado, probamos el siguiente. */
+/**
+ * IDs actuales (Google retira 2.x para cuentas nuevas).
+ * Lite primero: suele tener más cupo que 3.8-flash en free tier.
+ */
 const GOOGLE_MODELS = [
+  "gemini-3.5-flash-lite",
   "gemini-3.8-flash",
-  "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
+  "gemini-3.5-flash",
 ] as const;
 
 const GATEWAY_MODELS = [
+  "google/gemini-3.5-flash-lite",
   "google/gemini-3.8-flash",
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-flash-lite",
+  "google/gemini-3.5-flash",
 ] as const;
 
 const TRANSCRIBE_TIMEOUT_MS = 20_000;

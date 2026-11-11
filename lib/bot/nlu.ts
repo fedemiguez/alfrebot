@@ -286,19 +286,35 @@ export async function interpretFreeText(
     return { intent: "change_photo", productHint: text };
   }
 
-  // Try AI Gateway only if configured
+  // LLM opcional: Gateway o Google directo
   if (!process.env.AI_GATEWAY_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     return { intent: "unknown" };
   }
 
+  const nluPrompt = `Sos el NLU de un bot de tienda por WhatsApp para personas mayores en Argentina.
+Del mensaje, devolvé una acción tipada. No inventes. Mensaje: """${text}"""`;
+
   try {
     const { generateObject } = await import("ai");
-    const { gateway } = await import("@ai-sdk/gateway");
+    if (process.env.AI_GATEWAY_API_KEY?.trim()) {
+      const { gateway } = await import("@ai-sdk/gateway");
+      const result = await generateObject({
+        model: gateway("google/gemini-3.5-flash-lite"),
+        schema: freeTextActionSchema,
+        prompt: nluPrompt,
+        maxRetries: 0,
+      });
+      return result.object;
+    }
+    const { createGoogleGenerativeAI } = await import("@ai-sdk/google");
+    const google = createGoogleGenerativeAI({
+      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!.trim(),
+    });
     const result = await generateObject({
-      model: gateway("google/gemini-3.8-flash"),
+      model: google("gemini-3.5-flash-lite"),
       schema: freeTextActionSchema,
-      prompt: `Sos el NLU de un bot de tienda por WhatsApp para personas mayores en Argentina.
-Del mensaje, devolvé una acción tipada. No inventes. Mensaje: """${text}"""`,
+      prompt: nluPrompt,
+      maxRetries: 0,
     });
     return result.object;
   } catch (err) {
