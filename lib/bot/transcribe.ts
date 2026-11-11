@@ -214,7 +214,7 @@ export async function transcribeAudio(
     if (hasGoogleKey()) {
       console.warn("[transcribe] Google falló; probando Groq Whisper");
     }
-    return transcribeWithGroq(bytes, mediaType);
+    return transcribeWithGroq(bytes);
   } catch (err) {
     console.warn("[transcribe] failed", err);
     return null;
