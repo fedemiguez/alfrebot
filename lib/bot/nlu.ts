@@ -270,7 +270,11 @@ export async function interpretFreeText(
       lowered,
     )
   ) {
-    if (/sin stock|agotad|ya no tengo|no tengo|se agoto|se agotó/.test(lowered)) {
+    // "pausar X" / "se agotó X" → pausa concreta (el motor busca el producto)
+    if (
+      /\b(pausar|paus[ae]|pause)\b/.test(lowered) ||
+      /sin stock|agotad|ya no tengo|no tengo|se agoto|se agotó/.test(lowered)
+    ) {
       return { intent: "mark_out_of_stock", productHint: text };
     }
     return { intent: "manage_stock", productHint: text };

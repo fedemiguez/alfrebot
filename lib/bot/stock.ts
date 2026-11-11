@@ -94,11 +94,11 @@ export function confirmStockMessage(
       : "¿Pasamos a solo marcar Agotado o Disponible, sin números?";
   } else if (product) {
     if (action === "pause") {
-      text = `¿Marcamos "${product.title}" como agotado?`;
+      text = `¿Querés pausar "${product.title}"? (queda Agotado)`;
     } else if (action === "resume") {
       text = store.tracksQuantity
-        ? `¿Reactivamos "${product.title}"? Después te pido la cantidad.`
-        : `¿Reactivamos "${product.title}"?`;
+        ? `¿Querés reactivar "${product.title}"? Después te pido la cantidad.`
+        : `¿Querés reactivar "${product.title}"?`;
     } else if (action === "set_qty") {
       text = `¿Dejamos "${product.title}" con ${draft.stockQtyPending ?? 0} unidades?`;
     } else if (action === "hide") {
@@ -115,6 +115,81 @@ export function confirmStockMessage(
     ],
     caps,
   );
+}
+
+function normalizeMatch(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Detecta pausa / reactivar en frases habladas o escritas. */
+export function detectStockActionFromText(
+  raw: string,
+): "pause" | "resume" | null {
+  const t = normalizeMatch(raw);
+  if (
+    /\b(pausar|pausa|pause|agotad|sin stock|ya no tengo|se agoto|no tengo)\b/.test(
+      t,
+    )
+  ) {
+    return "pause";
+  }
+  if (/\b(reactivar|reactiva|volvio|disponible de nuevo)\b/.test(t)) {
+    return "resume";
+  }
+  return null;
+}
+
+/** Saca ruido de la frase para buscar el título del producto. */
+export function extractProductSearchHint(raw: string): string {
+  return normalizeMatch(raw)
+    .replace(
+      /\b(quiero|queria|quisiera|necesito|por favor|favor|podes|podrias|me|vos|dale)\b/g,
+      " ",
+    )
+    .replace(
+      /\b(pausar|pausa|pause|reactivar|reactiva|marcar|marcalo|como|agotado|sin stock|stock|cantidad|unidades|listado|mostrame|ver)\b/g,
+      " ",
+    )
+    .replace(/\b(la|el|los|las|de|del|un|una|unos|unas|al)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Busca productos por nombre aproximado (audio / texto libre). */
+export function findProductsByHint(
+  products: Product[],
+  hintRaw: string,
+): Product[] {
+  const hint = extractProductSearchHint(hintRaw) || normalizeMatch(hintRaw);
+  if (!hint || products.length === 0) return [];
+
+  const tokens = hint.split(" ").filter((t) => t.length > 1);
+  const scored = products
+    .map((p) => {
+      const title = normalizeMatch(p.title);
+      let score = 0;
+      if (title === hint) score = 100;
+      else if (title.includes(hint) || hint.includes(title)) score = 85;
+      else if (tokens.length && tokens.every((tok) => title.includes(tok))) {
+        score = 70;
+      } else if (tokens.some((tok) => tok.length >= 4 && title.includes(tok))) {
+        score = 40;
+      }
+      return { product: p, score };
+    })
+    .filter((x) => x.score >= 40)
+    .sort((a, b) => b.score - a.score);
+
+  if (scored.length === 0) return [];
+  const best = scored[0]!.score;
+  // Empates cercanos → que elija
+  return scored.filter((x) => x.score >= best - 15).map((x) => x.product);
 }
 
 const SPOKEN_QTY: Record<string, number> = {
