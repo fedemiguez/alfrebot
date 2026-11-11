@@ -91,7 +91,7 @@ Si pone `0`, queda agotado. Siempre hay confirmación antes de guardar. Con boto
 
 ## Audios (WhatsApp / `/probar`)
 
-Podés **dictar** nombre, precio, descripción, cantidad o pedidos de stock. El bot transcribe con Gemini (AI Gateway o `GOOGLE_GENERATIVE_AI_API_KEY`) y sigue el mismo flujo de siempre, con un eco `Te escuché: «…»` antes de la respuesta.
+Podés **dictar** nombre, precio, descripción, cantidad o pedidos de stock. El bot transcribe con Gemini (AI Gateway o `GOOGLE_GENERATIVE_AI_API_KEY`) y, si Google falla o se satura, con **Groq Whisper** (`GROQ_API_KEY`). Sigue el mismo flujo de siempre, con un eco `Te escuché: «…»` antes de la respuesta.
 
 - En `/probar`: botón 🎤 → hablá → tocá de nuevo para enviar.
 - En WhatsApp real: mandá un audio como siempre (ogg/opus).
