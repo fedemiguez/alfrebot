@@ -19,7 +19,42 @@ const freeTextActionSchema = z.object({
 
 export type FreeTextAction = z.infer<typeof freeTextActionSchema>;
 
-/** Parsea precios AR: "15 mil", "15.000", "$15000", "15000", "15 mil pesos" */
+const SPOKEN_UNITS: Record<string, number> = {
+  cero: 0,
+  un: 1,
+  uno: 1,
+  una: 1,
+  dos: 2,
+  tres: 3,
+  cuatro: 4,
+  cinco: 5,
+  seis: 6,
+  siete: 7,
+  ocho: 8,
+  nueve: 9,
+  diez: 10,
+  once: 11,
+  doce: 12,
+  trece: 13,
+  catorce: 14,
+  quince: 15,
+  dieciseis: 16,
+  diecisiete: 17,
+  dieciocho: 18,
+  diecinueve: 19,
+  veinte: 20,
+  treinta: 30,
+  cuarenta: 40,
+  cincuenta: 50,
+  sesenta: 60,
+  setenta: 70,
+  ochenta: 80,
+  noventa: 90,
+  cien: 100,
+  ciento: 100,
+};
+
+/** Parsea precios AR: "15 mil", "quince mil", "15.000", "$15000", "15000" */
 export function parsePriceToCents(raw: string): number | null {
   const text = raw
     .toLowerCase()
@@ -34,6 +69,15 @@ export function parsePriceToCents(raw: string): number | null {
     const n = Number(milMatch[1].replace(",", "."));
     if (!Number.isFinite(n)) return null;
     return Math.round(n * 1000) * 100;
+  }
+
+  // "quince mil", "veinte mil pesos"
+  const spokenMil = text.match(
+    /\b(ciento|cien|noventa|ochenta|setenta|sesenta|cincuenta|cuarenta|treinta|veinte|diecinueve|dieciocho|diecisiete|dieciseis|quince|catorce|trece|doce|once|diez|nueve|ocho|siete|seis|cinco|cuatro|tres|dos|un|uno|una)\s+mil(?:es)?\b/,
+  );
+  if (spokenMil) {
+    const n = SPOKEN_UNITS[spokenMil[1]!];
+    if (n != null) return n * 1000 * 100;
   }
 
   const cleaned = text
@@ -215,20 +259,27 @@ export async function interpretFreeText(
     /\b(listado|listar|ver stock|mi stock|mis piezas|mis productos|que tengo|qué tengo)\b/.test(
       lowered,
     ) ||
-    /ver (mis )?productos/.test(lowered)
+    /ver (mis )?productos/.test(lowered) ||
+    /mostrame (el )?stock|mostrame (mis )?piezas/.test(lowered)
   ) {
     return { intent: "list_stock", productHint: text };
   }
   if (
     /\b(stock|pausar|paus[ae]|reactivar|cantidad(es)?|inventario)\b/.test(lowered) ||
-    /sin stock|agotad|ya no tengo|volvio|volvió/.test(lowered)
+    /sin stock|agotad|ya no tengo|volvio|volvió|se agoto|se agotó|pone(le)? \d|pon[eé] \d/.test(
+      lowered,
+    )
   ) {
-    if (/sin stock|agotad|ya no tengo|no tengo/.test(lowered)) {
+    if (/sin stock|agotad|ya no tengo|no tengo|se agoto|se agotó/.test(lowered)) {
       return { intent: "mark_out_of_stock", productHint: text };
     }
     return { intent: "manage_stock", productHint: text };
   }
-  if (/cambia(r|le)? (el )?precio|ahora sale|sale \d/.test(lowered)) {
+  if (
+    /cambia(r|le)? (el )?precio|ahora sale|sale \d|sale a \d|pon[eé](le)? (el )?precio/.test(
+      lowered,
+    )
+  ) {
     return { intent: "set_price", productHint: text, priceHint: text };
   }
   if (/cambia(r|le)? (la )?foto/.test(lowered)) {

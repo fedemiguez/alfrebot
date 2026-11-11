@@ -23,6 +23,7 @@ import {
   stockHubMessage,
   withPendingChoices,
 } from "@/lib/bot/stock";
+import { transcribeAudio } from "@/lib/bot/transcribe";
 import { uploadDataUrl, uploadProductImage } from "@/lib/blob";
 import { appBaseUrl } from "@/lib/env";
 import {
@@ -167,10 +168,10 @@ function helpMessage(): OutboundMessage {
   return {
     kind: "text",
     text:
-      "Soy tu ayudante para armar la tienda. Podés mandarme fotos de tus productos y te voy guiando.\n\n" +
-      "Stock: escribí menú → Stock / pausa, o pedime el listado, pausar, reactivar o cambiar cantidad.\n" +
+      "Soy tu ayudante para armar la tienda. Podés mandarme fotos de tus productos y te voy guiando. También podés mandarme audios (nombre, precio, stock).\n\n" +
+      "Stock: menú → Stock / pausa, o pedime el listado, pausar, reactivar o cambiar cantidad (por texto o audio).\n" +
       "WhatsApp de pedidos: el número donde te escriben los clientes (puede ser distinto al que usás para gestionar la tienda).\n" +
-      "Escribí menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
+      "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
   };
 }
 
@@ -282,6 +283,37 @@ export async function handleMessage(
   const fresh = await markProcessed(msg.messageId);
   if (!fresh) return [];
 
+  // Audio → texto: reusa la máquina de estados (título, precio, stock, NLU).
+  if (msg.media?.kind === "audio") {
+    let transcript: string | null = null;
+    try {
+      const blob = await msg.media.fetch();
+      transcript = await transcribeAudio(blob, msg.media.mime);
+    } catch (err) {
+      console.warn("[engine] audio fetch/transcribe failed", err);
+    }
+    if (!transcript) {
+      return [
+        {
+          kind: "text",
+          text: "No pude escuchar el audio. Probá de nuevo o escribilo.",
+        },
+      ];
+    }
+    const rest = await handleMessageBody(
+      { ...msg, text: transcript, media: undefined },
+      caps,
+    );
+    return [{ kind: "text", text: `Te escuché: «${transcript}»` }, ...rest];
+  }
+
+  return handleMessageBody(msg, caps);
+}
+
+async function handleMessageBody(
+  msg: InboundMessage,
+  caps: ChannelCapabilities,
+): Promise<OutboundMessage[]> {
   const existing = await getConversation(msg.from);
   let state = (existing?.state as BotState) || "NEW";
   let draft = draftOf(existing?.draft as Record<string, unknown>);
@@ -1010,7 +1042,7 @@ export async function handleMessage(
         return [
           {
             kind: "text",
-            text: `¿Cuántas unidades de "${product.title}" quedan? Escribí un número (puede ser 0).`,
+            text: `¿Cuántas unidades de "${product.title}" quedan? Decime un número (puede ser 0), por texto o audio.`,
           },
         ];
       }
@@ -1028,7 +1060,7 @@ export async function handleMessage(
       return [
         {
           kind: "text",
-          text: `¿Cuántas unidades de "${product.title}" quedan? Escribí un número.`,
+          text: `¿Cuántas unidades de "${product.title}" quedan? Decime un número, por texto o audio.`,
         },
       ];
     }
@@ -1128,14 +1160,21 @@ export async function handleMessage(
   if (state === "PRODUCT_TITLE") {
     const title = msg.text?.trim();
     if (!title) {
-      replies.push({ kind: "text", text: "¿Cómo se llama el producto?" });
+      replies.push({
+        kind: "text",
+        text: "¿Cómo se llama el producto? Podés escribirlo o mandarme un audio.",
+      });
+
       return replies;
     }
     const product = { ...productDraft(draft), title };
     draft = { ...draft, product };
     if (product.priceCents == null) {
       await setState("PRODUCT_PRICE", draft);
-      replies.push({ kind: "text", text: "¿A cómo la vendés? Podés decir 15 mil o 15000." });
+      replies.push({
+        kind: "text",
+        text: "¿A cómo la vendés? Podés decir 15 mil o 15000 (texto o audio).",
+      });
       return replies;
     }
     return replyWithChoices(
@@ -1143,7 +1182,7 @@ export async function handleMessage(
       setState,
       "PRODUCT_DESC",
       withOptions(
-        "¿Querés contar algo del producto? Podés escribir o saltar.",
+        "¿Querés contar algo del producto? Podés escribir, mandar un audio o saltar.",
         [{ id: CHOICE.SKIP, label: "Saltar" }],
         caps,
       ),
@@ -1155,7 +1194,7 @@ export async function handleMessage(
     if (price == null) {
       replies.push({
         kind: "text",
-        text: "No entendí el precio. Probá con 15 mil o 15000.",
+        text: "No entendí el precio. Probá con 15 mil o 15000 (texto o audio).",
       });
       return replies;
     }
@@ -1166,7 +1205,7 @@ export async function handleMessage(
       setState,
       "PRODUCT_DESC",
       withOptions(
-        "¿Querés contar algo del producto? Podés escribir o saltar.",
+        "¿Querés contar algo del producto? Podés escribir, mandar un audio o saltar.",
         [{ id: CHOICE.SKIP, label: "Saltar" }],
         caps,
       ),
@@ -1353,21 +1392,27 @@ async function startProductFromImage(
 
   if (!product.title) {
     await setState("PRODUCT_TITLE", nextDraft);
-    return [{ kind: "text", text: "¿Cómo se llama el producto?" }];
+    return [
+      {
+        kind: "text",
+        text: "¿Cómo se llama el producto? Podés escribirlo o mandarme un audio.",
+      },
+    ];
   }
   if (product.priceCents == null) {
     await setState("PRODUCT_PRICE", nextDraft);
     return [
       {
         kind: "text",
-        text: "¿A cómo la vendés? Podés decir 15 mil o 15000.",
+        text: "¿A cómo la vendés? Podés decir 15 mil o 15000 (texto o audio).",
       },
     ];
   }
   const { draft: withChoices, message } = withPendingChoices(
     nextDraft,
     withOptions(
-      "¿Querés contar algo del producto? Podés escribir o saltar.",
+      "¿Querés contar algo del producto? Podés escribir, mandar un audio o saltar.",
+
       [{ id: CHOICE.SKIP, label: "Saltar" }],
       caps,
     ),
