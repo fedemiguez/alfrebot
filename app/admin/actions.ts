@@ -14,6 +14,8 @@ import {
   getProduct,
   getStoreById,
   updateProduct,
+  updateStoreCheckoutMode,
+  updateStoreShowPhone,
 } from "@/lib/db/repos";
 
 async function requireAdmin() {
@@ -94,4 +96,25 @@ export async function deleteDemoStoreAction(formData: FormData): Promise<void> {
   bustStoreCache(store?.slug);
   revalidatePath("/admin");
   redirect("/admin");
+}
+
+export async function setCheckoutModeAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const storeId = String(formData.get("storeId") ?? "");
+  const modeRaw = String(formData.get("checkoutMode") ?? "");
+  const checkoutMode = modeRaw === "cart" ? "cart" : "whatsapp";
+  const updated = await updateStoreCheckoutMode(storeId, checkoutMode);
+  if (!updated) return;
+  revalidatePath(`/admin/${storeId}`);
+  bustStoreCache(updated.slug);
+}
+
+export async function setShowPhoneAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const storeId = String(formData.get("storeId") ?? "");
+  const showPhone = String(formData.get("showPhone") ?? "") === "true";
+  const updated = await updateStoreShowPhone(storeId, showPhone);
+  if (!updated) return;
+  revalidatePath(`/admin/${storeId}`);
+  bustStoreCache(updated.slug);
 }

@@ -9,6 +9,7 @@ export const DEMO_STORE: Store = {
   name: "Cerámicas de Norma",
   slug: "ceramicas-de-norma",
   showPhone: true,
+  checkoutMode: "whatsapp",
   isDemo: false,
   status: "active",
   createdAt: new Date("2026-11-01T12:00:00.000Z"),
