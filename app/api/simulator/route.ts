@@ -2,6 +2,9 @@ import { handleMessage } from "@/lib/bot/engine";
 import { createSimulatorAdapter } from "@/lib/channels/simulator";
 import type { OutboundMessage } from "@/lib/channels/types";
 
+/** STT + motor pueden tardar; evita corte a los 10s por defecto en Hobby. */
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text();

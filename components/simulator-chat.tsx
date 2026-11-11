@@ -87,6 +87,8 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
     setError(null);
     startTransition(async () => {
       setItems((prev) => [...prev, userBubble]);
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 55_000);
       try {
         const res = await fetch("/api/simulator", {
           method: "POST",
@@ -96,6 +98,7 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
             messageId: `sim_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
             ...payload,
           }),
+          signal: controller.signal,
         });
         const data = (await res.json()) as {
           replies?: OutboundMessage[];
@@ -117,8 +120,13 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
           },
         ]);
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "No se pudo enviar el mensaje";
+        const aborted =
+          err instanceof DOMException && err.name === "AbortError";
+        const message = aborted
+          ? "Tardó demasiado (la IA puede estar saturada). Probá de nuevo o escribilo."
+          : err instanceof Error
+            ? err.message
+            : "No se pudo enviar el mensaje";
         setError(message);
         setItems((prev) => [
           ...prev,
@@ -133,6 +141,8 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
             ],
           },
         ]);
+      } finally {
+        window.clearTimeout(timer);
       }
     });
   }
@@ -162,7 +172,15 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
     if (uploading || pending || sendingAudio) return;
 
     if (recording && mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
+      // Cortar UI ya: algunos browsers tardan en disparar onstop.
+      setRecording(false);
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {
+        stopMicTracks();
+        mediaRecorderRef.current = null;
+        setError("No pude cortar la grabación. Probá de nuevo.");
+      }
       return;
     }
 
@@ -194,6 +212,12 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
       recorder.ondataavailable = (ev) => {
         if (ev.data.size > 0) audioChunksRef.current.push(ev.data);
       };
+      recorder.onerror = () => {
+        setRecording(false);
+        stopMicTracks();
+        mediaRecorderRef.current = null;
+        setError("Falló la grabación. Probá de nuevo o escribilo.");
+      };
       recorder.onstop = () => {
         setRecording(false);
         stopMicTracks();
@@ -208,7 +232,8 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
         void sendAudioBlob(blob, type);
       };
       mediaRecorderRef.current = recorder;
-      recorder.start();
+      // timeslice: chunks periódicos (evita onstop vacío / colgado en mobile)
+      recorder.start(250);
       setRecording(true);
     } catch {
       stopMicTracks();
@@ -220,6 +245,8 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
   async function sendAudioBlob(blob: Blob, mime: string) {
     setSendingAudio(true);
     setError(null);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 30_000);
     try {
       const type = mime.split(";")[0] || "audio/webm";
       const ext = type.includes("ogg")
@@ -234,6 +261,7 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
       const up = await fetch("/api/upload", {
         method: "POST",
         body: form,
+        signal: controller.signal,
       });
       const json = (await up.json()) as { url?: string; error?: string };
       if (!up.ok || !json.url) {
@@ -255,10 +283,16 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
         },
       );
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "No se pudo enviar el audio";
+      const aborted =
+        err instanceof DOMException && err.name === "AbortError";
+      const message = aborted
+        ? "La subida del audio tardó demasiado. Probá de nuevo."
+        : err instanceof Error
+          ? err.message
+          : "No se pudo enviar el audio";
       setError(message);
     } finally {
+      window.clearTimeout(timer);
       setSendingAudio(false);
     }
   }
@@ -429,7 +463,14 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
           {sendingAudio && (
             <div className="flex justify-end">
               <div className="rounded-lg bg-[#DCF8C6]/80 px-3 py-2 text-[15px] text-[var(--muted)]">
-                Enviando audio…
+                Subiendo audio…
+              </div>
+            </div>
+          )}
+          {pending && !sendingAudio && !uploading && (
+            <div className="flex justify-start">
+              <div className="rounded-lg bg-white/90 px-3 py-2 text-[15px] text-[var(--muted)] shadow-sm">
+                Escuchando / pensando…
               </div>
             </div>
           )}
