@@ -31,8 +31,10 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
   const [pending, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pickSourceOpen, setPickSourceOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const busy = pending || uploading;
 
   useEffect(() => {
@@ -314,22 +316,46 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
           onSubmit={onSendText}
           className="flex items-end gap-2 border-t border-black/5 bg-[#F0F0F0] p-3"
         >
+          {/*
+            Inputs fuera de display:none: en varios Android/iOS el capture
+            de cámara no abre si el <input type=file> está hidden.
+            capture=environment pide la cámara trasera (ideal para piezas).
+          */}
           <input
-            ref={fileRef}
+            ref={cameraInputRef}
             type="file"
             accept="image/*"
-            className="hidden"
+            capture="environment"
+            className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0"
+            tabIndex={-1}
+            aria-hidden
             onChange={(e) => {
               const f = e.target.files?.[0];
               e.target.value = "";
+              setPickSourceOpen(false);
+              if (f) void onPickImage(f);
+            }}
+          />
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*"
+            className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0"
+            tabIndex={-1}
+            aria-hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              setPickSourceOpen(false);
               if (f) void onPickImage(f);
             }}
           />
           <button
             type="button"
             className="min-h-12 rounded bg-white px-3 text-[1.2rem]"
-            onClick={() => fileRef.current?.click()}
+            onClick={() => setPickSourceOpen(true)}
             aria-label="Adjuntar foto"
+            aria-haspopup="dialog"
             disabled={busy || !phone}
           >
             📎
@@ -345,6 +371,56 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
             Enviar
           </button>
         </form>
+
+        {pickSourceOpen && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+            <button
+              type="button"
+              className="absolute inset-0 bg-[var(--ink)]/40"
+              aria-label="Cerrar"
+              onClick={() => setPickSourceOpen(false)}
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="photo-source-title"
+              className="relative z-10 w-full max-w-md border border-[var(--border)] bg-[var(--bg)] px-5 pb-6 pt-5 shadow-lg sm:mx-4"
+            >
+              <h2
+                id="photo-source-title"
+                className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--ink)]"
+              >
+                Sumá una foto
+              </h2>
+              <p className="mt-1 text-[16px] text-[var(--muted)]">
+                Sacá una con la cámara o elegí una de la galería.
+              </p>
+              <div className="mt-5 flex flex-col gap-3">
+                <button
+                  type="button"
+                  className="btn btn-primary w-full min-h-12"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  Sacar foto
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary w-full min-h-12"
+                  onClick={() => galleryInputRef.current?.click()}
+                >
+                  Elegir de la galería
+                </button>
+                <button
+                  type="button"
+                  className="w-full py-2 text-[16px] text-[var(--muted)] hover:text-[var(--primary)]"
+                  onClick={() => setPickSourceOpen(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <aside className="hidden min-h-[70vh] flex-col rounded-lg border border-[var(--border)] bg-white/80 p-5 lg:flex">

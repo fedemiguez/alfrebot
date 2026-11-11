@@ -15,8 +15,10 @@ import {
   getStoreById,
   updateProduct,
   updateStoreCheckoutMode,
+  updateStoreContactPhone,
   updateStoreShowPhone,
 } from "@/lib/db/repos";
+import { normalizeArMobileE164 } from "@/lib/phone";
 
 async function requireAdmin() {
   if (!(await isAdminAuthenticated())) {
@@ -120,6 +122,18 @@ export async function setShowPhoneAction(formData: FormData): Promise<void> {
   const storeId = String(formData.get("storeId") ?? "");
   const showPhone = String(formData.get("showPhone") ?? "") === "true";
   const updated = await updateStoreShowPhone(storeId, showPhone);
+  if (!updated) return;
+  revalidatePath(`/admin/${storeId}`);
+  bustStoreCache(updated.slug);
+}
+
+export async function setContactPhoneAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const storeId = String(formData.get("storeId") ?? "");
+  const raw = String(formData.get("contactPhone") ?? "").trim();
+  const contactPhone = raw ? normalizeArMobileE164(raw) : null;
+  if (raw && !contactPhone) return;
+  const updated = await updateStoreContactPhone(storeId, contactPhone);
   if (!updated) return;
   revalidatePath(`/admin/${storeId}`);
   bustStoreCache(updated.slug);

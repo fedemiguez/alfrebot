@@ -7,7 +7,8 @@ import {
   NoPublicPhoneNote,
   StorePurchaseProvider,
 } from "@/components/store-purchase";
-import { formatPhoneDisplay } from "@/lib/format";
+import { StoreContactLine } from "@/components/store-contact";
+import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
 import { getCachedStore } from "@/lib/store-data";
 
@@ -94,14 +95,25 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
         )}
 
         <footer className="mt-16 border-t border-[var(--border)] pt-8 text-[18px] text-[var(--ink)]">
-          {store.showPhone ? (
-            <p>
-              ¿Te gustó algo? Escribile a {store.ownerName || "la dueña"} al{" "}
-              {formatPhoneDisplay(store.phone)}.
-            </p>
-          ) : (
-            <p>Catálogo armado con alfrebot.</p>
-          )}
+          {(() => {
+            const contact = resolveStoreContactPhone(store);
+            if (store.showPhone && contact) {
+              return (
+                <StoreContactLine
+                  ownerName={store.ownerName}
+                  phoneE164={contact}
+                />
+              );
+            }
+            if (store.showPhone && !contact) {
+              return (
+                <p className="text-[var(--muted)]">
+                  Esta tienda todavía no configuró un WhatsApp público para pedidos.
+                </p>
+              );
+            }
+            return <p>Catálogo armado con alfrebot.</p>;
+          })()}
         </footer>
       </div>
     </StorePurchaseProvider>

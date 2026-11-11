@@ -8,7 +8,9 @@ import {
   StoreHomeLink,
   StorePurchaseProvider,
 } from "@/components/store-purchase";
-import { formatPhoneDisplay, formatPriceArs } from "@/lib/format";
+import { StoreContactLine } from "@/components/store-contact";
+import { formatPriceArs } from "@/lib/format";
+import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
 import { getCachedProduct } from "@/lib/store-data";
 
@@ -96,12 +98,19 @@ async function ProductBody({
           ownerName={store.ownerName}
         />
 
-        {store.showPhone && (
-          <p className="mt-10 border-t border-[var(--border)] pt-6 text-[18px]">
-            ¿Te gustó? Escribile a {store.ownerName || "la dueña"} al{" "}
-            {formatPhoneDisplay(store.phone)}.
-          </p>
-        )}
+        {(() => {
+          const contact = resolveStoreContactPhone(store);
+          if (!store.showPhone || !contact) return null;
+          return (
+            <div className="mt-10 border-t border-[var(--border)] pt-6 text-[18px]">
+              <StoreContactLine
+                ownerName={store.ownerName}
+                phoneE164={contact}
+                prefix="¿Te gustó? Escribile a"
+              />
+            </div>
+          );
+        })()}
       </div>
     </StorePurchaseProvider>
   );
