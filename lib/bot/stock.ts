@@ -39,12 +39,16 @@ export function stockHubMessage(
       id: CHOICE.STOCK_MODE,
       label: store.tracksQuantity ? "Sin números" : "Con números",
     },
-    { id: CHOICE.MENU_HELP, label: "Volver al menú" },
+    { id: CHOICE.MENU_BACK, label: "Volver al menú" },
   ];
   const mode = store.tracksQuantity
     ? "Tu tienda lleva cantidades con números."
     : "Tu tienda solo marca Agotado o Disponible, sin números.";
-  return withOptions(`${mode}\n¿Qué querés hacer?`, options, caps);
+  return withOptions(
+    `${mode}\n¿Qué querés hacer con el stock?\n(Ver mi tienda y WhatsApp pedidos están en el menú.)`,
+    options,
+    caps,
+  );
 }
 
 export function productPickOptions(products: Product[]): Option[] {
