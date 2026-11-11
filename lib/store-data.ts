@@ -7,23 +7,41 @@ import {
 import type { Product, Store } from "@/lib/db/schema";
 import { DEMO_PRODUCTS, DEMO_STORE } from "@/lib/demo-store";
 
+function withCheckoutDefault(store: Store): Store {
+  return {
+    ...store,
+    checkoutMode: store.checkoutMode === "cart" ? "cart" : "whatsapp",
+  };
+}
+
 async function readStore(slug: string): Promise<{
   store: Store | null;
   products: Product[];
 }> {
-  const store = (await getStoreBySlug(slug)) ?? (slug === DEMO_STORE.slug ? DEMO_STORE : null);
-  if (!store) return { store: null, products: [] };
+  try {
+    const storeRaw =
+      (await getStoreBySlug(slug)) ?? (slug === DEMO_STORE.slug ? DEMO_STORE : null);
+    if (!storeRaw) return { store: null, products: [] };
+    const store = withCheckoutDefault(storeRaw);
 
-  let products = await listProductsByStore(store.id);
-  if (products.length === 0 && store.slug === DEMO_STORE.slug) {
-    products = DEMO_PRODUCTS;
+    let products = await listProductsByStore(store.id);
+    if (products.length === 0 && store.slug === DEMO_STORE.slug) {
+      products = DEMO_PRODUCTS;
+    }
+
+    const sorted = [...products].sort((a, b) => {
+      if (a.inStock === b.inStock) return a.position - b.position;
+      return a.inStock ? -1 : 1;
+    });
+    return { store, products: sorted };
+  } catch (err) {
+    // p.ej. columna nueva aún no migrada en Neon → no tumbar el build/prerender
+    console.warn("[store-data] readStore failed; using demo fallback if applicable", err);
+    if (slug === DEMO_STORE.slug) {
+      return { store: DEMO_STORE, products: DEMO_PRODUCTS };
+    }
+    return { store: null, products: [] };
   }
-
-  const sorted = [...products].sort((a, b) => {
-    if (a.inStock === b.inStock) return a.position - b.position;
-    return a.inStock ? -1 : 1;
-  });
-  return { store, products: sorted };
 }
 
 export async function getCachedStore(slug: string): Promise<{
