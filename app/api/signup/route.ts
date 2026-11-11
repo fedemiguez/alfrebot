@@ -6,21 +6,10 @@ import {
 } from "@/lib/env";
 
 
+import { normalizeArMobileE164 } from "@/lib/phone";
+
 function normalizeArPhone(input: string): string | null {
-  const digits = input.replace(/\D/g, "");
-  if (!digits) return null;
-  // Accept 10-digit local (11…) or already with 54/549
-  if (digits.startsWith("549") && digits.length >= 12) return `+${digits}`;
-  if (digits.startsWith("54") && digits.length >= 11) {
-    // Ensure mobile 9 after 54 when missing for AR mobiles
-    if (!digits.startsWith("549") && digits.length === 12) {
-      return `+54${digits.slice(2)}`;
-    }
-    return `+${digits}`;
-  }
-  if (digits.length === 10) return `+549${digits}`;
-  if (digits.length === 11 && digits.startsWith("9")) return `+54${digits}`;
-  return null;
+  return normalizeArMobileE164(input);
 }
 
 function randomCode(): string {

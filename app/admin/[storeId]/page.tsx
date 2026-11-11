@@ -3,13 +3,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
-import { formatPhoneDisplay, formatPriceArs } from "@/lib/format";
+import {
+  formatPhoneDisplay,
+  formatPriceArs,
+  resolveStoreContactPhone,
+} from "@/lib/format";
 import { getStoreById, listProductsByStore } from "@/lib/db/repos";
 import {
   deleteDemoStoreAction,
   deleteProductAction,
   logoutAdminAction,
   setCheckoutModeAction,
+  setContactPhoneAction,
   setShowPhoneAction,
   toggleProductHiddenAction,
   toggleProductStockAction,
@@ -149,6 +154,9 @@ async function AdminStoreBody({
           <div className="flex flex-wrap items-center gap-2 pt-2">
             <p className="text-[16px] text-[var(--muted)]">
               Número público: {store.showPhone ? "sí" : "no"}
+              {resolveStoreContactPhone(store)
+                ? ` · ${formatPhoneDisplay(resolveStoreContactPhone(store))}`
+                : " · sin WhatsApp válido"}
             </p>
             <form action={setShowPhoneAction}>
               <input type="hidden" name="storeId" value={store.id} />
@@ -165,6 +173,30 @@ async function AdminStoreBody({
               </button>
             </form>
           </div>
+          <form action={setContactPhoneAction} className="mt-3 flex flex-wrap gap-2">
+            <input type="hidden" name="storeId" value={store.id} />
+            <label className="sr-only" htmlFor="contactPhone">
+              WhatsApp público
+            </label>
+            <input
+              id="contactPhone"
+              name="contactPhone"
+              type="tel"
+              inputMode="tel"
+              placeholder="11 1234-5678"
+              defaultValue={
+                store.contactPhone
+                  ? formatPhoneDisplay(store.contactPhone)
+                  : resolveStoreContactPhone(store)
+                    ? formatPhoneDisplay(resolveStoreContactPhone(store)!)
+                    : ""
+              }
+              className="min-h-12 min-w-[12rem] flex-1 border border-[var(--border)] bg-white px-3 text-[16px] text-[var(--ink)]"
+            />
+            <button type="submit" className="btn btn-secondary">
+              Guardar WhatsApp
+            </button>
+          </form>
         </section>
       </header>
 

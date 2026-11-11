@@ -13,7 +13,13 @@ export type CheckoutMode = "whatsapp" | "cart";
 
 export const stores = pgTable("stores", {
   id: uuid("id").defaultRandom().primaryKey(),
+  /** Identidad del canal (Meta o simulador). No siempre es el WA público. */
   phone: text("phone").notNull().unique(),
+  /**
+   * WhatsApp público para catálogo / Lo quiero.
+   * Si es null, se usa `phone` cuando es un móvil AR válido.
+   */
+  contactPhone: text("contact_phone"),
   ownerName: text("owner_name"),
   name: text("name"),
   slug: text("slug").unique(),

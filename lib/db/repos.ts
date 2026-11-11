@@ -27,6 +27,7 @@ export type ConversationDraft = {
   storeName?: string;
   slug?: string;
   showPhone?: boolean;
+  contactPhone?: string;
   checkoutMode?: "whatsapp" | "cart";
   tracksQuantity?: boolean;
   signupCode?: string;
@@ -136,6 +137,7 @@ export async function slugExists(slug: string): Promise<boolean> {
 
 export async function upsertStore(input: {
   phone: string;
+  contactPhone?: string | null;
   ownerName?: string | null;
   name?: string | null;
   slug?: string | null;
@@ -151,6 +153,10 @@ export async function upsertStore(input: {
     if (existing) {
       const updated = touchStore({
         ...existing,
+        contactPhone:
+          input.contactPhone !== undefined
+            ? input.contactPhone
+            : existing.contactPhone,
         ownerName: input.ownerName ?? existing.ownerName,
         name: input.name ?? existing.name,
         slug: input.slug ?? existing.slug,
@@ -166,6 +172,7 @@ export async function upsertStore(input: {
     const created: Store = {
       id: newId(),
       phone: input.phone,
+      contactPhone: input.contactPhone ?? null,
       ownerName: input.ownerName ?? null,
       name: input.name ?? null,
       slug: input.slug ?? null,
@@ -186,6 +193,10 @@ export async function upsertStore(input: {
     const rows = await db
       .update(stores)
       .set({
+        contactPhone:
+          input.contactPhone !== undefined
+            ? input.contactPhone
+            : existing.contactPhone,
         ownerName: input.ownerName ?? existing.ownerName,
         name: input.name ?? existing.name,
         slug: input.slug ?? existing.slug,
@@ -204,6 +215,7 @@ export async function upsertStore(input: {
     .insert(stores)
     .values({
       phone: input.phone,
+      contactPhone: input.contactPhone ?? null,
       ownerName: input.ownerName ?? null,
       name: input.name ?? null,
       slug: input.slug ?? null,
@@ -254,6 +266,27 @@ export async function updateStoreShowPhone(
   const rows = await db
     .update(stores)
     .set({ showPhone, updatedAt: now() })
+    .where(eq(stores.id, storeId))
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function updateStoreContactPhone(
+  storeId: string,
+  contactPhone: string | null,
+): Promise<Store | null> {
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    const current = mem.stores.get(storeId);
+    if (!current) return null;
+    const updated = touchStore({ ...current, contactPhone });
+    mem.stores.set(storeId, updated);
+    return updated;
+  }
+  const db = getDb();
+  const rows = await db
+    .update(stores)
+    .set({ contactPhone, updatedAt: now() })
     .where(eq(stores.id, storeId))
     .returning();
   return rows[0] ?? null;
@@ -506,6 +539,7 @@ export async function ensureDemoStore(): Promise<Store> {
 
   const store = await upsertStore({
     phone: "+5491100000001",
+    contactPhone: "+5491100000001",
     ownerName: "Norma",
     name: "Cerámicas de Norma",
     slug: "ceramicas-de-norma",

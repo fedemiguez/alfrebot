@@ -1,18 +1,12 @@
 import { formatPriceArs } from "@/lib/format";
 import { appBaseUrl } from "@/lib/env";
+import {
+  buildWaMeUrl,
+  phoneToWaDigits,
+  resolveStoreContactPhone,
+} from "@/lib/phone";
 
-/** Dígitos para wa.me (sin +). */
-export function phoneToWaDigits(e164: string | null | undefined): string | null {
-  if (!e164) return null;
-  const digits = e164.replace(/\D/g, "");
-  return digits.length >= 8 ? digits : null;
-}
-
-export function buildWaMeUrl(phoneE164: string, message: string): string {
-  const digits = phoneToWaDigits(phoneE164);
-  if (!digits) return "#";
-  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
-}
+export { buildWaMeUrl, phoneToWaDigits };
 
 export function storeCatalogUrl(slug: string | null | undefined): string | null {
   if (!slug) return null;
@@ -87,10 +81,12 @@ export function cartCheckoutMessage(input: {
   return lines.join("\n");
 }
 
-/** Contacto público para pedidos: requiere número visible. */
+/** Contacto público para pedidos: showPhone + número WA válido. */
 export function storeAcceptsWhatsAppOrders(store: {
   showPhone: boolean;
   phone: string;
+  contactPhone?: string | null;
 }): boolean {
-  return store.showPhone && Boolean(phoneToWaDigits(store.phone));
+  if (!store.showPhone) return false;
+  return Boolean(resolveStoreContactPhone(store));
 }

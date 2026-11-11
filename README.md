@@ -30,15 +30,18 @@ Abrí [http://localhost:3000/probar](http://localhost:3000/probar) y tocá **Emp
 - Default: botón **Lo quiero** → `wa.me` al dueño con el producto (requiere número público / `showPhone`).
 - Opcional: `checkoutMode: 'cart'` (bot en el alta o panel `/admin`) → carrito local y checkout por WhatsApp con el listado. **Sin pasarela de pago.**
 
-### Migración schema (`checkout_mode`)
+### Migración schema
 
-Se agregó `stores.checkout_mode` (`whatsapp` | `cart`, default `whatsapp`). Con `DATABASE_URL`:
+- `stores.checkout_mode` (`whatsapp` | `cart`, default `whatsapp`)
+- `stores.contact_phone` — WhatsApp público para catálogo / Lo quiero (si el `phone` del canal no es un móvil AR válido, p.ej. simulador)
+
+Con `DATABASE_URL`:
 
 ```bash
 npm run db:push
 ```
 
-Sin Neon, el fallback en memoria ya incluye el campo.
+Sin Neon, el fallback en memoria ya incluye los campos.
 
 ## Meta WhatsApp
 

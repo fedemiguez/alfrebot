@@ -26,6 +26,11 @@ import {
 import { uploadDataUrl, uploadProductImage } from "@/lib/blob";
 import { appBaseUrl } from "@/lib/env";
 import {
+  formatPhoneDisplay,
+  isWhatsAppContactPhone,
+  normalizeArMobileE164,
+} from "@/lib/phone";
+import {
   createProduct,
   getConversation,
   getProduct,
@@ -49,6 +54,7 @@ export type BotState =
   | "ASK_STORE"
   | "CONFIRM_SLUG"
   | "ASK_SHOW_PHONE"
+  | "ASK_CONTACT_PHONE"
   | "ASK_STOCK_MODE"
   | "ASK_CHECKOUT_MODE"
   | "IDLE"
@@ -388,6 +394,52 @@ export async function handleMessage(
     }
 
     draft = { ...draft, showPhone };
+    // Si quieren mostrar número pero el canal no es un WA AR válido (p.ej. simulador +0…),
+    // pedimos el celular real para Lo quiero / pie de tienda.
+    if (showPhone && !isWhatsAppContactPhone(msg.from)) {
+      await setState("ASK_CONTACT_PHONE", draft);
+      replies.push({
+        kind: "text",
+        text: "¿A qué WhatsApp te escriben los clientes? Mandame tu celular con código de área, por ejemplo 11 1234-5678.",
+      });
+      return replies;
+    }
+    if (showPhone && isWhatsAppContactPhone(msg.from)) {
+      draft = {
+        ...draft,
+        contactPhone: normalizeArMobileE164(msg.from) ?? undefined,
+      };
+    }
+    return replyWithChoices(
+      draft,
+      setState,
+      "ASK_STOCK_MODE",
+      withOptions(
+        "¿Cómo querés manejar el stock?\n\n• Llevar cantidades: vas anotando cuántas unidades quedan de cada pieza.\n• Solo pausar: marcás agotado / volvió, sin números.",
+        [
+          { id: CHOICE.STOCK_QTY_MODE, label: "Llevar cantidades" },
+          { id: CHOICE.STOCK_PAUSE_MODE, label: "Solo pausar" },
+        ],
+        caps,
+      ),
+    );
+  }
+
+  if (state === "ASK_CONTACT_PHONE") {
+    const raw = msg.text?.trim() ?? "";
+    const contactPhone = normalizeArMobileE164(raw);
+    if (!contactPhone) {
+      replies.push({
+        kind: "text",
+        text: "No entendí el número. Probá así: 11 1234-5678 o 351 123-4567.",
+      });
+      return replies;
+    }
+    draft = { ...draft, contactPhone, showPhone: true };
+    replies.push({
+      kind: "text",
+      text: `Perfecto, en la tienda va a figurar ${formatPhoneDisplay(contactPhone)}.`,
+    });
     return replyWithChoices(
       draft,
       setState,
@@ -480,8 +532,14 @@ export async function handleMessage(
     }
 
     const tracksQuantity = draft.tracksQuantity ?? false;
+    const contactPhone =
+      draft.contactPhone ??
+      (isWhatsAppContactPhone(msg.from)
+        ? normalizeArMobileE164(msg.from)
+        : null);
     const store = await upsertStore({
       phone: msg.from,
+      contactPhone,
       ownerName: draft.ownerName,
       name: draft.storeName,
       slug: draft.slug,
@@ -903,6 +961,11 @@ export async function handleMessage(
       if (!store) {
         store = await upsertStore({
           phone: msg.from,
+          contactPhone:
+            draft.contactPhone ??
+            (isWhatsAppContactPhone(msg.from)
+              ? normalizeArMobileE164(msg.from)
+              : null),
           ownerName: draft.ownerName,
           name: draft.storeName,
           slug: draft.slug,
