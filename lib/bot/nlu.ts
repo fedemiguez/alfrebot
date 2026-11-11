@@ -93,6 +93,90 @@ export function extractSignupCode(text: string): string | null {
   return m?.[1] ?? null;
 }
 
+export type PersonNameExtraction = {
+  name: string | null;
+  confidence: "high" | "low" | "none";
+};
+
+const NAME_PREFIX_RE =
+  /^(?:(?:hola|buenas?(?:\s+(?:d[ií]as|tardes|noches))?)[,!.\s]+)*(?:(?:yo\s+)?(?:me\s+llamo|me\s+digo|me\s+dicen|me\s+llaman|mi\s+nombre\s+es|mi\s+nombre\s*:|soy))(?:\s+|$)/i;
+
+const NAME_TRAILING_NOISE_RE =
+  /[,!.]+(?:\s*(?:mucho\s+gusto|un\s+placer|para\s+servirte|gracias|eh|che))?$/i;
+
+const NAME_REJECT_RE =
+  /\b(tienda|pieza|foto|precio|armar|quiero|necesito|ayuda|menu|men[uú]|whatsapp|hola|buenas)\b/i;
+
+function titleCaseName(raw: string): string {
+  return raw
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => {
+      const lower = word.toLocaleLowerCase("es-AR");
+      if (/^(de|del|la|las|los|el|y|e)$/i.test(lower)) return lower;
+      return lower.charAt(0).toLocaleUpperCase("es-AR") + lower.slice(1);
+    })
+    .join(" ")
+    .replace(/^(de|del|la|las|los|el|y|e)\s+/i, (m) => m.charAt(0).toUpperCase() + m.slice(1));
+}
+
+const NAME_PARTICLE_RE = /^(de|del|la|las|los|el|y|e)$/i;
+const NAME_NON_NAME_RE =
+  /^(ac[aá]|aqu[ií]|all[aá]|bien|mal|nuevo|nueva|yo|vos|usted|che)$/i;
+
+function looksLikePersonName(candidate: string): boolean {
+  if (!candidate || candidate.length < 2 || candidate.length > 40) return false;
+  if (NAME_REJECT_RE.test(candidate)) return false;
+  const words = candidate.split(/\s+/).filter(Boolean);
+  if (words.length < 1 || words.length > 4) return false;
+  if (!words.every((w) => /^[\p{L}][\p{L}'’.-]*$/u.test(w))) return false;
+  const substantive = words.filter(
+    (w) => !NAME_PARTICLE_RE.test(w) && !NAME_NON_NAME_RE.test(w),
+  );
+  return substantive.length >= 1;
+}
+
+/**
+ * Extrae el nombre de pila/completo con reglas deterministas (ES / rioplatense).
+ * Prefijos: me llamo, soy, mi nombre es, me dicen, me llaman, etc.
+ */
+export function extractPersonName(raw: string): PersonNameExtraction {
+  const trimmed = raw.replace(/\s+/g, " ").trim();
+  if (!trimmed) return { name: null, confidence: "none" };
+
+  let rest = trimmed;
+  let usedPrefix = false;
+  const prefixMatch = trimmed.match(NAME_PREFIX_RE);
+  if (prefixMatch) {
+    usedPrefix = true;
+    rest = trimmed.slice(prefixMatch[0].length).trim();
+  } else {
+    rest = trimmed.replace(
+      /^(?:hola|buenas?(?:\s+(?:d[ií]as|tardes|noches))?)[,!.\s]+/i,
+      "",
+    ).trim();
+  }
+
+  rest = rest.replace(NAME_TRAILING_NOISE_RE, "").replace(/^["'«]|["'»]$/g, "").trim();
+
+  if (!rest) return { name: null, confidence: "none" };
+
+  if (!looksLikePersonName(rest)) {
+    // Prefijo claro pero cola ruidosa → pedimos confirmación / reintento
+    if (usedPrefix) {
+      const firstToken = rest.split(/\s+/).find((w) => /^[\p{L}][\p{L}'’.-]*$/u.test(w));
+      if (firstToken && looksLikePersonName(firstToken)) {
+        return { name: titleCaseName(firstToken), confidence: "low" };
+      }
+      return { name: null, confidence: "none" };
+    }
+    return { name: null, confidence: "none" };
+  }
+
+  const name = titleCaseName(rest);
+  return { name, confidence: usedPrefix || rest.split(/\s+/).length <= 3 ? "high" : "low" };
+}
+
 export function parseCaptionHints(text: string): {
   title?: string;
   priceCents?: number;

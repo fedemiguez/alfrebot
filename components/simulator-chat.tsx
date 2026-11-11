@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import type { OutboundMessage } from "@/lib/channels/types";
+import { segmentUrls } from "@/lib/bot/render";
 
 type ChatItem =
   | { id: string; role: "user"; text?: string; imageUrl?: string }
@@ -271,7 +272,7 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
                         />
                       )}
                       <p className="whitespace-pre-wrap">
-                        {m.kind === "text" ? m.text : m.caption}
+                        {linkifyMessageText(m.kind === "text" ? m.text : m.caption)}
                       </p>
                       {m.options && m.options.length > 0 && (
                         <div className="mt-3 flex flex-col gap-2">
@@ -381,6 +382,25 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
         </div>
       </aside>
     </div>
+  );
+}
+
+function linkifyMessageText(text: string | undefined): ReactNode {
+  if (!text) return null;
+  return segmentUrls(text).map((seg, i) =>
+    seg.type === "link" ? (
+      <a
+        key={`l_${i}`}
+        href={seg.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-[#027eb5] underline break-all"
+      >
+        {seg.value}
+      </a>
+    ) : (
+      <span key={`t_${i}`}>{seg.value}</span>
+    ),
   );
 }
 
