@@ -12,10 +12,13 @@ export function SiteHeader() {
         </Link>
         <nav className="flex items-center gap-4 text-[17px]">
           <Link href="/registro" className="text-[var(--ink)] hover:text-[var(--primary)]">
-            Armá tu tienda
+            Por WhatsApp
           </Link>
-          <Link href="/probar" className="text-[var(--ink)] hover:text-[var(--primary)]">
-            Probar
+          <Link
+            href="/registro?canal=web"
+            className="text-[var(--ink)] hover:text-[var(--primary)]"
+          >
+            En la web
           </Link>
         </nav>
       </div>

@@ -114,7 +114,7 @@ async function AdminBody() {
 
       {stores.length === 0 && (
         <p className="mt-6 text-[var(--muted)]">
-          Cuando alguien se registre por WhatsApp o el simulador, aparece acá.
+          Cuando alguien se registre por WhatsApp o en la web, aparece acá.
         </p>
       )}
     </main>

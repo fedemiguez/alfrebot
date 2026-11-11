@@ -10,19 +10,20 @@ export default function Home() {
           alfrebot
         </p>
         <h1 className="mt-5 max-w-2xl text-[1.65rem] font-normal leading-snug text-[var(--ink)] sm:text-3xl">
-          Armá tu tienda por WhatsApp, sin paneles ni mail.
+          Armá tu tienda charlando: por WhatsApp o en la web.
         </h1>
         <p className="mt-4 max-w-xl text-[1.15rem] text-[var(--muted)]">
-          Pensado para personas como Norma: mandás fotos por el chat y tu catálogo
-          queda online.
+          Pensado para personas como Norma: mandás fotos y tu catálogo queda
+          online. Empezás con tu celular; después podés seguir por el canal que
+          te quede cómodo.
         </p>
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Link href="/registro" className="btn btn-primary">
-            Armá tu tienda por WhatsApp
+            Armá por WhatsApp
           </Link>
-          <Link href="/probar" className="btn btn-secondary">
-            Probalo sin WhatsApp
+          <Link href="/registro?canal=web" className="btn btn-secondary">
+            Armá en la web
           </Link>
         </div>
 

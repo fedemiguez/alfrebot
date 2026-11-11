@@ -1,6 +1,6 @@
 # alfrebot
 
-Armá tu tienda por WhatsApp. Dominio: [alfrebot.com.ar](https://alfrebot.com.ar). **Tía Norma** (`/ceramicas-de-norma`) es la tienda demo.
+Armá tu tienda por WhatsApp o en la web. Dominio: [alfrebot.com.ar](https://alfrebot.com.ar). **Tía Norma** (`/ceramicas-de-norma`) es la tienda demo.
 
 ## Stack
 
@@ -18,7 +18,11 @@ npm install
 npm run dev
 ```
 
-Abrí [http://localhost:3000/probar](http://localhost:3000/probar) y tocá **Empezar**.
+Flujo dueña:
+
+1. [http://localhost:3000/registro](http://localhost:3000/registro) — pedís el celular.
+2. Elegís **Abrir WhatsApp** o **Seguir en la web** (`/probar?phone=…&code=…`).
+3. Mismo motor de bot; con celular real la tienda **no** es demo y podés retomar por WhatsApp después.
 
 ## Scripts
 
@@ -45,9 +49,9 @@ Sin Neon, el fallback en memoria ya incluye los campos.
 
 ## Meta WhatsApp
 
-Ver `.env.example`. Webhook: `GET/POST /api/whatsapp/meta`. Mientras `META_TEST_MODE=true`, el registro deriva números no verificados a `/probar`.
+Ver `.env.example`. Webhook: `GET/POST /api/whatsapp/meta`. Mientras `META_TEST_MODE=true`, el registro deriva números no verificados al chat web (`/probar`).
 
-## Stock y pausa (bot / `/probar`)
+## Stock y pausa (bot / chat web)
 
 En el alta, o después desde el menú, la dueña elige el modo de la tienda:
 

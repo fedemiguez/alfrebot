@@ -14,9 +14,13 @@ type SignupResult = {
   error?: string;
 };
 
-export function RegistroForm() {
+export function RegistroForm({
+  preferredChannel = "choose",
+}: {
+  preferredChannel?: "web" | "whatsapp" | "choose";
+}) {
   const [localNumber, setLocalNumber] = useState("");
-  const [step, setStep] = useState<"phone" | "open">("phone");
+  const [step, setStep] = useState<"phone" | "channel">("phone");
   const [result, setResult] = useState<SignupResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -41,54 +45,81 @@ export function RegistroForm() {
         return;
       }
       setResult(data);
-      setStep("open");
+      setStep("channel");
     });
   }
 
-  if (step === "open" && result) {
-    if (result.forceSimulator) {
-      return (
-        <div className="fade-in max-w-lg">
-          <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
-            Probá sin WhatsApp
-          </h1>
-          <p className="mt-4 text-[var(--muted)]">
-            {result.reason ||
-              "Esta versión de prueba todavía no está abierta a todos."}
-          </p>
-          <Link
-            href={result.probarPath || "/probar"}
-            className="btn btn-primary mt-8 inline-flex"
-          >
-            Ir al simulador
-          </Link>
-          <p className="mt-6 text-[15px] text-[var(--muted)]">
-            Número cargado: {result.phone}
-          </p>
-        </div>
-      );
-    }
+  if (step === "channel" && result) {
+    const webHref = result.probarPath || "/registro?canal=web";
+    const webOnly = Boolean(result.forceSimulator);
+    const preferWeb = preferredChannel === "web" || webOnly;
+    const preferWa = preferredChannel === "whatsapp" && !webOnly;
 
     return (
       <div className="fade-in max-w-lg">
         <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
-          Abrí WhatsApp
+          {webOnly ? "Seguí en la web" : "¿Cómo querés seguir?"}
         </h1>
         <p className="mt-4 text-[var(--muted)]">
-          Tocá el botón verde y después <strong>Enviar</strong>. El bot te va a
-          pedir tu nombre.
+          {webOnly
+            ? result.reason ||
+              "Por ahora este número sigue por la web. Después vas a poder continuar por WhatsApp."
+            : "Tu celular queda registrado. Podés armar la tienda por WhatsApp o en la web; más adelante podés cambiar de canal con el mismo número."}
         </p>
-        <a href={result.waLink} className="btn btn-wa mt-8 inline-flex w-full sm:w-auto">
-          Abrir WhatsApp
-        </a>
-        <p className="mt-6 text-[15px]">
-          <Link
-            href={result.probarPath || "/probar"}
-            className="text-[var(--primary)] underline-offset-2 hover:underline"
-          >
-            ¿No te respondió? Probá sin WhatsApp
-          </Link>
+
+        {preferWeb ? (
+          <>
+            <Link href={webHref} className="btn btn-primary mt-8 inline-flex w-full sm:w-auto">
+              Seguir en la web
+            </Link>
+            {!webOnly && result.waLink && (
+              <p className="mt-6 text-[15px]">
+                <a
+                  href={result.waLink}
+                  className="text-[var(--primary)] underline-offset-2 hover:underline"
+                >
+                  Prefiero Abrir WhatsApp
+                </a>
+              </p>
+            )}
+          </>
+        ) : preferWa ? (
+          <>
+            <a
+              href={result.waLink}
+              className="btn btn-wa mt-8 inline-flex w-full sm:w-auto"
+            >
+              Abrir WhatsApp
+            </a>
+            <p className="mt-6 text-[15px]">
+              <Link
+                href={webHref}
+                className="text-[var(--primary)] underline-offset-2 hover:underline"
+              >
+                Prefiero seguir en la web
+              </Link>
+            </p>
+          </>
+        ) : (
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <a href={result.waLink} className="btn btn-wa inline-flex justify-center">
+              Abrir WhatsApp
+            </a>
+            <Link href={webHref} className="btn btn-secondary inline-flex justify-center">
+              Seguir en la web
+            </Link>
+          </div>
+        )}
+
+        <p className="mt-6 text-[15px] text-[var(--muted)]">
+          Número: {result.phone}
         </p>
+        {!webOnly && (
+          <p className="mt-2 text-[15px] text-[var(--muted)]">
+            Si abrís WhatsApp, tocá <strong>Enviar</strong>. El bot te pide el
+            nombre.
+          </p>
+        )}
       </div>
     );
   }
@@ -96,10 +127,11 @@ export function RegistroForm() {
   return (
     <form onSubmit={onContinue} className="fade-in max-w-lg">
       <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
-        Tu número de WhatsApp
+        Tu número de celular
       </h1>
       <p className="mt-3 text-[var(--muted)]">
-        Con el +54 fijo. Ejemplo: 11 5555 1234
+        Con el +54 fijo. Ejemplo: 11 5555 1234. Sirve para identificarte y, si
+        querés, seguir después por WhatsApp.
       </p>
       <label className="mt-8 block">
         <span className="mb-2 block text-[17px] font-semibold">Celular</span>

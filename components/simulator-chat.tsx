@@ -23,7 +23,15 @@ function defaultSimPhone(): string {
   return phone;
 }
 
-export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
+export function SimulatorChat({
+  initialPhone,
+  initialCode,
+  continueWaLink,
+}: {
+  initialPhone?: string;
+  initialCode?: string;
+  continueWaLink?: string;
+}) {
   const [phone, setPhone] = useState(initialPhone || "");
   const [input, setInput] = useState("");
   const [items, setItems] = useState<ChatItem[]>([]);
@@ -41,6 +49,7 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const busy = pending || uploading || recording || sendingAudio;
+  const signupCode = initialCode?.replace(/\D/g, "").slice(0, 4) || "";
 
   useEffect(() => {
     setPhone((prev) => {
@@ -359,8 +368,9 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
 
   function startConversation() {
     if (busy) return;
+    const codePart = signupCode ? ` Código ${signupCode}` : "";
     sendPayload(
-      { text: "Hola! Quiero armar mi tienda. Código 4821" },
+      { text: `Hola! Quiero armar mi tienda.${codePart}` },
       { id: `u_${Date.now()}`, role: "user", text: "Hola! Quiero armar mi tienda." },
     );
   }
@@ -376,14 +386,29 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
             <p className="font-[family-name:var(--font-display)] text-lg font-semibold leading-tight">
               alfrebot
             </p>
-            <p className="text-sm text-white/80">Simulador · {phone || "…"}</p>
+            <p className="text-sm text-white/80">Chat web · {phone || "…"}</p>
           </div>
         </div>
+
+        {continueWaLink && (
+          <div className="border-b border-black/5 bg-[#FFF8E7] px-4 py-3 text-[15px] text-[var(--ink)]">
+            Cuando quieras seguir desde el celu,{" "}
+            <a
+              href={continueWaLink}
+              className="font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
+              target="_blank"
+              rel="noreferrer"
+            >
+              abrí WhatsApp con este mismo número
+            </a>
+            .
+          </div>
+        )}
 
         <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4">
           {items.length === 0 && (
             <div className="mx-auto max-w-sm rounded-lg bg-white/90 p-4 text-center text-[16px] text-[var(--ink)]">
-              <p>Este chat usa el mismo motor que WhatsApp.</p>
+              <p>Este chat usa el mismo ayudante que WhatsApp.</p>
               <button
                 type="button"
                 className="btn btn-primary mt-4"

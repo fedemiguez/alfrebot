@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: "%s · alfrebot",
   },
   description:
-    "Armá tu tienda por WhatsApp. Alfrebot ayuda a personas como Norma a mostrar sus productos sin complicaciones.",
+    "Armá tu tienda por WhatsApp o en la web. Alfrebot ayuda a personas como Norma a mostrar sus productos sin complicaciones.",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://alfrebot.com.ar",
   ),

@@ -781,7 +781,7 @@ async function handleMessageBody(
       showPhone: draft.showPhone ?? true,
       checkoutMode,
       tracksQuantity,
-      isDemo: msg.channel === "simulator",
+      isDemo: !isWhatsAppContactPhone(msg.from),
       status: "active",
     });
     draft = clearStockDraft({ ...draft, checkoutMode, tracksQuantity });
@@ -794,9 +794,13 @@ async function handleMessageBody(
     const stockHint = tracksQuantity
       ? "Podés anotar cantidades desde el menú → Stock / pausa."
       : "Podés marcar productos como Agotado desde el menú → Stock / pausa.";
+    const continuityHint =
+      msg.channel === "simulator" && isWhatsAppContactPhone(msg.from)
+        ? " Cuando quieras, escribile al bot por WhatsApp desde este mismo número y seguís la conversación."
+        : "";
     replies.push({
       kind: "text",
-      text: `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${checkoutHint} ${stockHint}\n\nMandame una foto de tu primer producto.`,
+      text: `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${checkoutHint} ${stockHint}${continuityHint}\n\nMandame una foto de tu primer producto.`,
     });
     return replies;
   }
@@ -1281,7 +1285,7 @@ async function handleMessageBody(
           showPhone: draft.showPhone ?? true,
           checkoutMode: draft.checkoutMode ?? "whatsapp",
           tracksQuantity: draft.tracksQuantity ?? false,
-          isDemo: msg.channel === "simulator",
+          isDemo: !isWhatsAppContactPhone(msg.from),
           status: "active",
         });
       }
