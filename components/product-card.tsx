@@ -2,17 +2,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { formatPriceArs } from "@/lib/format";
 import type { Product } from "@/lib/db/schema";
+import { ProductBuyActions } from "@/components/store-purchase";
+import type { StorePurchaseInfo } from "@/lib/store-purchase";
 
 export function ProductCard({
   product,
-  storeSlug,
+  store,
   priority = false,
 }: {
   product: Product;
-  storeSlug: string;
+  store: StorePurchaseInfo;
   priority?: boolean;
 }) {
-  const href = `/${storeSlug}/producto/${product.id}`;
+  const href = `/${store.storeSlug}/producto/${product.id}`;
   return (
     <article className="group">
       <Link href={href} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">
@@ -45,6 +47,17 @@ export function ProductCard({
           {formatPriceArs(product.priceCents)}
         </p>
       </Link>
+      <ProductBuyActions
+        store={store}
+        product={{
+          id: product.id,
+          title: product.title,
+          priceCents: product.priceCents,
+          imageUrl: product.imageUrl,
+          inStock: product.inStock,
+        }}
+        layout="inline"
+      />
     </article>
   );
 }

@@ -36,6 +36,7 @@ export type BotState =
   | "ASK_STORE"
   | "CONFIRM_SLUG"
   | "ASK_SHOW_PHONE"
+  | "ASK_CHECKOUT_MODE"
   | "IDLE"
   | "PRODUCT_PHOTO"
   | "PRODUCT_TITLE"
@@ -323,21 +324,75 @@ export async function handleMessage(
       return replies;
     }
 
+    draft = { ...draft, showPhone };
+    await setState("ASK_CHECKOUT_MODE", draft);
+    replies.push(
+      withOptions(
+        "¿Cómo querés que te pidan? Por defecto cada pieza tiene un botón Lo quiero que te escribe por WhatsApp. También podés armar un carrito y mandar el pedido junto (igual por WhatsApp, sin cobro online).",
+        [
+          { id: CHOICE.CHECKOUT_WA, label: "Lo quiero" },
+          { id: CHOICE.CHECKOUT_CART, label: "Con carrito" },
+        ],
+        caps,
+      ),
+    );
+    return replies;
+  }
+
+  if (state === "ASK_CHECKOUT_MODE") {
+    const choice = msg.choiceId;
+    const text = (msg.text?.trim() ?? "").toLowerCase();
+    let checkoutMode: "whatsapp" | "cart" | null = null;
+    if (
+      choice === CHOICE.CHECKOUT_WA ||
+      choice === CHOICE.YES ||
+      /\blo quiero\b/.test(text) ||
+      text === "1" ||
+      /whatsapp|directo|uno/.test(text)
+    ) {
+      checkoutMode = "whatsapp";
+    } else if (
+      choice === CHOICE.CHECKOUT_CART ||
+      text === "2" ||
+      /carrito|pedido|junt/.test(text)
+    ) {
+      checkoutMode = "cart";
+    }
+
+    if (!checkoutMode) {
+      replies.push(
+        withOptions(
+          "Elegí cómo te piden en el catálogo:",
+          [
+            { id: CHOICE.CHECKOUT_WA, label: "Lo quiero" },
+            { id: CHOICE.CHECKOUT_CART, label: "Con carrito" },
+          ],
+          caps,
+        ),
+      );
+      return replies;
+    }
+
     const store = await upsertStore({
       phone: msg.from,
       ownerName: draft.ownerName,
       name: draft.storeName,
       slug: draft.slug,
-      showPhone,
+      showPhone: draft.showPhone ?? true,
+      checkoutMode,
       isDemo: msg.channel === "simulator",
       status: "active",
     });
-    draft = { ...draft, showPhone };
+    draft = { ...draft, checkoutMode };
     revalidateStore(store.slug);
     await setState("IDLE", draft);
+    const modeHint =
+      checkoutMode === "cart"
+        ? "En tu catálogo van a poder armar un pedido y mandártelo por WhatsApp."
+        : "En tu catálogo cada pieza tiene Lo quiero para escribirte por WhatsApp.";
     replies.push({
       kind: "text",
-      text: `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. Mandame una foto de tu primera pieza.`,
+      text: `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${modeHint} Mandame una foto de tu primera pieza.`,
     });
     return replies;
   }
@@ -497,6 +552,7 @@ export async function handleMessage(
           name: draft.storeName,
           slug: draft.slug,
           showPhone: draft.showPhone ?? true,
+          checkoutMode: draft.checkoutMode ?? "whatsapp",
           isDemo: msg.channel === "simulator",
           status: "active",
         });

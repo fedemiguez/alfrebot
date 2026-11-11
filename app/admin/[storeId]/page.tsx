@@ -9,6 +9,8 @@ import {
   deleteDemoStoreAction,
   deleteProductAction,
   logoutAdminAction,
+  setCheckoutModeAction,
+  setShowPhoneAction,
   toggleProductHiddenAction,
   toggleProductStockAction,
 } from "../actions";
@@ -99,6 +101,65 @@ async function AdminStoreBody({
             Todavía no tiene slug público.
           </p>
         )}
+
+        <section className="mt-8 space-y-4 border-t border-[var(--border)] pt-6">
+          <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--ink)]">
+            Pedidos en el catálogo
+          </h2>
+          <p className="text-[16px] text-[var(--muted)]">
+            Ambos modos cierran por WhatsApp. El carrito no cobra online: arma el
+            pedido y manda el listado al dueño.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <form action={setCheckoutModeAction}>
+              <input type="hidden" name="storeId" value={store.id} />
+              <input type="hidden" name="checkoutMode" value="whatsapp" />
+              <button
+                type="submit"
+                className={
+                  (store.checkoutMode ?? "whatsapp") === "whatsapp"
+                    ? "btn btn-primary"
+                    : "border border-[var(--border)] bg-[var(--paper)] px-3 py-2 text-[15px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
+                }
+              >
+                Solo Lo quiero
+              </button>
+            </form>
+            <form action={setCheckoutModeAction}>
+              <input type="hidden" name="storeId" value={store.id} />
+              <input type="hidden" name="checkoutMode" value="cart" />
+              <button
+                type="submit"
+                className={
+                  store.checkoutMode === "cart"
+                    ? "btn btn-primary"
+                    : "border border-[var(--border)] bg-[var(--paper)] px-3 py-2 text-[15px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
+                }
+              >
+                Con carrito
+              </button>
+            </form>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            <p className="text-[16px] text-[var(--muted)]">
+              Número público: {store.showPhone ? "sí" : "no"}
+            </p>
+            <form action={setShowPhoneAction}>
+              <input type="hidden" name="storeId" value={store.id} />
+              <input
+                type="hidden"
+                name="showPhone"
+                value={store.showPhone ? "false" : "true"}
+              />
+              <button
+                type="submit"
+                className="border border-[var(--border)] bg-[var(--paper)] px-3 py-2 text-[15px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
+              >
+                {store.showPhone ? "Ocultar número" : "Mostrar número"}
+              </button>
+            </form>
+          </div>
+        </section>
       </header>
 
       <section className="mt-10">

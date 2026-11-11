@@ -27,6 +27,7 @@ export type ConversationDraft = {
   storeName?: string;
   slug?: string;
   showPhone?: boolean;
+  checkoutMode?: "whatsapp" | "cart";
   signupCode?: string;
   product?: ProductDraft;
   editProductId?: string;
@@ -128,6 +129,7 @@ export async function upsertStore(input: {
   name?: string | null;
   slug?: string | null;
   showPhone?: boolean;
+  checkoutMode?: "whatsapp" | "cart";
   isDemo?: boolean;
   status?: string;
 }): Promise<Store> {
@@ -141,6 +143,7 @@ export async function upsertStore(input: {
         name: input.name ?? existing.name,
         slug: input.slug ?? existing.slug,
         showPhone: input.showPhone ?? existing.showPhone,
+        checkoutMode: input.checkoutMode ?? existing.checkoutMode,
         isDemo: input.isDemo ?? existing.isDemo,
         status: input.status ?? existing.status,
       });
@@ -154,6 +157,7 @@ export async function upsertStore(input: {
       name: input.name ?? null,
       slug: input.slug ?? null,
       showPhone: input.showPhone ?? true,
+      checkoutMode: input.checkoutMode ?? "whatsapp",
       isDemo: input.isDemo ?? false,
       status: input.status ?? "onboarding",
       createdAt: now(),
@@ -172,6 +176,7 @@ export async function upsertStore(input: {
         name: input.name ?? existing.name,
         slug: input.slug ?? existing.slug,
         showPhone: input.showPhone ?? existing.showPhone,
+        checkoutMode: input.checkoutMode ?? existing.checkoutMode,
         isDemo: input.isDemo ?? existing.isDemo,
         status: input.status ?? existing.status,
         updatedAt: now(),
@@ -188,11 +193,54 @@ export async function upsertStore(input: {
       name: input.name ?? null,
       slug: input.slug ?? null,
       showPhone: input.showPhone ?? true,
+      checkoutMode: input.checkoutMode ?? "whatsapp",
       isDemo: input.isDemo ?? false,
       status: input.status ?? "onboarding",
     })
     .returning();
   return rows[0]!;
+}
+
+export async function updateStoreCheckoutMode(
+  storeId: string,
+  checkoutMode: "whatsapp" | "cart",
+): Promise<Store | null> {
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    const current = mem.stores.get(storeId);
+    if (!current) return null;
+    const updated = touchStore({ ...current, checkoutMode });
+    mem.stores.set(storeId, updated);
+    return updated;
+  }
+  const db = getDb();
+  const rows = await db
+    .update(stores)
+    .set({ checkoutMode, updatedAt: now() })
+    .where(eq(stores.id, storeId))
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function updateStoreShowPhone(
+  storeId: string,
+  showPhone: boolean,
+): Promise<Store | null> {
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    const current = mem.stores.get(storeId);
+    if (!current) return null;
+    const updated = touchStore({ ...current, showPhone });
+    mem.stores.set(storeId, updated);
+    return updated;
+  }
+  const db = getDb();
+  const rows = await db
+    .update(stores)
+    .set({ showPhone, updatedAt: now() })
+    .where(eq(stores.id, storeId))
+    .returning();
+  return rows[0] ?? null;
 }
 
 export async function listProductsByStore(
@@ -424,6 +472,7 @@ export async function ensureDemoStore(): Promise<Store> {
     name: "Cerámicas de Norma",
     slug: "ceramicas-de-norma",
     showPhone: true,
+    checkoutMode: "whatsapp",
     isDemo: false,
     status: "active",
   });

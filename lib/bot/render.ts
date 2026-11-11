@@ -92,4 +92,6 @@ export const CHOICE = {
   MENU_ADD: "menu_add",
   MENU_STORE: "menu_store",
   MENU_HELP: "menu_help",
+  CHECKOUT_WA: "checkout_whatsapp",
+  CHECKOUT_CART: "checkout_cart",
 } as const;

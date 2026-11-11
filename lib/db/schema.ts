@@ -8,6 +8,9 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+/** Cómo compra el visitante en el catálogo público. */
+export type CheckoutMode = "whatsapp" | "cart";
+
 export const stores = pgTable("stores", {
   id: uuid("id").defaultRandom().primaryKey(),
   phone: text("phone").notNull().unique(),
@@ -15,6 +18,8 @@ export const stores = pgTable("stores", {
   name: text("name"),
   slug: text("slug").unique(),
   showPhone: boolean("show_phone").default(true).notNull(),
+  /** `whatsapp` = solo "Lo quiero"; `cart` = carrito + pedido por WhatsApp. */
+  checkoutMode: text("checkout_mode").default("whatsapp").notNull().$type<CheckoutMode>(),
   isDemo: boolean("is_demo").default(false).notNull(),
   status: text("status").default("onboarding").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
