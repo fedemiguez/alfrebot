@@ -83,6 +83,12 @@ async function AdminStoreBody({
               {store.isDemo ? " · demo" : ""}
             </dd>
           </div>
+          <div>
+            <dt className="text-[14px] uppercase tracking-wide">Stock</dt>
+            <dd className="text-[var(--ink)]">
+              {store.tracksQuantity ? "Cantidades" : "Solo pausa (agotado)"}
+            </dd>
+          </div>
         </dl>
 
         {store.slug ? (
@@ -207,6 +213,11 @@ async function AdminStoreBody({
                   </p>
                   <p className="mt-1 text-[15px] text-[var(--muted)]">
                     {product.inStock ? "En stock" : "Agotado"}
+                    {store.tracksQuantity
+                      ? product.quantity == null
+                        ? " · sin cantidad"
+                        : ` · ${product.quantity} u.`
+                      : ""}
                     {product.hidden ? " · oculto" : ""}
                   </p>
                 </div>

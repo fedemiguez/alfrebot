@@ -4,6 +4,8 @@ const freeTextActionSchema = z.object({
   intent: z.enum([
     "set_price",
     "mark_out_of_stock",
+    "list_stock",
+    "manage_stock",
     "create_product",
     "change_photo",
     "help",
@@ -209,8 +211,22 @@ export async function interpretFreeText(
   if (/\bayuda\b/.test(lowered) || lowered === "help") {
     return { intent: "help" };
   }
-  if (/sin stock|agotad|ya no tengo|no tengo/.test(lowered)) {
-    return { intent: "mark_out_of_stock", productHint: text };
+  if (
+    /\b(listado|listar|ver stock|mi stock|mis piezas|que tengo|qué tengo)\b/.test(
+      lowered,
+    ) ||
+    /ver (mis )?productos/.test(lowered)
+  ) {
+    return { intent: "list_stock", productHint: text };
+  }
+  if (
+    /\b(stock|pausar|paus[ae]|reactivar|cantidad(es)?|inventario)\b/.test(lowered) ||
+    /sin stock|agotad|ya no tengo|volvio|volvió/.test(lowered)
+  ) {
+    if (/sin stock|agotad|ya no tengo|no tengo/.test(lowered)) {
+      return { intent: "mark_out_of_stock", productHint: text };
+    }
+    return { intent: "manage_stock", productHint: text };
   }
   if (/cambia(r|le)? (el )?precio|ahora sale|sale \d/.test(lowered)) {
     return { intent: "set_price", productHint: text, priceHint: text };

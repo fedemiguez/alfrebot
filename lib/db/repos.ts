@@ -28,9 +28,20 @@ export type ConversationDraft = {
   slug?: string;
   showPhone?: boolean;
   checkoutMode?: "whatsapp" | "cart";
+  tracksQuantity?: boolean;
   signupCode?: string;
   product?: ProductDraft;
   editProductId?: string;
+  /** Ids de opciones del último listado (para responder con número). */
+  pendingChoices?: string[];
+  /** Producto seleccionado en flujo de stock. */
+  stockProductId?: string;
+  /** Acción pendiente de stock a confirmar. */
+  stockAction?: "pause" | "resume" | "set_qty" | "hide" | "show" | "set_mode";
+  /** Cantidad pendiente de confirmar. */
+  stockQtyPending?: number;
+  /** Modo de stock pendiente (true = cantidades). */
+  stockModePending?: boolean;
   [key: string]: unknown;
 };
 
@@ -130,6 +141,7 @@ export async function upsertStore(input: {
   slug?: string | null;
   showPhone?: boolean;
   checkoutMode?: "whatsapp" | "cart";
+  tracksQuantity?: boolean;
   isDemo?: boolean;
   status?: string;
 }): Promise<Store> {
@@ -144,6 +156,7 @@ export async function upsertStore(input: {
         slug: input.slug ?? existing.slug,
         showPhone: input.showPhone ?? existing.showPhone,
         checkoutMode: input.checkoutMode ?? existing.checkoutMode,
+        tracksQuantity: input.tracksQuantity ?? existing.tracksQuantity,
         isDemo: input.isDemo ?? existing.isDemo,
         status: input.status ?? existing.status,
       });
@@ -158,6 +171,7 @@ export async function upsertStore(input: {
       slug: input.slug ?? null,
       showPhone: input.showPhone ?? true,
       checkoutMode: input.checkoutMode ?? "whatsapp",
+      tracksQuantity: input.tracksQuantity ?? false,
       isDemo: input.isDemo ?? false,
       status: input.status ?? "onboarding",
       createdAt: now(),
@@ -177,6 +191,7 @@ export async function upsertStore(input: {
         slug: input.slug ?? existing.slug,
         showPhone: input.showPhone ?? existing.showPhone,
         checkoutMode: input.checkoutMode ?? existing.checkoutMode,
+        tracksQuantity: input.tracksQuantity ?? existing.tracksQuantity,
         isDemo: input.isDemo ?? existing.isDemo,
         status: input.status ?? existing.status,
         updatedAt: now(),
@@ -194,6 +209,7 @@ export async function upsertStore(input: {
       slug: input.slug ?? null,
       showPhone: input.showPhone ?? true,
       checkoutMode: input.checkoutMode ?? "whatsapp",
+      tracksQuantity: input.tracksQuantity ?? false,
       isDemo: input.isDemo ?? false,
       status: input.status ?? "onboarding",
     })
@@ -283,9 +299,14 @@ export async function createProduct(input: {
   priceCents?: number | null;
   imageUrl?: string | null;
   imageBlobKey?: string | null;
+  quantity?: number | null;
+  inStock?: boolean;
 }): Promise<Product> {
   const existing = await listProductsByStore(input.storeId, { includeHidden: true });
   const position = existing.length;
+  const quantity = input.quantity ?? null;
+  const inStock =
+    input.inStock ?? (quantity == null ? true : quantity > 0);
   if (!hasDatabaseUrl()) {
     const created: Product = {
       id: newId(),
@@ -295,7 +316,8 @@ export async function createProduct(input: {
       priceCents: input.priceCents ?? null,
       imageUrl: input.imageUrl ?? null,
       imageBlobKey: input.imageBlobKey ?? null,
-      inStock: true,
+      inStock,
+      quantity,
       hidden: false,
       position,
       createdAt: now(),
@@ -314,10 +336,23 @@ export async function createProduct(input: {
       priceCents: input.priceCents ?? null,
       imageUrl: input.imageUrl ?? null,
       imageBlobKey: input.imageBlobKey ?? null,
+      inStock,
+      quantity,
       position,
     })
     .returning();
   return rows[0]!;
+}
+
+/** Aplica patch de stock: si viene quantity, sincroniza inStock. */
+export function syncStockFields(
+  patch: Partial<Pick<Product, "inStock" | "quantity" | "hidden">>,
+): Partial<Pick<Product, "inStock" | "quantity" | "hidden">> {
+  const next = { ...patch };
+  if (typeof next.quantity === "number") {
+    next.inStock = next.quantity > 0;
+  }
+  return next;
 }
 
 export async function updateProduct(
@@ -331,23 +366,26 @@ export async function updateProduct(
       | "imageUrl"
       | "imageBlobKey"
       | "inStock"
+      | "quantity"
       | "hidden"
       | "position"
     >
   >,
 ): Promise<Product | null> {
+  const stockAware = syncStockFields(patch);
+  const merged = { ...patch, ...stockAware };
   if (!hasDatabaseUrl()) {
     const mem = getMemoryDb();
     const current = mem.products.get(id);
     if (!current) return null;
-    const updated = { ...current, ...patch, updatedAt: now() };
+    const updated = { ...current, ...merged, updatedAt: now() };
     mem.products.set(id, updated);
     return updated;
   }
   const db = getDb();
   const rows = await db
     .update(products)
-    .set({ ...patch, updatedAt: now() })
+    .set({ ...merged, updatedAt: now() })
     .where(eq(products.id, id))
     .returning();
   return rows[0] ?? null;

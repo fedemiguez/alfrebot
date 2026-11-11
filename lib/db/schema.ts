@@ -20,6 +20,8 @@ export const stores = pgTable("stores", {
   showPhone: boolean("show_phone").default(true).notNull(),
   /** `whatsapp` = solo "Lo quiero"; `cart` = carrito + pedido por WhatsApp. */
   checkoutMode: text("checkout_mode").default("whatsapp").notNull().$type<CheckoutMode>(),
+  /** Si true, la tienda lleva cantidad numérica por producto; si false, solo pausa (agotado). */
+  tracksQuantity: boolean("tracks_quantity").default(false).notNull(),
   isDemo: boolean("is_demo").default(false).notNull(),
   status: text("status").default("onboarding").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -41,6 +43,8 @@ export const products = pgTable("products", {
   imageUrl: text("image_url"),
   imageBlobKey: text("image_blob_key"),
   inStock: boolean("in_stock").default(true).notNull(),
+  /** Cantidad disponible; null si la tienda no lleva stock numérico. */
+  quantity: integer("quantity"),
   hidden: boolean("hidden").default(false).notNull(),
   position: integer("position").default(0).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
