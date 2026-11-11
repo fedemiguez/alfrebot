@@ -16,6 +16,21 @@ export function setTranscribeImplForTests(fn: TranscribeFn | null) {
   testImpl = fn;
 }
 
+/** Preferidos primero; si uno está caído/saturado, probamos el siguiente. */
+const GOOGLE_MODELS = [
+  "gemini-3.8-flash",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+] as const;
+
+const GATEWAY_MODELS = [
+  "google/gemini-3.8-flash",
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-flash-lite",
+] as const;
+
+const TRANSCRIBE_TIMEOUT_MS = 20_000;
+
 function hasAiKey(): boolean {
   return Boolean(
     process.env.AI_GATEWAY_API_KEY?.trim() ||
@@ -34,11 +49,19 @@ function cleanTranscript(raw: string): string | null {
     .replace(/^(transcripci[oó]n|texto)\s*:\s*/i, "")
     .trim();
   if (!text || text.length < 1) return null;
-  // Model sometimes returns “no se entiende”
   if (/^(no (se )?entiende|silence|inaudible|\(silencio\))$/i.test(text)) {
     return null;
   }
   return text;
+}
+
+function abortAfter(ms: number): AbortSignal {
+  if (typeof AbortSignal !== "undefined" && "timeout" in AbortSignal) {
+    return AbortSignal.timeout(ms);
+  }
+  const c = new AbortController();
+  setTimeout(() => c.abort(), ms);
+  return c.signal;
 }
 
 /**
@@ -74,44 +97,49 @@ export async function transcribeAudio(
       "Devolvé SOLO el texto dicho, sin comillas, sin prefijos ni explicaciones. " +
       "Si no se entiende nada, respondé exactamente: inaudible";
 
-    let text: string;
+    const content = [
+      { type: "file" as const, data: bytes, mediaType },
+      { type: "text" as const, text: prompt },
+    ];
 
     if (process.env.AI_GATEWAY_API_KEY?.trim()) {
       const { gateway } = await import("@ai-sdk/gateway");
-      const result = await generateText({
-        model: gateway("google/gemini-3.8-flash"),
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "file", data: bytes, mediaType },
-              { type: "text", text: prompt },
-            ],
-          },
-        ],
-      });
-      text = result.text;
-    } else {
-      const { createGoogleGenerativeAI } = await import("@ai-sdk/google");
-      const google = createGoogleGenerativeAI({
-        apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!.trim(),
-      });
-      const result = await generateText({
-        model: google("gemini-3.8-flash"),
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "file", data: bytes, mediaType },
-              { type: "text", text: prompt },
-            ],
-          },
-        ],
-      });
-      text = result.text;
+      for (const modelId of GATEWAY_MODELS) {
+        try {
+          const result = await generateText({
+            model: gateway(modelId),
+            messages: [{ role: "user", content }],
+            maxRetries: 0,
+            abortSignal: abortAfter(TRANSCRIBE_TIMEOUT_MS),
+          });
+          const cleaned = cleanTranscript(result.text);
+          if (cleaned) return cleaned;
+        } catch (err) {
+          console.warn(`[transcribe] gateway ${modelId} failed`, err);
+        }
+      }
+      return null;
     }
 
-    return cleanTranscript(text);
+    const { createGoogleGenerativeAI } = await import("@ai-sdk/google");
+    const google = createGoogleGenerativeAI({
+      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!.trim(),
+    });
+    for (const modelId of GOOGLE_MODELS) {
+      try {
+        const result = await generateText({
+          model: google(modelId),
+          messages: [{ role: "user", content }],
+          maxRetries: 0,
+          abortSignal: abortAfter(TRANSCRIBE_TIMEOUT_MS),
+        });
+        const cleaned = cleanTranscript(result.text);
+        if (cleaned) return cleaned;
+      } catch (err) {
+        console.warn(`[transcribe] google ${modelId} failed`, err);
+      }
+    }
+    return null;
   } catch (err) {
     console.warn("[transcribe] failed", err);
     return null;
