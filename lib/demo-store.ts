@@ -1,0 +1,61 @@
+import type { Product, Store } from "@/lib/db/schema";
+
+export const DEMO_STORE_ID = "00000000-0000-4000-8000-000000000001";
+
+export const DEMO_STORE: Store = {
+  id: DEMO_STORE_ID,
+  phone: "+5491100000001",
+  ownerName: "Norma",
+  name: "Cerámicas de Norma",
+  slug: "ceramicas-de-norma",
+  showPhone: true,
+  isDemo: false,
+  status: "active",
+  createdAt: new Date("2026-11-01T12:00:00.000Z"),
+  updatedAt: new Date("2026-11-01T12:00:00.000Z"),
+};
+
+export const DEMO_PRODUCTS: Product[] = [
+  {
+    id: "00000000-0000-4000-8000-000000000011",
+    storeId: DEMO_STORE_ID,
+    title: "Jarrón azul",
+    description: "Esmalte azul profundo, hecho a mano.",
+    priceCents: 1500000,
+    imageUrl: "/demo/jarron-azul.svg",
+    imageBlobKey: null,
+    inStock: true,
+    hidden: false,
+    position: 0,
+    createdAt: new Date("2026-11-01T12:00:00.000Z"),
+    updatedAt: new Date("2026-11-01T12:00:00.000Z"),
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000012",
+    storeId: DEMO_STORE_ID,
+    title: "Taza de café",
+    description: "Ideal para el mate o el café de la mañana.",
+    priceCents: 650000,
+    imageUrl: "/demo/taza.svg",
+    imageBlobKey: null,
+    inStock: true,
+    hidden: false,
+    position: 1,
+    createdAt: new Date("2026-11-01T12:00:00.000Z"),
+    updatedAt: new Date("2026-11-01T12:00:00.000Z"),
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000013",
+    storeId: DEMO_STORE_ID,
+    title: "Plato grande",
+    description: "Para servir o decorar la mesa.",
+    priceCents: 980000,
+    imageUrl: "/demo/plato.svg",
+    imageBlobKey: null,
+    inStock: true,
+    hidden: false,
+    position: 2,
+    createdAt: new Date("2026-11-01T12:00:00.000Z"),
+    updatedAt: new Date("2026-11-01T12:00:00.000Z"),
+  },
+];
