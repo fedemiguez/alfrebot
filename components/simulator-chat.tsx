@@ -319,7 +319,7 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
           {/*
             Inputs fuera de display:none: en varios Android/iOS el capture
             de cámara no abre si el <input type=file> está hidden.
-            capture=environment pide la cámara trasera (ideal para piezas).
+            capture=environment pide la cámara trasera (ideal para productos).
           */}
           <input
             ref={cameraInputRef}
@@ -428,7 +428,7 @@ export function SimulatorChat({ initialPhone }: { initialPhone?: string }) {
           Tu tienda en vivo
         </h2>
         <p className="mt-2 text-[16px] text-[var(--muted)]">
-          Cuando publiques una pieza, el link aparece acá.
+          Cuando publiques un producto, el link aparece acá.
         </p>
         {storePreviewUrl ? (
           <div className="mt-6 flex flex-1 flex-col">

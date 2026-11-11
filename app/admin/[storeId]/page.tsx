@@ -91,7 +91,7 @@ async function AdminStoreBody({
           <div>
             <dt className="text-[14px] uppercase tracking-wide">Stock</dt>
             <dd className="text-[var(--ink)]">
-              {store.tracksQuantity ? "Cantidades" : "Solo pausa (agotado)"}
+              {store.tracksQuantity ? "Con números" : "Sin números (Agotado / Disponible)"}
             </dd>
           </div>
         </dl>

@@ -53,34 +53,34 @@ En el alta, o después desde el menú, la dueña elige el modo de la tienda:
 
 | Modo | Qué hace |
 | --- | --- |
-| **Llevar cantidades** | Cada pieza tiene unidades (`quantity`). En 0 se muestra **Agotado**. |
-| **Solo pausar** | Sin números: pausar = agotado en la tienda; reactivar = disponible. |
+| **Con números** | Cada producto tiene unidades (`quantity`). En 0 se muestra **Agotado**. |
+| **Sin números** | Solo marcás Agotado o Disponible; reactivar = disponible. |
 
 Comandos / menú (WhatsApp o simulador):
 
 - `menú` → **Stock / pausa**
-- Texto libre: `stock`, `listado`, `mis piezas`, `pausar`, `agotado`, `cantidad`
+- Texto libre: `stock`, `listado`, `mis productos`, `pausar`, `agotado`, `cantidad`
 
-### Ejemplo: solo pausar
+### Ejemplo: sin números
 
 ```
 Dueña: menú
-Bot:    [Cargar pieza] [Ver mi tienda] [Stock / pausa] [Ayuda]
+Bot:    [Cargar producto] [Ver mi tienda] [Stock / pausa] [Ayuda]
 Dueña: Stock / pausa
-Bot:    Tu tienda solo pausa piezas…
-        [Ver listado] [Elegir pieza] [Llevar cantidades] …
-Dueña: Elegir pieza → Taza de café → Pausar (agotado)
+Bot:    Tu tienda solo marca Agotado o Disponible…
+        [Ver listado] [Elegir producto] [Con números] …
+Dueña: Elegir producto → Taza de café → Pausar (agotado)
 Bot:    ¿Marcamos "Taza de café" como agotado?
 Dueña: Sí, guardar
 Bot:    Marqué "Taza de café" como agotado.
 ```
 
-En la tienda la pieza sigue visible con cartel **Agotado**. **Ocultar** la saca del catálogo (como el admin).
+En la tienda el producto sigue visible con cartel **Agotado**. **Ocultar** la saca del catálogo (como el admin).
 
 ### Ejemplo: cantidades
 
 ```
-Dueña: Stock / pausa → Elegir pieza → Jarrón azul → Cambiar cantidad
+Dueña: Stock / pausa → Elegir producto → Jarrón azul → Cambiar cantidad
 Bot:    ¿Cuántas unidades de "Jarrón azul" quedan?
 Dueña: 2
 Bot:    ¿Dejamos "Jarrón azul" con 2 unidades?

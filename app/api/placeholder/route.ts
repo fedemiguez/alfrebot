@@ -1,7 +1,7 @@
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const name = searchParams.get("name") ?? "pieza";
+  const name = searchParams.get("name") ?? "producto";
   const label = name.slice(0, 28);
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">

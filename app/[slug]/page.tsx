@@ -91,7 +91,7 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
         </div>
 
         {products.length === 0 && (
-          <p className="mt-10 text-[var(--muted)]">Todavía no hay piezas publicadas.</p>
+          <p className="mt-10 text-[var(--muted)]">Todavía no hay productos publicados.</p>
         )}
 
         <footer className="mt-16 border-t border-[var(--border)] pt-8 text-[18px] text-[var(--ink)]">
