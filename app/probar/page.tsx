@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SimulatorChat } from "@/components/simulator-chat";
-import { isWhatsAppContactPhone } from "@/lib/phone";
+import { clerkIdentityKey, isClerkConfigured } from "@/lib/clerk";
 import { metaBotNumber } from "@/lib/env";
 
 export const metadata: Metadata = {
@@ -11,42 +12,38 @@ export const metadata: Metadata = {
   description: "Armá tu tienda en el chat web con el mismo motor de alfrebot.",
 };
 
-async function ProbarBody({
-  searchParams,
-}: {
-  searchParams: PageProps<"/probar">["searchParams"];
-}) {
-  const params = await searchParams;
-  const phoneParam = typeof params.phone === "string" ? params.phone : undefined;
-  const codeParam = typeof params.code === "string" ? params.code : undefined;
-
-  const initialPhone = phoneParam?.startsWith("+")
-    ? phoneParam
-    : phoneParam
-      ? `+${phoneParam.replace(/\D/g, "")}`
-      : undefined;
-
-  if (!initialPhone || !isWhatsAppContactPhone(initialPhone)) {
-    redirect("/registro?canal=web");
+async function ProbarBody() {
+  if (!isClerkConfigured()) {
+    redirect("/sign-up");
   }
 
+  const { userId } = await auth();
+  if (!userId) {
+    redirect("/sign-up");
+  }
+
+  const user = await currentUser();
+  const email =
+    user?.primaryEmailAddress?.emailAddress ??
+    user?.emailAddresses?.[0]?.emailAddress ??
+    undefined;
+  const identity = clerkIdentityKey(userId);
   const botDigits = metaBotNumber();
-  const continueWaLink = codeParam
-    ? `https://wa.me/${botDigits}?text=${encodeURIComponent(
-        `Hola! Quiero armar mi tienda. Código ${codeParam}`,
-      )}`
-    : `https://wa.me/${botDigits}`;
+  const continueWaLink = `https://wa.me/${botDigits}?text=${encodeURIComponent(
+    "Hola! Quiero seguir armando mi tienda desde la web.",
+  )}`;
 
   return (
     <SimulatorChat
-      initialPhone={initialPhone}
-      initialCode={codeParam}
+      initialPhone={identity}
+      ownerEmail={email}
       continueWaLink={continueWaLink}
+      identityMode="clerk"
     />
   );
 }
 
-export default function ProbarPage(props: PageProps<"/probar">) {
+export default function ProbarPage() {
   return (
     <>
       <SiteHeader />
@@ -58,8 +55,9 @@ export default function ProbarPage(props: PageProps<"/probar">) {
           Armá tu tienda en la web
         </h1>
         <p className="mt-2 max-w-2xl text-[var(--muted)]">
-          Mismo ayudante que por WhatsApp. Registrás la tienda, mandás fotos y
-          publicás. Cuando quieras, seguís desde el celular.
+          Mismo ayudante que por WhatsApp. Estás registrada con email; cuando
+          el bot te pida el WhatsApp de pedidos, ese número es el que ven tus
+          clientes.
         </p>
         <div className="mt-8">
           <Suspense
@@ -69,7 +67,7 @@ export default function ProbarPage(props: PageProps<"/probar">) {
               </div>
             }
           >
-            <ProbarBody searchParams={props.searchParams} />
+            <ProbarBody />
           </Suspense>
         </div>
       </main>

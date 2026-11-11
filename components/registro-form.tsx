@@ -10,17 +10,13 @@ type SignupResult = {
   waLink?: string;
   forceSimulator?: boolean;
   reason?: string;
-  probarPath?: string;
   error?: string;
 };
 
-export function RegistroForm({
-  preferredChannel = "choose",
-}: {
-  preferredChannel?: "web" | "whatsapp" | "choose";
-}) {
+/** Solo camino WhatsApp. El camino web va por Clerk (/sign-up). */
+export function RegistroForm() {
   const [localNumber, setLocalNumber] = useState("");
-  const [step, setStep] = useState<"phone" | "channel">("phone");
+  const [step, setStep] = useState<"phone" | "open">("phone");
   const [result, setResult] = useState<SignupResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -45,81 +41,54 @@ export function RegistroForm({
         return;
       }
       setResult(data);
-      setStep("channel");
+      setStep("open");
     });
   }
 
-  if (step === "channel" && result) {
-    const webHref = result.probarPath || "/registro?canal=web";
-    const webOnly = Boolean(result.forceSimulator);
-    const preferWeb = preferredChannel === "web" || webOnly;
-    const preferWa = preferredChannel === "whatsapp" && !webOnly;
+  if (step === "open" && result) {
+    if (result.forceSimulator) {
+      return (
+        <div className="fade-in max-w-lg">
+          <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
+            WhatsApp todavía no está abierto
+          </h1>
+          <p className="mt-4 text-[var(--muted)]">
+            {result.reason ||
+              "Por ahora este número no puede hablar con el bot por WhatsApp."}
+          </p>
+          <Link href="/sign-up" className="btn btn-primary mt-8 inline-flex">
+            Armá la tienda en la web con email
+          </Link>
+          <p className="mt-6 text-[15px] text-[var(--muted)]">
+            Número: {result.phone}
+          </p>
+        </div>
+      );
+    }
 
     return (
       <div className="fade-in max-w-lg">
         <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
-          {webOnly ? "Seguí en la web" : "¿Cómo querés seguir?"}
+          Abrí WhatsApp
         </h1>
         <p className="mt-4 text-[var(--muted)]">
-          {webOnly
-            ? result.reason ||
-              "Por ahora este número sigue por la web. Después vas a poder continuar por WhatsApp."
-            : "Tu celular queda registrado. Podés armar la tienda por WhatsApp o en la web; más adelante podés cambiar de canal con el mismo número."}
+          Tocá el botón verde y después <strong>Enviar</strong>. El bot te va a
+          pedir tu nombre.
         </p>
-
-        {preferWeb ? (
-          <>
-            <Link href={webHref} className="btn btn-primary mt-8 inline-flex w-full sm:w-auto">
-              Seguir en la web
-            </Link>
-            {!webOnly && result.waLink && (
-              <p className="mt-6 text-[15px]">
-                <a
-                  href={result.waLink}
-                  className="text-[var(--primary)] underline-offset-2 hover:underline"
-                >
-                  Prefiero Abrir WhatsApp
-                </a>
-              </p>
-            )}
-          </>
-        ) : preferWa ? (
-          <>
-            <a
-              href={result.waLink}
-              className="btn btn-wa mt-8 inline-flex w-full sm:w-auto"
-            >
-              Abrir WhatsApp
-            </a>
-            <p className="mt-6 text-[15px]">
-              <Link
-                href={webHref}
-                className="text-[var(--primary)] underline-offset-2 hover:underline"
-              >
-                Prefiero seguir en la web
-              </Link>
-            </p>
-          </>
-        ) : (
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <a href={result.waLink} className="btn btn-wa inline-flex justify-center">
-              Abrir WhatsApp
-            </a>
-            <Link href={webHref} className="btn btn-secondary inline-flex justify-center">
-              Seguir en la web
-            </Link>
-          </div>
-        )}
-
-        <p className="mt-6 text-[15px] text-[var(--muted)]">
+        <a href={result.waLink} className="btn btn-wa mt-8 inline-flex w-full sm:w-auto">
+          Abrir WhatsApp
+        </a>
+        <p className="mt-6 text-[15px]">
+          <Link
+            href="/sign-up"
+            className="text-[var(--primary)] underline-offset-2 hover:underline"
+          >
+            Prefiero armarla en la web con email
+          </Link>
+        </p>
+        <p className="mt-4 text-[15px] text-[var(--muted)]">
           Número: {result.phone}
         </p>
-        {!webOnly && (
-          <p className="mt-2 text-[15px] text-[var(--muted)]">
-            Si abrís WhatsApp, tocá <strong>Enviar</strong>. El bot te pide el
-            nombre.
-          </p>
-        )}
       </div>
     );
   }
@@ -127,11 +96,10 @@ export function RegistroForm({
   return (
     <form onSubmit={onContinue} className="fade-in max-w-lg">
       <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
-        Tu número de celular
+        Tu WhatsApp
       </h1>
       <p className="mt-3 text-[var(--muted)]">
-        Con el +54 fijo. Ejemplo: 11 5555 1234. Sirve para identificarte y, si
-        querés, seguir después por WhatsApp.
+        Con el +54 fijo. Ejemplo: 11 5555 1234. El bot te escribe a ese número.
       </p>
       <label className="mt-8 block">
         <span className="mb-2 block text-[17px] font-semibold">Celular</span>

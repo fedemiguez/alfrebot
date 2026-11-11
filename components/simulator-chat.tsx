@@ -27,10 +27,14 @@ export function SimulatorChat({
   initialPhone,
   initialCode,
   continueWaLink,
+  ownerEmail,
+  identityMode = "phone",
 }: {
   initialPhone?: string;
   initialCode?: string;
   continueWaLink?: string;
+  ownerEmail?: string;
+  identityMode?: "phone" | "clerk";
 }) {
   const [phone, setPhone] = useState(initialPhone || "");
   const [input, setInput] = useState("");
@@ -50,14 +54,19 @@ export function SimulatorChat({
   const streamRef = useRef<MediaStream | null>(null);
   const busy = pending || uploading || recording || sendingAudio;
   const signupCode = initialCode?.replace(/\D/g, "").slice(0, 4) || "";
+  const displayIdentity =
+    identityMode === "clerk"
+      ? ownerEmail || "cuenta web"
+      : phone || "…";
 
   useEffect(() => {
     setPhone((prev) => {
       if (prev) return prev;
       if (initialPhone) return initialPhone;
+      if (identityMode === "clerk") return "";
       return defaultSimPhone();
     });
-  }, [initialPhone]);
+  }, [initialPhone, identityMode]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -386,22 +395,40 @@ export function SimulatorChat({
             <p className="font-[family-name:var(--font-display)] text-lg font-semibold leading-tight">
               alfrebot
             </p>
-            <p className="text-sm text-white/80">Chat web · {phone || "…"}</p>
+            <p className="text-sm text-white/80">Chat web · {displayIdentity}</p>
           </div>
         </div>
 
         {continueWaLink && (
           <div className="border-b border-black/5 bg-[#FFF8E7] px-4 py-3 text-[15px] text-[var(--ink)]">
-            Cuando quieras seguir desde el celu,{" "}
-            <a
-              href={continueWaLink}
-              className="font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
-              target="_blank"
-              rel="noreferrer"
-            >
-              abrí WhatsApp con este mismo número
-            </a>
-            .
+            {identityMode === "clerk" ? (
+              <>
+                Los pedidos de clientes van por WhatsApp. Cuando el bot te pida
+                el número de pedidos, cargalo ahí. También podés{" "}
+                <a
+                  href={continueWaLink}
+                  className="font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  abrir el bot por WhatsApp
+                </a>{" "}
+                más adelante.
+              </>
+            ) : (
+              <>
+                Cuando quieras seguir desde el celu,{" "}
+                <a
+                  href={continueWaLink}
+                  className="font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  abrí WhatsApp con este mismo número
+                </a>
+                .
+              </>
+            )}
           </div>
         )}
 

@@ -1,5 +1,6 @@
 /**
- * Smoke: chat web con celular AR real → tienda no-demo + hint de continuidad WA.
+ * Smoke: camino web con identidad Clerk (`clerk:{userId}`) → tienda no-demo
+ * + hint de pedidos por WhatsApp de contacto.
  * Uso: DATABASE_URL= npx tsx scripts/smoke-web-identity.ts
  */
 import { handleMessage } from "../lib/bot/engine";
@@ -7,7 +8,8 @@ import { getMemoryDb } from "../lib/db/memory";
 import { getConversation, getStoreByPhone } from "../lib/db/repos";
 
 const caps = { buttons: true, maxButtons: 3, maxListRows: 10 };
-const from = "+5491155558888";
+const from = "clerk:user_smoke_web_identity";
+const ownerEmail = "dueña@example.com";
 
 function reset() {
   const mem = getMemoryDb();
@@ -28,6 +30,7 @@ async function say(text?: string, choiceId?: string) {
       messageId: `webid_${n}_${Date.now()}`,
       text,
       choiceId,
+      ownerEmail,
     },
     caps,
   );
@@ -45,10 +48,10 @@ function assert(cond: unknown, msg: string): asserts cond {
 
 async function main() {
   reset();
-  await say("Hola! Quiero armar mi tienda. Código 4242");
+  await say("Hola! Quiero armar mi tienda");
   await say("Fede");
   await say("Sí", "yes");
-  await say("Tienda Web Identidad");
+  await say("Tienda Web Clerk");
   await say("Sí", "yes");
   await say("Sí", "yes"); // mostrar número
   await say("11 5555-8888"); // WhatsApp de pedidos
@@ -57,15 +60,22 @@ async function main() {
 
   const store = await getStoreByPhone(from);
   assert(store, "store created");
-  assert(store.isDemo === false, "real AR phone must not be demo");
+  assert(store.isDemo === false, "clerk identity must not be demo");
+  assert(store.clerkUserId === "user_smoke_web_identity", "clerkUserId set");
+  assert(store.ownerEmail === ownerEmail, "ownerEmail set");
   assert(store.slug, "slug set");
+  assert(
+    store.contactPhone?.includes("1155558888") ||
+      store.contactPhone === "+5491155558888",
+    "contact phone from onboarding",
+  );
 
   const continuity = done.some(
     (r) =>
       r.kind === "text" &&
-      /whatsapp desde este mismo número/i.test(r.text),
+      /whatsapp de pedidos/i.test(r.text),
   );
-  assert(continuity, "onboarding mentions WhatsApp continuity");
+  assert(continuity, "onboarding mentions WhatsApp de pedidos");
 
   const conv = await getConversation(from);
   assert(conv?.state === "IDLE", "conversation IDLE after onboarding");
@@ -73,10 +83,10 @@ async function main() {
   const menu = await say("menú");
   assert(
     menu.some((r) => r.kind === "text" && r.options?.some((o) => o.id === "menu_store")),
-    "same phone resumes menu",
+    "same clerk identity resumes menu",
   );
 
-  console.log("\nOK web identity: isDemo=false, continuity, menu resume");
+  console.log("\nOK web identity: clerk, isDemo=false, ownerEmail, menu resume");
   console.log("ALL WEB IDENTITY SMOKE TESTS PASSED");
 }
 

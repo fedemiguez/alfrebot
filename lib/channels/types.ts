@@ -14,6 +14,8 @@ export type InboundMessage = {
   text?: string;
   media?: InboundMedia;
   choiceId?: string;
+  /** Solo camino web (Clerk): email verificado del dueño. */
+  ownerEmail?: string;
 };
 
 export type Option = { id: string; label: string };

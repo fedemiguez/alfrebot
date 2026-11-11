@@ -13,17 +13,16 @@ export default function Home() {
           Armá tu tienda charlando: por WhatsApp o en la web.
         </h1>
         <p className="mt-4 max-w-xl text-[1.15rem] text-[var(--muted)]">
-          Pensado para personas como Norma: mandás fotos y tu catálogo queda
-          online. Empezás con tu celular; después podés seguir por el canal que
-          te quede cómodo.
+          Dos caminos: WhatsApp con tu celular, o la web con tu email. El
+          catálogo queda online y los pedidos siguen por WhatsApp.
         </p>
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Link href="/registro" className="btn btn-primary">
             Armá por WhatsApp
           </Link>
-          <Link href="/registro?canal=web" className="btn btn-secondary">
-            Armá en la web
+          <Link href="/sign-up" className="btn btn-secondary">
+            Armá en la web (email)
           </Link>
         </div>
 

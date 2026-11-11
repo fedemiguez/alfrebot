@@ -14,11 +14,11 @@ export function SiteHeader() {
           <Link href="/registro" className="text-[var(--ink)] hover:text-[var(--primary)]">
             Por WhatsApp
           </Link>
-          <Link
-            href="/registro?canal=web"
-            className="text-[var(--ink)] hover:text-[var(--primary)]"
-          >
+          <Link href="/sign-up" className="text-[var(--ink)] hover:text-[var(--primary)]">
             En la web
+          </Link>
+          <Link href="/sign-in" className="text-[var(--muted)] hover:text-[var(--primary)]">
+            Entrar
           </Link>
         </nav>
       </div>

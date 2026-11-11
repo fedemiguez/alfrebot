@@ -29,11 +29,21 @@ import type { Product } from "@/lib/db/schema";
 import { transcribeAudio } from "@/lib/bot/transcribe";
 import { uploadDataUrl, uploadProductImage } from "@/lib/blob";
 import { appBaseUrl } from "@/lib/env";
+import { isClerkIdentity } from "@/lib/clerk";
 import {
   formatPhoneDisplay,
   isWhatsAppContactPhone,
   normalizeArMobileE164,
 } from "@/lib/phone";
+
+function storeIsDemo(from: string): boolean {
+  if (isClerkIdentity(from)) return false;
+  return !isWhatsAppContactPhone(from);
+}
+
+function clerkUserIdFromFrom(from: string): string | null {
+  return isClerkIdentity(from) ? from.slice("clerk:".length) : null;
+}
 import {
   createProduct,
   getConversation,
@@ -776,12 +786,14 @@ async function handleMessageBody(
       phone: msg.from,
       contactPhone,
       ownerName: draft.ownerName,
+      ownerEmail: msg.ownerEmail ?? undefined,
       name: draft.storeName,
       slug: draft.slug,
       showPhone: draft.showPhone ?? true,
       checkoutMode,
       tracksQuantity,
-      isDemo: !isWhatsAppContactPhone(msg.from),
+      isDemo: storeIsDemo(msg.from),
+      clerkUserId: clerkUserIdFromFrom(msg.from),
       status: "active",
     });
     draft = clearStockDraft({ ...draft, checkoutMode, tracksQuantity });
@@ -794,8 +806,9 @@ async function handleMessageBody(
     const stockHint = tracksQuantity
       ? "Podés anotar cantidades desde el menú → Stock / pausa."
       : "Podés marcar productos como Agotado desde el menú → Stock / pausa.";
-    const continuityHint =
-      msg.channel === "simulator" && isWhatsAppContactPhone(msg.from)
+    const continuityHint = isClerkIdentity(msg.from)
+      ? " Los pedidos de clientes van por el WhatsApp de pedidos que cargaste."
+      : msg.channel === "simulator" && isWhatsAppContactPhone(msg.from)
         ? " Cuando quieras, escribile al bot por WhatsApp desde este mismo número y seguís la conversación."
         : "";
     replies.push({
@@ -1280,12 +1293,14 @@ async function handleMessageBody(
               ? normalizeArMobileE164(msg.from)
               : null),
           ownerName: draft.ownerName,
+          ownerEmail: msg.ownerEmail ?? undefined,
           name: draft.storeName,
           slug: draft.slug,
           showPhone: draft.showPhone ?? true,
           checkoutMode: draft.checkoutMode ?? "whatsapp",
           tracksQuantity: draft.tracksQuantity ?? false,
-          isDemo: !isWhatsAppContactPhone(msg.from),
+          isDemo: storeIsDemo(msg.from),
+          clerkUserId: clerkUserIdFromFrom(msg.from),
           status: "active",
         });
       }

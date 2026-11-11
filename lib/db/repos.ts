@@ -140,6 +140,8 @@ export async function slugExists(slug: string): Promise<boolean> {
 export async function upsertStore(input: {
   phone: string;
   contactPhone?: string | null;
+  clerkUserId?: string | null;
+  ownerEmail?: string | null;
   ownerName?: string | null;
   name?: string | null;
   slug?: string | null;
@@ -159,6 +161,8 @@ export async function upsertStore(input: {
           input.contactPhone !== undefined
             ? input.contactPhone
             : existing.contactPhone,
+        clerkUserId: input.clerkUserId ?? existing.clerkUserId,
+        ownerEmail: input.ownerEmail ?? existing.ownerEmail,
         ownerName: input.ownerName ?? existing.ownerName,
         name: input.name ?? existing.name,
         slug: input.slug ?? existing.slug,
@@ -175,6 +179,8 @@ export async function upsertStore(input: {
       id: newId(),
       phone: input.phone,
       contactPhone: input.contactPhone ?? null,
+      clerkUserId: input.clerkUserId ?? null,
+      ownerEmail: input.ownerEmail ?? null,
       ownerName: input.ownerName ?? null,
       name: input.name ?? null,
       slug: input.slug ?? null,
@@ -199,6 +205,8 @@ export async function upsertStore(input: {
           input.contactPhone !== undefined
             ? input.contactPhone
             : existing.contactPhone,
+        clerkUserId: input.clerkUserId ?? existing.clerkUserId,
+        ownerEmail: input.ownerEmail ?? existing.ownerEmail,
         ownerName: input.ownerName ?? existing.ownerName,
         name: input.name ?? existing.name,
         slug: input.slug ?? existing.slug,
@@ -218,6 +226,8 @@ export async function upsertStore(input: {
     .values({
       phone: input.phone,
       contactPhone: input.contactPhone ?? null,
+      clerkUserId: input.clerkUserId ?? null,
+      ownerEmail: input.ownerEmail ?? null,
       ownerName: input.ownerName ?? null,
       name: input.name ?? null,
       slug: input.slug ?? null,

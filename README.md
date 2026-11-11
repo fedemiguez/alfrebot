@@ -18,11 +18,12 @@ npm install
 npm run dev
 ```
 
-Flujo dueña:
+Dos caminos para la dueña:
 
-1. [http://localhost:3000/registro](http://localhost:3000/registro) — pedís el celular.
-2. Elegís **Abrir WhatsApp** o **Seguir en la web** (`/probar?phone=…&code=…`).
-3. Mismo motor de bot; con celular real la tienda **no** es demo y podés retomar por WhatsApp después.
+1. **WhatsApp:** [http://localhost:3000/registro](http://localhost:3000/registro) → celular → Abrir WhatsApp.
+2. **Web (email / Clerk):** [http://localhost:3000/sign-up](http://localhost:3000/sign-up) → `/probar` con el mismo motor. Pedidos del catálogo siguen por WhatsApp (`contact_phone`).
+
+Clerk se provisiona desde Vercel Marketplace (`CLERK_*` en preview/production).
 
 ## Scripts
 
