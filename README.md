@@ -96,7 +96,7 @@ Podés **dictar** nombre, precio, descripción, cantidad o pedidos de stock. El 
 - En `/probar`: botón 🎤 → hablá → tocá de nuevo para enviar.
 - En WhatsApp real: mandá un audio como siempre (ogg/opus).
 - Sin API key: el bot responde *No pude escuchar el audio…* y sigue usable por texto/botones.
-- El audio **no** reemplaza la foto al cargar una pieza.
+- El audio **no** reemplaza la foto al cargar un producto.
 
 ### Ejemplo: precio por audio
 
@@ -104,7 +104,7 @@ Podés **dictar** nombre, precio, descripción, cantidad o pedidos de stock. El 
 Bot:    ¿A cómo la vendés? Podés decir 15 mil o 15000 (texto o audio).
 Dueña:  [audio] "quince mil"
 Bot:    Te escuché: «quince mil»
-Bot:    ¿Querés contar algo de la pieza? …
+Bot:    ¿Querés contar algo del producto? …
 ```
 
 ### Ejemplo: pausar / listado
@@ -112,7 +112,7 @@ Bot:    ¿Querés contar algo de la pieza? …
 ```
 Dueña:  [audio] "mostrame el stock"
 Bot:    Te escuché: «mostrame el stock»
-Bot:    Tus piezas: …
+Bot:    Tus productos: …
 ```
 
 Smoke local (mock STT, sin Gemini):
