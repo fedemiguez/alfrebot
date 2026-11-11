@@ -8,7 +8,8 @@ export function formatPriceArs(cents: number | null | undefined): string {
   }).format(pesos);
 }
 
-export function formatPhoneDisplay(e164: string): string {
+export function formatPhoneDisplay(e164: string | null | undefined): string {
+  if (!e164) return "—";
   const d = e164.replace(/\D/g, "");
   // +54911… → 11 …
   if (d.startsWith("549") && d.length >= 12) {
