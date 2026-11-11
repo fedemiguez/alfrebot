@@ -2,6 +2,7 @@ import { revalidateTag } from "next/cache";
 import type { ChannelCapabilities, InboundMessage, OutboundMessage } from "@/lib/channels/types";
 import { CHOICE, imageWithOptions, withOptions } from "@/lib/bot/render";
 import {
+  extractPersonName,
   extractSignupCode,
   formatPriceArs,
   interpretFreeText,
@@ -31,6 +32,7 @@ import {
 export type BotState =
   | "NEW"
   | "ASK_NAME"
+  | "CONFIRM_NAME"
   | "ASK_STORE"
   | "CONFIRM_SLUG"
   | "ASK_SHOW_PHONE"
@@ -163,17 +165,85 @@ export async function handleMessage(
   }
 
   if (state === "ASK_NAME") {
-    const name = msg.text?.trim();
-    if (!name) {
+    const raw = msg.text?.trim();
+    if (!raw) {
       replies.push({ kind: "text", text: "Decime tu nombre, así te hablo de vos." });
       return replies;
     }
-    draft = { ...draft, ownerName: name };
-    await setState("ASK_STORE", draft);
-    replies.push({
-      kind: "text",
-      text: `Encantada, ${name}. ¿Cómo querés que se llame tu tienda?`,
-    });
+    const extracted = extractPersonName(raw);
+    if (!extracted.name || extracted.confidence === "none") {
+      replies.push({
+        kind: "text",
+        text: "No entendí bien el nombre. Escribí solo cómo te llamás, por ejemplo: Norma.",
+      });
+      return replies;
+    }
+    draft = { ...draft, ownerName: extracted.name };
+    await setState("CONFIRM_NAME", draft);
+    const prompt =
+      extracted.confidence === "high"
+        ? `Encantada, ${extracted.name}. ¿Usamos ese nombre?`
+        : `¿Te llamás ${extracted.name}? Si no, tocá Cambiar nombre.`;
+    replies.push(
+      withOptions(
+        prompt,
+        [
+          { id: CHOICE.YES, label: "Sí" },
+          { id: CHOICE.CHANGE, label: "Cambiar nombre" },
+        ],
+        caps,
+      ),
+    );
+    return replies;
+  }
+
+  if (state === "CONFIRM_NAME") {
+    const choice = msg.choiceId;
+    const text = msg.text?.trim() ?? "";
+    if (choice === CHOICE.CHANGE || isNegative(text) || /cambiar/.test(text.toLowerCase())) {
+      draft = { ...draft, ownerName: undefined };
+      await setState("ASK_NAME", draft);
+      replies.push({
+        kind: "text",
+        text: "Dale, ¿cómo te llamás? Escribí solo tu nombre.",
+      });
+      return replies;
+    }
+    if (choice === CHOICE.YES || isAffirmative(text)) {
+      await setState("ASK_STORE", draft);
+      replies.push({
+        kind: "text",
+        text: `Perfecto, ${draft.ownerName}. ¿Cómo querés que se llame tu tienda?`,
+      });
+      return replies;
+    }
+    // Si escribe otro nombre, lo tomamos como corrección
+    const again = extractPersonName(text);
+    if (again.name && again.confidence !== "none") {
+      draft = { ...draft, ownerName: again.name };
+      await setState("CONFIRM_NAME", draft);
+      replies.push(
+        withOptions(
+          `Encantada, ${again.name}. ¿Usamos ese nombre?`,
+          [
+            { id: CHOICE.YES, label: "Sí" },
+            { id: CHOICE.CHANGE, label: "Cambiar nombre" },
+          ],
+          caps,
+        ),
+      );
+      return replies;
+    }
+    replies.push(
+      withOptions(
+        `¿Confirmamos tu nombre: ${draft.ownerName}?`,
+        [
+          { id: CHOICE.YES, label: "Sí" },
+          { id: CHOICE.CHANGE, label: "Cambiar nombre" },
+        ],
+        caps,
+      ),
+    );
     return replies;
   }
 
