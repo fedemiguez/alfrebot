@@ -94,6 +94,8 @@ export const CHOICE = {
   MENU_STOCK: "menu_stock",
   MENU_CONTACT: "menu_contact",
   MENU_HELP: "menu_help",
+  /** Volver al menú principal (no confundir con Ayuda). */
+  MENU_BACK: "menu_back",
   CHECKOUT_WA: "checkout_whatsapp",
   CHECKOUT_CART: "checkout_cart",
   CONTACT_SAME: "contact_same",

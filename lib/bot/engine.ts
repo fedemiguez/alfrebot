@@ -109,14 +109,44 @@ function clearStockDraft(d: ConversationDraft): ConversationDraft {
 }
 
 function globalCommands(text?: string, choiceId?: string): "menu" | "help" | "cancel" | null {
+  if (choiceId === CHOICE.MENU_BACK) return "menu";
   if (choiceId === CHOICE.MENU_HELP || choiceId === "help") return "help";
   if (choiceId === CHOICE.MENU_ADD) return null;
   const t = text?.trim().toLowerCase();
   if (!t) return null;
-  if (t === "menu" || t === "menú") return "menu";
+  if (t === "menu" || t === "menú" || t === "volver" || /^volver al men/.test(t)) {
+    return "menu";
+  }
   if (t === "ayuda" || t === "help") return "help";
   if (t === "cancelar") return "cancel";
   return null;
+}
+
+function normalizeLoose(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+/** Pedidos / WhatsApp de contacto (no confundir con “whatsapp” del modo de checkout). */
+function wantsContactPhoneText(text: string): boolean {
+  const t = normalizeLoose(text);
+  return (
+    /\b(whats?app|contacto|pedidos?)\b/.test(t) ||
+    /numero (de )?(pedidos?|whats?app|contacto)/.test(t) ||
+    /cambiar (el )?numero/.test(t)
+  );
+}
+
+function wantsStoreLinkText(text: string): boolean {
+  const t = normalizeLoose(text);
+  return (
+    /\b(ver (mi )?tienda|mi tienda|link( de)?( la)? tienda|catalogo|mi link)\b/.test(
+      t,
+    ) || t === "tienda"
+  );
 }
 
 function menuMessage(caps: ChannelCapabilities): OutboundMessage {
@@ -151,6 +181,62 @@ function askContactPhonePrompt(editing: boolean): OutboundMessage {
       ? "Mandame el WhatsApp donde querés que te escriban los clientes (con código de área), por ejemplo 11 1234-5678. Tu número de gestión no cambia."
       : "¿A qué WhatsApp te escriben los clientes? Mandame tu celular con código de área, por ejemplo 11 1234-5678.",
   };
+}
+
+function storeLinkReply(store: Store): OutboundMessage {
+  const contact =
+    store.contactPhone ||
+    (isWhatsAppContactPhone(store.phone) ? store.phone : null);
+  const contactLine = contact
+    ? `\nWhatsApp de pedidos: ${formatPhoneDisplay(contact)}`
+    : "\nTodavía no hay WhatsApp de pedidos configurado.";
+  return {
+    kind: "text",
+    text: `Acá está tu tienda: ${storeUrl(store.slug!)}${contactLine}\n\nSi querés cambiar el número de pedidos, tocá WhatsApp pedidos en el menú.`,
+  };
+}
+
+async function startContactEditFlow(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  msg: InboundMessage,
+): Promise<OutboundMessage[]> {
+  const current =
+    store.contactPhone ||
+    (isWhatsAppContactPhone(store.phone) ? store.phone : null);
+  const nextDraft: ConversationDraft = {
+    ...clearStockDraft(draft),
+    product: undefined,
+    contactPhoneFlow: "edit",
+  };
+  if (isWhatsAppContactPhone(msg.from)) {
+    return replyWithChoices(
+      nextDraft,
+      setState,
+      "ASK_CONTACT_CHOICE",
+      withOptions(
+        current
+          ? `Hoy los pedidos van a ${formatPhoneDisplay(current)}. ¿Seguimos con tu WhatsApp de gestión (${formatPhoneDisplay(msg.from)}) u otro número?\n\nTu número de gestión no cambia.`
+          : `¿Usamos tu WhatsApp de gestión (${formatPhoneDisplay(msg.from)}) para pedidos u otro número?`,
+        [
+          { id: CHOICE.CONTACT_SAME, label: "Este mismo" },
+          { id: CHOICE.CONTACT_OTHER, label: "Otro número" },
+        ],
+        caps,
+      ),
+    );
+  }
+  await setState("ASK_CONTACT_PHONE", nextDraft);
+  const replies: OutboundMessage[] = [askContactPhonePrompt(true)];
+  if (current) {
+    replies.unshift({
+      kind: "text",
+      text: `Hoy figura ${formatPhoneDisplay(current)} para pedidos.`,
+    });
+  }
+  return replies;
 }
 
 function afterContactPhoneOnboarding(
@@ -217,8 +303,13 @@ export async function handleMessage(
       menuMessage(caps),
     ];
   }
-  if (cmd === "menu" && (state === "IDLE" || state.startsWith("STOCK_"))) {
-    draft = clearStockDraft(draft);
+  if (
+    cmd === "menu" &&
+    (state === "IDLE" ||
+      state.startsWith("STOCK_") ||
+      state.startsWith("PRODUCT_"))
+  ) {
+    draft = clearStockDraft({ ...draft, product: undefined });
     await saveConversation({
       phone: msg.from,
       channel: msg.channel,
@@ -686,16 +777,7 @@ export async function handleMessage(
     }
     if (choice === CHOICE.MENU_STORE || msg.choiceId === CHOICE.MENU_STORE) {
       if (store?.slug) {
-        const contact =
-          store.contactPhone ||
-          (isWhatsAppContactPhone(store.phone) ? store.phone : null);
-        const contactLine = contact
-          ? `\nWhatsApp de pedidos: ${formatPhoneDisplay(contact)}`
-          : "\nTodavía no hay WhatsApp de pedidos configurado.";
-        replies.push({
-          kind: "text",
-          text: `Acá está tu tienda: ${storeUrl(store.slug)}${contactLine}\n\nSi querés cambiar el número de pedidos, tocá WhatsApp pedidos en el menú.`,
-        });
+        replies.push(storeLinkReply(store));
       } else {
         replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
       }
@@ -709,36 +791,7 @@ export async function handleMessage(
         });
         return replies;
       }
-      const current =
-        store.contactPhone ||
-        (isWhatsAppContactPhone(store.phone) ? store.phone : null);
-      draft = { ...draft, contactPhoneFlow: "edit" };
-      if (isWhatsAppContactPhone(msg.from)) {
-        return replyWithChoices(
-          draft,
-          setState,
-          "ASK_CONTACT_CHOICE",
-          withOptions(
-            current
-              ? `Hoy los pedidos van a ${formatPhoneDisplay(current)}. ¿Seguimos con tu WhatsApp de gestión (${formatPhoneDisplay(msg.from)}) u otro número?\n\nTu número de gestión no cambia.`
-              : `¿Usamos tu WhatsApp de gestión (${formatPhoneDisplay(msg.from)}) para pedidos u otro número?`,
-            [
-              { id: CHOICE.CONTACT_SAME, label: "Este mismo" },
-              { id: CHOICE.CONTACT_OTHER, label: "Otro número" },
-            ],
-            caps,
-          ),
-        );
-      }
-      await setState("ASK_CONTACT_PHONE", draft);
-      replies.push(askContactPhonePrompt(true));
-      if (current) {
-        replies.unshift({
-          kind: "text",
-          text: `Hoy figura ${formatPhoneDisplay(current)} para pedidos.`,
-        });
-      }
-      return replies;
+      return startContactEditFlow(store, draft, setState, caps, msg);
     }
     if (choice === CHOICE.MENU_STOCK || msg.choiceId === CHOICE.MENU_STOCK) {
       if (!store) {
@@ -749,6 +802,15 @@ export async function handleMessage(
     }
     if (msg.media?.kind === "image") {
       return startProductFromImage(msg, draft, caps, setState);
+    }
+
+    if (msg.text && store?.slug && wantsStoreLinkText(msg.text)) {
+      replies.push(storeLinkReply(store));
+      replies.push(menuMessage(caps));
+      return replies;
+    }
+    if (msg.text && store && wantsContactPhoneText(msg.text)) {
+      return startContactEditFlow(store, draft, setState, caps, msg);
     }
 
     const action = msg.text ? await interpretFreeText(msg.text) : { intent: "unknown" as const };
@@ -806,7 +868,7 @@ export async function handleMessage(
   }
 
   if (state === "STOCK_HUB" && store) {
-    if (choice === CHOICE.MENU_HELP) {
+    if (choice === CHOICE.MENU_BACK || choice === CHOICE.MENU_HELP) {
       draft = clearStockDraft(draft);
       await setState("IDLE", draft);
       return [menuMessage(caps)];
@@ -855,6 +917,28 @@ export async function handleMessage(
         setState,
         "STOCK_CONFIRM",
         confirmStockMessage(draft, null, store, caps),
+      );
+    }
+    if (msg.text?.trim()) {
+      if (wantsContactPhoneText(msg.text)) {
+        return startContactEditFlow(store, draft, setState, caps, msg);
+      }
+      if (store.slug && wantsStoreLinkText(msg.text)) {
+        draft = clearStockDraft(draft);
+        await setState("IDLE", draft);
+        return [storeLinkReply(store), menuMessage(caps)];
+      }
+      return replyWithChoices(
+        draft,
+        setState,
+        "STOCK_HUB",
+        stockHubMessage(store, caps),
+        [
+          {
+            kind: "text",
+            text: "No atrapé eso. Tocá Volver al menú para Ver mi tienda o WhatsApp pedidos.",
+          },
+        ],
       );
     }
     return replyWithChoices(draft, setState, "STOCK_HUB", stockHubMessage(store, caps));

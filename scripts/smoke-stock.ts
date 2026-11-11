@@ -51,7 +51,8 @@ async function main() {
   await say("Sí", "yes");
   await say("Cerámicas Smoke");
   await say("Sí", "yes");
-  await say("Sí", "yes");
+  await say("Sí", "yes"); // mostrar número
+  await say("11 5555-9999"); // WhatsApp de pedidos (simulador)
   await say(undefined, "stock_pause_mode");
   await say(undefined, "checkout_whatsapp");
 
@@ -75,6 +76,21 @@ async function main() {
   });
 
   await say("menú");
+  await say(undefined, "menu_stock");
+
+  // Bugfix: Volver al menú no debe abrir Ayuda; "Whatsapp" sale del hub.
+  const back = await say(undefined, "menu_back");
+  assert(
+    back.some((r) => r.kind === "text" && r.options?.some((o) => o.id === "menu_store")),
+    "menu_back shows main menu with Ver mi tienda",
+  );
+  await say(undefined, "menu_stock");
+  const wa = await say("Whatsapp");
+  assert(
+    wa.some((r) => r.kind === "text" && /whatsapp|pedidos|11 5555/i.test(r.text)),
+    "typing Whatsapp from stock hub opens contact flow",
+  );
+  await say("cancelar");
   await say(undefined, "menu_stock");
   await say(undefined, "stock_list");
   await say(undefined, "stock_pick");
