@@ -276,6 +276,9 @@ export async function saveConversation(input: {
   state: string;
   draft?: ConversationDraft;
 }): Promise<Conversation> {
+  if (!input.phone) {
+    throw new Error("saveConversation: phone requerido");
+  }
   if (!hasDatabaseUrl()) {
     const mem = getMemoryDb();
     const existing = mem.conversations.get(input.phone);
