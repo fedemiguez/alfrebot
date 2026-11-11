@@ -14,6 +14,8 @@ import {
 import { uniqueSlug } from "@/lib/bot/slug";
 import {
   confirmStockMessage,
+  detectStockActionFromText,
+  findProductsByHint,
   formatProductList,
   parseQuantityInput,
   productActionOptions,
@@ -23,6 +25,7 @@ import {
   stockHubMessage,
   withPendingChoices,
 } from "@/lib/bot/stock";
+import type { Product } from "@/lib/db/schema";
 import { transcribeAudio } from "@/lib/bot/transcribe";
 import { uploadDataUrl, uploadProductImage } from "@/lib/blob";
 import { appBaseUrl } from "@/lib/env";
@@ -861,6 +864,15 @@ async function handleMessageBody(
         replies.push(menuMessage(caps));
         return replies;
       }
+      // "pausar/reactivar X" llega a veces como manage_stock
+      const spoken = await trySpokenStockConfirm(
+        store,
+        draft,
+        setState,
+        caps,
+        msg.text ?? action.productHint,
+      );
+      if (spoken) return spoken;
       return openStockHub(store, draft, setState, caps);
     }
     if (action.intent === "set_price" && store) {
@@ -883,10 +895,19 @@ async function handleMessageBody(
       return replies;
     }
     if (action.intent === "mark_out_of_stock" && store) {
+      const spoken = await trySpokenStockConfirm(
+        store,
+        draft,
+        setState,
+        caps,
+        msg.text ?? action.productHint,
+        "pause",
+      );
+      if (spoken) return spoken;
       return openStockHub(store, draft, setState, caps, [
         {
           kind: "text",
-          text: "Para marcar agotado elegí el producto y confirmamos antes de guardar.",
+          text: "No encontré ese producto. Elegí uno y confirmamos antes de guardar.",
         },
       ]);
     }
@@ -993,6 +1014,17 @@ async function handleMessageBody(
     if (!product || product.storeId !== store.id) {
       replies.push({ kind: "text", text: "No encontré ese producto." });
       return openStockHub(store, draft, setState, caps);
+    }
+    // Venimos de audio/texto "pausá X" con varios matches → ya sabemos la acción
+    if (draft.stockAction === "pause" || draft.stockAction === "resume") {
+      return goToStockConfirm(
+        store,
+        draft,
+        setState,
+        caps,
+        product,
+        draft.stockAction,
+      );
     }
     draft = { ...draft, stockProductId: product.id };
     return replyWithChoices(
@@ -1298,6 +1330,93 @@ async function openStockHub(
 ): Promise<OutboundMessage[]> {
   const cleaned = clearStockDraft(draft);
   return replyWithChoices(cleaned, setState, "STOCK_HUB", stockHubMessage(store, caps), extra);
+}
+
+/**
+ * Audio/texto libre tipo "pausá la lata de cerveza":
+ * matchea producto y pasa a confirmación (Sí/No) sin pasar por el hub.
+ */
+async function trySpokenStockConfirm(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  rawText: string | undefined,
+  forcedAction?: "pause" | "resume",
+): Promise<OutboundMessage[] | null> {
+  if (!rawText?.trim()) return null;
+  const stockAction =
+    forcedAction ?? detectStockActionFromText(rawText) ?? null;
+  if (!stockAction) return null;
+
+  const products = await listProductsByStore(store.id, { includeHidden: true });
+  const matches = findProductsByHint(products, rawText);
+  if (matches.length === 0) return null;
+
+  if (matches.length > 1) {
+    const nextDraft: ConversationDraft = {
+      ...clearStockDraft(draft),
+      stockAction,
+    };
+    return replyWithChoices(
+      nextDraft,
+      setState,
+      "STOCK_PICK",
+      withOptions(
+        stockAction === "pause"
+          ? "Encontré más de uno. ¿Cuál querés pausar?"
+          : "Encontré más de uno. ¿Cuál querés reactivar?",
+        productPickOptions(matches),
+        caps,
+      ),
+      [
+        {
+          kind: "text",
+          text: `Te entendí: querés ${stockAction === "pause" ? "pausar" : "reactivar"} un producto.`,
+        },
+      ],
+    );
+  }
+
+  const product = matches[0]!;
+  return goToStockConfirm(store, draft, setState, caps, product, stockAction);
+}
+
+async function goToStockConfirm(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  product: Product,
+  stockAction: "pause" | "resume",
+): Promise<OutboundMessage[]> {
+  // Reactivar con cantidades → pedir número (igual que el hub)
+  if (stockAction === "resume" && store.tracksQuantity) {
+    const nextDraft: ConversationDraft = {
+      ...clearStockDraft(draft),
+      stockProductId: product.id,
+      stockAction: "resume",
+    };
+    await setState("STOCK_QTY", nextDraft);
+    return [
+      {
+        kind: "text",
+        text: `¿Cuántas unidades de "${product.title}" quedan? Decime un número (puede ser 0), por texto o audio.`,
+      },
+    ];
+  }
+
+  const nextDraft: ConversationDraft = {
+    ...clearStockDraft(draft),
+    stockProductId: product.id,
+    stockAction,
+  };
+  return replyWithChoices(
+    nextDraft,
+    setState,
+    "STOCK_CONFIRM",
+    confirmStockMessage(nextDraft, product, store, caps),
+  );
 }
 
 async function applyStockAction(store: Store, draft: ConversationDraft): Promise<string> {

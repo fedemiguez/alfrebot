@@ -177,6 +177,33 @@ async function main() {
   assert(updated?.quantity === 3, `qty 3 got ${updated?.quantity}`);
   console.log("OK audio cantidad hablada");
 
+  // Pausar producto por audio → confirmación directa
+  await createProduct({
+    storeId: store.id,
+    title: "Lata de cerveza",
+    priceCents: 50000,
+    imageUrl: "/demo/taza.svg",
+    quantity: 1,
+  });
+  await saveConversation({
+    phone: from,
+    channel: "simulator",
+    state: "IDLE",
+    draft: {},
+  });
+  const pauseReplies = await sayAudio("quiero pausar lata de cerveza");
+  assert(
+    pauseReplies.some(
+      (r) =>
+        r.kind === "text" &&
+        /Querés pausar "Lata de cerveza"|Marcamos "Lata de cerveza"/.test(r.text),
+    ),
+    "confirmación pausa por audio",
+  );
+  const pauseConv = await getConversation(from);
+  assert(pauseConv?.state === "STOCK_CONFIRM", `STOCK_CONFIRM got ${pauseConv?.state}`);
+  console.log("OK audio pausar → confirmación");
+
   console.log("\nSMOKE AUDIO OK");
 }
 
