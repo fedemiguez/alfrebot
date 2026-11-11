@@ -28,6 +28,8 @@ export type ConversationDraft = {
   slug?: string;
   showPhone?: boolean;
   contactPhone?: string;
+  /** onboarding → sigue el alta; edit → vuelve a IDLE tras guardar. */
+  contactPhoneFlow?: "onboarding" | "edit";
   checkoutMode?: "whatsapp" | "cart";
   tracksQuantity?: boolean;
   signupCode?: string;
