@@ -10,7 +10,7 @@ import {
   createProduct,
   getConversation,
   getProduct,
-  getStoreByPhone,
+  getStoreForChannelIdentity,
   saveConversation,
 } from "../lib/db/repos";
 
@@ -98,13 +98,13 @@ async function main() {
   await say(undefined, "stock_qty_mode");
   await say(undefined, "checkout_whatsapp");
 
-  const store = await getStoreByPhone(from);
+  const store = await getStoreForChannelIdentity(from);
   assert(store, "store");
   assert(store.tracksQuantity === true, "tracks qty");
 
   // Forzar PRODUCT_PRICE y mandar precio por audio
   await saveConversation({
-    phone: from,
+    channelIdentity: from,
     channel: "simulator",
     state: "PRODUCT_PRICE",
     draft: {
@@ -134,7 +134,7 @@ async function main() {
 
   // Stock: audio "listado" desde IDLE
   await saveConversation({
-    phone: from,
+    channelIdentity: from,
     channel: "simulator",
     state: "IDLE",
     draft: {},
@@ -159,7 +159,7 @@ async function main() {
   });
   const p = products[0]!;
   await saveConversation({
-    phone: from,
+    channelIdentity: from,
     channel: "simulator",
     state: "STOCK_QTY",
     draft: {
@@ -186,7 +186,7 @@ async function main() {
     quantity: 1,
   });
   await saveConversation({
-    phone: from,
+    channelIdentity: from,
     channel: "simulator",
     state: "IDLE",
     draft: {},

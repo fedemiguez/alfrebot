@@ -69,7 +69,7 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
 
         {store.isDemo && (
           <p className="mt-4 rounded border border-[var(--border)] bg-[var(--paper)] px-4 py-3 text-[16px] text-[var(--muted)]">
-            Tienda de prueba (simulador)
+            Tienda de prueba (sin celular registrado)
           </p>
         )}
 

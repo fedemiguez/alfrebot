@@ -3,7 +3,7 @@ import { getMemoryDb } from "../lib/db/memory";
 import {
   createProduct,
   getProduct,
-  getStoreByPhone,
+  getStoreForChannelIdentity,
   listProductsByStore,
 } from "../lib/db/repos";
 
@@ -56,7 +56,7 @@ async function main() {
   await say(undefined, "stock_pause_mode");
   await say(undefined, "checkout_whatsapp");
 
-  let store = await getStoreByPhone(from);
+  let store = await getStoreForChannelIdentity(from);
   assert(store, "store created");
   assert(store.tracksQuantity === false, "tracksQuantity false");
   assert(store.checkoutMode === "whatsapp", "checkout whatsapp");
@@ -108,7 +108,7 @@ async function main() {
 
   await say(undefined, "stock_mode");
   await say(undefined, "yes");
-  store = await getStoreByPhone(from);
+  store = await getStoreForChannelIdentity(from);
   assert(store && store.tracksQuantity === true, "switched to qty");
 
   await say(undefined, "stock_pick");

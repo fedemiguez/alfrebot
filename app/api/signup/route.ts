@@ -50,9 +50,11 @@ export async function POST(req: Request) {
     if (!allowed) {
       forceSimulator = true;
       reason =
-        "Esta versión de prueba todavía no está abierta a todos. Probala acá sin WhatsApp.";
+        "Por ahora WhatsApp no está abierto para este número. Seguí en la web con el mismo celular; después vas a poder continuar por WhatsApp.";
     }
   }
+
+  const probarPath = `/probar?phone=${encodeURIComponent(phone)}&code=${encodeURIComponent(code)}`;
 
   return Response.json({
     ok: true,
@@ -61,6 +63,6 @@ export async function POST(req: Request) {
     waLink,
     forceSimulator,
     reason,
-    probarPath: `/probar?phone=${encodeURIComponent(phone)}`,
+    probarPath,
   });
 }

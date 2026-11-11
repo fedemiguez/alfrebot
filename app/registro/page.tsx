@@ -3,7 +3,7 @@ import { SiteHeader } from "@/components/site-header";
 import { RegistroForm } from "@/components/registro-form";
 
 export const metadata: Metadata = {
-  title: "Armá tu tienda",
+  title: "Armá por WhatsApp",
   description: "Ingresá tu WhatsApp y abrí el chat con alfrebot.",
 };
 

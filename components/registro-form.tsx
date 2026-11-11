@@ -10,10 +10,10 @@ type SignupResult = {
   waLink?: string;
   forceSimulator?: boolean;
   reason?: string;
-  probarPath?: string;
   error?: string;
 };
 
+/** Solo camino WhatsApp. El camino web va por Clerk (/sign-up). */
 export function RegistroForm() {
   const [localNumber, setLocalNumber] = useState("");
   const [step, setStep] = useState<"phone" | "open">("phone");
@@ -50,20 +50,17 @@ export function RegistroForm() {
       return (
         <div className="fade-in max-w-lg">
           <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
-            Probá sin WhatsApp
+            WhatsApp todavía no está abierto
           </h1>
           <p className="mt-4 text-[var(--muted)]">
             {result.reason ||
-              "Esta versión de prueba todavía no está abierta a todos."}
+              "Por ahora este número no puede hablar con el bot por WhatsApp."}
           </p>
-          <Link
-            href={result.probarPath || "/probar"}
-            className="btn btn-primary mt-8 inline-flex"
-          >
-            Ir al simulador
+          <Link href="/sign-up" className="btn btn-primary mt-8 inline-flex">
+            Armá la tienda en la web con email
           </Link>
           <p className="mt-6 text-[15px] text-[var(--muted)]">
-            Número cargado: {result.phone}
+            Número: {result.phone}
           </p>
         </div>
       );
@@ -83,11 +80,14 @@ export function RegistroForm() {
         </a>
         <p className="mt-6 text-[15px]">
           <Link
-            href={result.probarPath || "/probar"}
+            href="/sign-up"
             className="text-[var(--primary)] underline-offset-2 hover:underline"
           >
-            ¿No te respondió? Probá sin WhatsApp
+            Prefiero armarla en la web con email
           </Link>
+        </p>
+        <p className="mt-4 text-[15px] text-[var(--muted)]">
+          Número: {result.phone}
         </p>
       </div>
     );
@@ -96,10 +96,10 @@ export function RegistroForm() {
   return (
     <form onSubmit={onContinue} className="fade-in max-w-lg">
       <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
-        Tu número de WhatsApp
+        Tu WhatsApp
       </h1>
       <p className="mt-3 text-[var(--muted)]">
-        Con el +54 fijo. Ejemplo: 11 5555 1234
+        Con el +54 fijo. Ejemplo: 11 5555 1234. El bot te escribe a ese número.
       </p>
       <label className="mt-8 block">
         <span className="mb-2 block text-[17px] font-semibold">Celular</span>

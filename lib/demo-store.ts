@@ -4,8 +4,10 @@ export const DEMO_STORE_ID = "00000000-0000-4000-8000-000000000001";
 
 export const DEMO_STORE: Store = {
   id: DEMO_STORE_ID,
-  phone: "+5491100000001",
+  channelIdentity: "+5491100000001",
   contactPhone: "+5491100000001",
+  clerkUserId: null,
+  ownerEmail: null,
   ownerName: "Norma",
   name: "Cerámicas de Norma",
   slug: "ceramicas-de-norma",

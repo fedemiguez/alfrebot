@@ -1,6 +1,6 @@
 # alfrebot
 
-Armá tu tienda por WhatsApp. Dominio: [alfrebot.com.ar](https://alfrebot.com.ar). **Tía Norma** (`/ceramicas-de-norma`) es la tienda demo.
+Armá tu tienda por WhatsApp o en la web. Dominio: [alfrebot.com.ar](https://alfrebot.com.ar). **Tía Norma** (`/ceramicas-de-norma`) es la tienda demo.
 
 ## Stack
 
@@ -18,7 +18,14 @@ npm install
 npm run dev
 ```
 
-Abrí [http://localhost:3000/probar](http://localhost:3000/probar) y tocá **Empezar**.
+Dos caminos para la dueña (misma tabla `stores`):
+
+1. **WhatsApp:** [http://localhost:3000/registro](http://localhost:3000/registro) → celular → Abrir WhatsApp.
+2. **Web (email / Clerk):** [http://localhost:3000/sign-up](http://localhost:3000/sign-up) → `/probar` con el mismo motor. Pedidos del catálogo siguen por WhatsApp (`contact_phone`).
+
+La key de dueña es `stores.channel_identity` (`+549…` o `clerk:{userId}`). Si la dueña web carga un WhatsApp que ya tiene tienda, se vincula la misma fila (`clerk_user_id`) — no se crea otra cuenta. Clerk autentica el camino web; no reemplaza el camino Meta.
+
+Clerk se provisiona desde Vercel Marketplace (`CLERK_*` en preview/production).
 
 ## Scripts
 
@@ -32,8 +39,11 @@ Abrí [http://localhost:3000/probar](http://localhost:3000/probar) y tocá **Emp
 
 ### Migración schema
 
+- `stores.channel_identity` — identidad de canal (antes `phone`): WA E.164 o `clerk:{userId}`
+- `conversations.channel_identity` — misma key (antes `phone`)
+- `stores.clerk_user_id` / `stores.owner_email` — alias / metadata del camino web
 - `stores.checkout_mode` (`whatsapp` | `cart`, default `whatsapp`)
-- `stores.contact_phone` — WhatsApp público para catálogo / Lo quiero (si el `phone` del canal no es un móvil AR válido, p.ej. simulador)
+- `stores.contact_phone` — WhatsApp público para catálogo / Lo quiero
 
 Con `DATABASE_URL`:
 
@@ -45,9 +55,9 @@ Sin Neon, el fallback en memoria ya incluye los campos.
 
 ## Meta WhatsApp
 
-Ver `.env.example`. Webhook: `GET/POST /api/whatsapp/meta`. Mientras `META_TEST_MODE=true`, el registro deriva números no verificados a `/probar`.
+Ver `.env.example`. Webhook: `GET/POST /api/whatsapp/meta`. Mientras `META_TEST_MODE=true`, el registro deriva números no verificados al chat web (`/probar`).
 
-## Stock y pausa (bot / `/probar`)
+## Stock y pausa (bot / chat web)
 
 En el alta, o después desde el menú, la dueña elige el modo de la tienda:
 

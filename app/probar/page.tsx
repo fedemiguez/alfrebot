@@ -1,30 +1,49 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SimulatorChat } from "@/components/simulator-chat";
+import { clerkIdentityKey, isClerkConfigured } from "@/lib/clerk";
+import { metaBotNumber } from "@/lib/env";
 
 export const metadata: Metadata = {
-  title: "Probar",
-  description: "Simulador de WhatsApp con el mismo motor de alfrebot.",
+  title: "Armar en la web",
+  description: "Armá tu tienda en el chat web con el mismo motor de alfrebot.",
 };
 
-async function ProbarBody({
-  searchParams,
-}: {
-  searchParams: PageProps<"/probar">["searchParams"];
-}) {
-  const params = await searchParams;
-  const phoneParam = typeof params.phone === "string" ? params.phone : undefined;
-  const initialPhone = phoneParam?.startsWith("+")
-    ? phoneParam
-    : phoneParam
-      ? `+${phoneParam.replace(/\D/g, "")}`
-      : undefined;
+async function ProbarBody() {
+  if (!isClerkConfigured()) {
+    redirect("/sign-up");
+  }
 
-  return <SimulatorChat initialPhone={initialPhone} />;
+  const { userId } = await auth();
+  if (!userId) {
+    redirect("/sign-up");
+  }
+
+  const user = await currentUser();
+  const email =
+    user?.primaryEmailAddress?.emailAddress ??
+    user?.emailAddresses?.[0]?.emailAddress ??
+    undefined;
+  const identity = clerkIdentityKey(userId);
+  const botDigits = metaBotNumber();
+  const continueWaLink = `https://wa.me/${botDigits}?text=${encodeURIComponent(
+    "Hola! Quiero seguir armando mi tienda desde la web.",
+  )}`;
+
+  return (
+    <SimulatorChat
+      initialPhone={identity}
+      ownerEmail={email}
+      continueWaLink={continueWaLink}
+      identityMode="clerk"
+    />
+  );
 }
 
-export default function ProbarPage(props: PageProps<"/probar">) {
+export default function ProbarPage() {
   return (
     <>
       <SiteHeader />
@@ -33,21 +52,22 @@ export default function ProbarPage(props: PageProps<"/probar">) {
           alfrebot
         </p>
         <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
-          Probalo sin WhatsApp
+          Armá tu tienda en la web
         </h1>
         <p className="mt-2 max-w-2xl text-[var(--muted)]">
-          Mismo motor que el bot real. Podés registrar la tienda, mandar una foto y
-          publicarla.
+          Mismo ayudante que por WhatsApp. Estás registrada con email; cuando
+          el bot te pida el WhatsApp de pedidos, ese número es el que ven tus
+          clientes.
         </p>
         <div className="mt-8">
           <Suspense
             fallback={
               <div className="rounded-lg border border-[var(--border)] bg-white/80 p-8 text-[var(--muted)]">
-                Cargando simulador…
+                Cargando el chat…
               </div>
             }
           >
-            <ProbarBody searchParams={props.searchParams} />
+            <ProbarBody />
           </Suspense>
         </div>
       </main>

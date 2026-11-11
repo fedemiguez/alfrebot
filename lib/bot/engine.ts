@@ -30,16 +30,27 @@ import { transcribeAudio } from "@/lib/bot/transcribe";
 import { uploadDataUrl, uploadProductImage } from "@/lib/blob";
 import { appBaseUrl } from "@/lib/env";
 import {
+  clerkUserIdFromIdentity,
+  isClerkIdentity,
+} from "@/lib/channel-identity";
+import {
   formatPhoneDisplay,
   isWhatsAppContactPhone,
   normalizeArMobileE164,
 } from "@/lib/phone";
+
+function storeIsDemo(from: string): boolean {
+  if (isClerkIdentity(from)) return false;
+  return !isWhatsAppContactPhone(from);
+}
+
 import {
   createProduct,
   getConversation,
   getProduct,
   getSignupIntent,
-  getStoreByPhone,
+  getStoreForChannelIdentity,
+  linkClerkToWaStore,
   listProductsByStore,
   markProcessed,
   saveConversation,
@@ -187,10 +198,28 @@ function askContactPhonePrompt(editing: boolean): OutboundMessage {
   };
 }
 
+/**
+ * Si la dueña web carga un WA que ya tiene tienda, vincula la misma fila
+ * (clerk_user_id en la tienda WA). No crea una segunda “cuenta”.
+ */
+async function maybeLinkClerkAfterContactPhone(
+  msg: InboundMessage,
+  contactPhone: string | null,
+): Promise<string | null> {
+  if (!contactPhone || !isClerkIdentity(msg.from)) return null;
+  const result = await linkClerkToWaStore({
+    clerkChannelIdentity: msg.from,
+    ownerEmail: msg.ownerEmail ?? null,
+    waE164: contactPhone,
+  });
+  if (!result.linked) return null;
+  return "Encontré tu tienda de WhatsApp y la vinculé a esta cuenta de email. Seguís con la misma tienda.";
+}
+
 function storeLinkReply(store: Store): OutboundMessage {
   const contact =
     store.contactPhone ||
-    (isWhatsAppContactPhone(store.phone) ? store.phone : null);
+    (isWhatsAppContactPhone(store.channelIdentity) ? store.channelIdentity : null);
   const contactLine = contact
     ? `\nWhatsApp de pedidos: ${formatPhoneDisplay(contact)}`
     : "\nTodavía no hay WhatsApp de pedidos configurado.";
@@ -209,7 +238,7 @@ async function startContactEditFlow(
 ): Promise<OutboundMessage[]> {
   const current =
     store.contactPhone ||
-    (isWhatsAppContactPhone(store.phone) ? store.phone : null);
+    (isWhatsAppContactPhone(store.channelIdentity) ? store.channelIdentity : null);
   const nextDraft: ConversationDraft = {
     ...clearStockDraft(draft),
     product: undefined,
@@ -328,7 +357,7 @@ async function handleMessageBody(
   if (cmd === "cancel") {
     draft = clearStockDraft({ ...draft, product: undefined });
     await saveConversation({
-      phone: msg.from,
+      channelIdentity: msg.from,
       channel: msg.channel,
       state: "IDLE",
       draft,
@@ -346,7 +375,7 @@ async function handleMessageBody(
   ) {
     draft = clearStockDraft({ ...draft, product: undefined });
     await saveConversation({
-      phone: msg.from,
+      channelIdentity: msg.from,
       channel: msg.channel,
       state: "IDLE",
       draft,
@@ -369,7 +398,7 @@ async function handleMessageBody(
     state = next;
     if (nextDraft) draft = nextDraft;
     await saveConversation({
-      phone: msg.from,
+      channelIdentity: msg.from,
       channel: msg.channel,
       state: next,
       draft,
@@ -380,6 +409,28 @@ async function handleMessageBody(
 
   // ——— State machine ———
   if (state === "NEW") {
+    // Misma dueña por el otro canal (Clerk ↔ WA vinculado) → menú, no onboarding.
+    const existingStore = await getStoreForChannelIdentity(msg.from);
+    if (existingStore?.status === "active" && existingStore.slug) {
+      draft = {
+        ...draft,
+        ownerName: existingStore.ownerName ?? draft.ownerName,
+        storeName: existingStore.name ?? draft.storeName,
+        slug: existingStore.slug,
+        contactPhone: existingStore.contactPhone ?? draft.contactPhone,
+        showPhone: existingStore.showPhone,
+        checkoutMode: existingStore.checkoutMode,
+        tracksQuantity: existingStore.tracksQuantity,
+      };
+      await setState("IDLE", draft);
+      const hello = existingStore.ownerName
+        ? `¡Hola de nuevo, ${existingStore.ownerName}! Encontré tu tienda.`
+        : "¡Hola de nuevo! Encontré tu tienda.";
+      replies.push({ kind: "text", text: hello });
+      replies.push(menuMessage(caps));
+      return replies;
+    }
+
     await setState("ASK_NAME", draft);
     replies.push({
       kind: "text",
@@ -609,11 +660,14 @@ async function handleMessageBody(
           text: `Dale, en la tienda va a figurar ${formatPhoneDisplay(contactPhone)}.`,
         });
       }
+      const linkedMsg = await maybeLinkClerkAfterContactPhone(msg, contactPhone);
+      if (linkedMsg) replies.push({ kind: "text", text: linkedMsg });
 
       if (flow === "edit") {
         const updated = await upsertStore({
-          phone: msg.from,
+          channelIdentity: msg.from,
           contactPhone,
+          ownerEmail: msg.ownerEmail,
           showPhone: true,
         });
         revalidateStore(updated.slug);
@@ -671,14 +725,37 @@ async function handleMessageBody(
       kind: "text",
       text: `Perfecto, en la tienda va a figurar ${formatPhoneDisplay(contactPhone)}. Tu número de gestión no cambia.`,
     });
+    const linkedMsg = await maybeLinkClerkAfterContactPhone(msg, contactPhone);
+    if (linkedMsg) replies.push({ kind: "text", text: linkedMsg });
 
     if (flow === "edit") {
       const updated = await upsertStore({
-        phone: msg.from,
+        channelIdentity: msg.from,
         contactPhone,
+        ownerEmail: msg.ownerEmail,
         showPhone: true,
       });
       revalidateStore(updated.slug);
+      await setState("IDLE", draft);
+      replies.push(menuMessage(caps));
+      return replies;
+    }
+
+    // Si vinculamos a una tienda WA ya activa, salteamos el resto del alta.
+    const linkedStore = await getStoreForChannelIdentity(msg.from);
+    if (
+      linkedStore?.status === "active" &&
+      linkedStore.slug &&
+      linkedStore.clerkUserId === clerkUserIdFromIdentity(msg.from)
+    ) {
+      draft = {
+        ...draft,
+        ownerName: linkedStore.ownerName ?? draft.ownerName,
+        storeName: linkedStore.name ?? draft.storeName,
+        slug: linkedStore.slug,
+        checkoutMode: linkedStore.checkoutMode,
+        tracksQuantity: linkedStore.tracksQuantity,
+      };
       await setState("IDLE", draft);
       replies.push(menuMessage(caps));
       return replies;
@@ -773,15 +850,17 @@ async function handleMessageBody(
         ? normalizeArMobileE164(msg.from)
         : null);
     const store = await upsertStore({
-      phone: msg.from,
+      channelIdentity: msg.from,
       contactPhone,
       ownerName: draft.ownerName,
+      ownerEmail: msg.ownerEmail ?? undefined,
       name: draft.storeName,
       slug: draft.slug,
       showPhone: draft.showPhone ?? true,
       checkoutMode,
       tracksQuantity,
-      isDemo: msg.channel === "simulator",
+      isDemo: storeIsDemo(msg.from),
+      clerkUserId: clerkUserIdFromIdentity(msg.from),
       status: "active",
     });
     draft = clearStockDraft({ ...draft, checkoutMode, tracksQuantity });
@@ -794,15 +873,20 @@ async function handleMessageBody(
     const stockHint = tracksQuantity
       ? "Podés anotar cantidades desde el menú → Stock / pausa."
       : "Podés marcar productos como Agotado desde el menú → Stock / pausa.";
+    const continuityHint = isClerkIdentity(msg.from)
+      ? " Los pedidos de clientes van por el WhatsApp de pedidos que cargaste."
+      : msg.channel === "simulator" && isWhatsAppContactPhone(msg.from)
+        ? " Cuando quieras, escribile al bot por WhatsApp desde este mismo número y seguís la conversación."
+        : "";
     replies.push({
       kind: "text",
-      text: `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${checkoutHint} ${stockHint}\n\nMandame una foto de tu primer producto.`,
+      text: `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${checkoutHint} ${stockHint}${continuityHint}\n\nMandame una foto de tu primer producto.`,
     });
     return replies;
   }
 
   // Ensure store exists when in idle/product/stock flows
-  let store = await getStoreByPhone(msg.from);
+  let store = await getStoreForChannelIdentity(msg.from);
 
   if (state === "IDLE") {
     if (choice === CHOICE.MENU_ADD || msg.choiceId === CHOICE.MENU_ADD) {
@@ -1175,7 +1259,7 @@ async function handleMessageBody(
 
     const applied = await applyStockAction(store, draft);
     revalidateStore(store.slug);
-    store = (await getStoreByPhone(msg.from)) ?? store;
+    store = (await getStoreForChannelIdentity(msg.from)) ?? store;
     return openStockHub(store, clearStockDraft(draft), setState, caps, [
       { kind: "text", text: applied },
     ]);
@@ -1269,19 +1353,21 @@ async function handleMessageBody(
     if (choice === CHOICE.PUBLISH || isAffirmative(text) || choice === CHOICE.YES) {
       if (!store) {
         store = await upsertStore({
-          phone: msg.from,
+          channelIdentity: msg.from,
           contactPhone:
             draft.contactPhone ??
             (isWhatsAppContactPhone(msg.from)
               ? normalizeArMobileE164(msg.from)
               : null),
           ownerName: draft.ownerName,
+          ownerEmail: msg.ownerEmail ?? undefined,
           name: draft.storeName,
           slug: draft.slug,
           showPhone: draft.showPhone ?? true,
           checkoutMode: draft.checkoutMode ?? "whatsapp",
           tracksQuantity: draft.tracksQuantity ?? false,
-          isDemo: msg.channel === "simulator",
+          isDemo: storeIsDemo(msg.from),
+          clerkUserId: clerkUserIdFromIdentity(msg.from),
           status: "active",
         });
       }
@@ -1423,7 +1509,7 @@ async function applyStockAction(store: Store, draft: ConversationDraft): Promise
   if (draft.stockAction === "set_mode") {
     const tracksQuantity = Boolean(draft.stockModePending);
     await upsertStore({
-      phone: store.phone,
+      channelIdentity: store.channelIdentity,
       tracksQuantity,
     });
     return tracksQuantity
