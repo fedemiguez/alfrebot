@@ -12,6 +12,8 @@ export type PublicStore = {
   checkoutMode: CheckoutMode;
   tracksQuantity: boolean;
   isDemo: boolean;
+  /** Hex de acento (`#rrggbb`) o null = default de marca. */
+  accentColor: string | null;
   /**
    * WhatsApp público resuelto, solo si `showPhone` (igual que el HTML del catálogo).
    * Nunca es `channelIdentity` crudo (`clerk:…`).
@@ -44,6 +46,7 @@ export function toPublicStore(store: Store): PublicStore {
     checkoutMode: normalizeCheckoutMode(store.checkoutMode),
     tracksQuantity: Boolean(store.tracksQuantity),
     isDemo: Boolean(store.isDemo),
+    accentColor: store.accentColor ?? null,
     contactPhone: showPhone ? resolved : null,
   };
 }

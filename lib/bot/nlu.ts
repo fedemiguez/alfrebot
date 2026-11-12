@@ -1,5 +1,9 @@
 import { z } from "zod";
 import type { PendingSetupPlan } from "@/lib/db/repos";
+import {
+  matchAccentFromText,
+  wantsAccentColorText,
+} from "@/lib/store-accent";
 
 const freeTextActionSchema = z.object({
   intent: z.enum([
@@ -12,6 +16,7 @@ const freeTextActionSchema = z.object({
     "generate_icon",
     "upload_icon",
     "profile_icon",
+    "set_accent_color",
     "help",
     "menu",
     "unknown",
@@ -19,6 +24,8 @@ const freeTextActionSchema = z.object({
   titleHint: z.string().optional(),
   priceHint: z.string().optional(),
   productHint: z.string().optional(),
+  /** Hex `#rrggbb` si el NLU detectó color. */
+  accentHint: z.string().optional(),
 });
 
 export type FreeTextAction = z.infer<typeof freeTextActionSchema>;
@@ -341,6 +348,18 @@ export function parseSetupPlan(text: string): PendingSetupPlan | null {
     plan.deferPhotos = true;
   }
 
+  // Color de acento (“color verde”, “quiero verde”, hex).
+  const accent = matchAccentFromText(raw);
+  if (
+    accent &&
+    (wantsAccentColorText(raw) ||
+      /\bcolor\s+/i.test(raw) ||
+      /#([0-9a-fA-F]{6})\b/.test(raw))
+  ) {
+    plan.accentColor = accent.hex.toLowerCase();
+    plan.accentLabel = accent.label;
+  }
+
   // En mensajes largos, extractPersonName falla por el resto tras la coma.
   const ownerMatch = raw.match(
     /(?:me\s+llamo|me\s+digo|me\s+dicen|me\s+llaman|mi\s+nombre\s+es|soy)\s+([\p{L}][\p{L}'’.-]*(?:\s+(?:de|del|la|las|los|el|y|e|[\p{L}][\p{L}'’.-]*)){0,3})(?=\s*[,.;]|\s+la\s+tienda|\s+el\s+(?:logo|icono)|\s+productos?\b|$)/iu,
@@ -361,7 +380,9 @@ export function parseSetupPlan(text: string): PendingSetupPlan | null {
     plan.storeName,
     plan.iconMode,
     plan.productTitles?.length,
-    plan.ownerName && (plan.storeName || plan.iconMode || plan.productTitles),
+    plan.accentColor,
+    plan.ownerName &&
+      (plan.storeName || plan.iconMode || plan.productTitles || plan.accentColor),
   ].filter(Boolean).length;
 
   // Un solo campo aislado lo maneja el flujo paso a paso; pedimos plan real.
@@ -383,6 +404,8 @@ export function mergeSetupPlan(
     storeName: incoming.storeName ?? current.storeName,
     iconHint: incoming.iconHint ?? current.iconHint,
     iconMode: incoming.iconMode ?? current.iconMode,
+    accentColor: incoming.accentColor ?? current.accentColor,
+    accentLabel: incoming.accentLabel ?? current.accentLabel,
     productTitles:
       incoming.productTitles && incoming.productTitles.length > 0
         ? incoming.productTitles
@@ -398,6 +421,13 @@ export function describeSetupPlan(plan: PendingSetupPlan): string {
   else if (plan.iconMode === "generate") {
     bits.push(
       plan.iconHint ? `logo «${plan.iconHint}»` : "armar logo",
+    );
+  }
+  if (plan.accentColor) {
+    bits.push(
+      plan.accentLabel
+        ? `color ${plan.accentLabel}`
+        : `color ${plan.accentColor}`,
     );
   }
   if (plan.productTitles?.length) {
@@ -488,13 +518,22 @@ export async function interpretFreeText(
     return { intent: "generate_icon" };
   }
 
+  // Color de acento de la vitrina (“quiero verde”, “color azul”).
+  if (wantsAccentColorText(text)) {
+    const swatch = matchAccentFromText(text);
+    return {
+      intent: "set_accent_color",
+      accentHint: swatch?.hex,
+    };
+  }
+
   // LLM opcional: Gateway o Google directo
   if (!process.env.AI_GATEWAY_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     return { intent: "unknown" };
   }
 
   const nluPrompt = `Sos el NLU de un bot de tienda por WhatsApp para personas mayores en Argentina.
-Intents: change_photo = foto de un PRODUCTO; generate_icon = armar/cambiar el ICONO de la TIENDA (app); upload_icon = subir imagen propia como icono de la tienda; profile_icon = usar la foto de Google/cuenta Clerk como icono de la tienda.
+Intents: change_photo = foto de un PRODUCTO; generate_icon = armar/cambiar el ICONO de la TIENDA (app); upload_icon = subir imagen propia como icono de la tienda; profile_icon = usar la foto de Google/cuenta Clerk como icono de la tienda; set_accent_color = color de acento de la vitrina (botones/links); accentHint = hex #rrggbb si lo deducís (verde≈#047857, azul≈#1d4ed8, terracota≈#9a3412).
 Del mensaje, devolvé una acción tipada. No inventes. Mensaje: """${text}"""`;
 
   try {
