@@ -3,6 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
+  HowToOrderNote,
   NoPublicPhoneNote,
   ProductBuyActions,
   StoreHomeLink,
@@ -80,6 +81,11 @@ async function ProductBody({
             {product.description}
           </p>
         )}
+
+        <HowToOrderNote
+          checkoutMode={purchase.checkoutMode}
+          compact
+        />
 
         <ProductBuyActions
           store={purchase}

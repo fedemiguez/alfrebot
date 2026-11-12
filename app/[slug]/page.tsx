@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ProductCard } from "@/components/product-card";
 import {
+  HowToOrderNote,
   NoPublicPhoneNote,
   StorePurchaseProvider,
 } from "@/components/store-purchase";
@@ -72,6 +73,8 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
             Tienda de prueba (sin celular cargado)
           </p>
         )}
+
+        <HowToOrderNote checkoutMode={purchase.checkoutMode} />
 
         <NoPublicPhoneNote
           showPhone={store.showPhone}

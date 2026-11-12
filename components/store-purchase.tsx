@@ -216,8 +216,16 @@ function CartPanel({ store }: { store: StorePurchaseInfo }) {
               </button>
             </div>
 
+            <p className="mt-3 text-[1.1rem] leading-relaxed text-[var(--muted)]">
+              Revisá la lista y tocá Pedir por WhatsApp. El pago se coordina
+              después con el dueño.
+            </p>
+
             {items.length === 0 ? (
-              <p className="mt-6 text-[var(--muted)]">Todavía no agregaste nada.</p>
+              <p className="mt-6 text-[1.1rem] text-[var(--muted)]">
+                Todavía no agregaste nada. Volvé al catálogo y tocá Agregar al
+                pedido.
+              </p>
             ) : (
               <ul className="mt-5 flex-1 space-y-4 overflow-y-auto">
                 {items.map((item) => (
@@ -393,6 +401,41 @@ function AddToCartButton({
     >
       {product.inStock ? "Agregar al pedido" : "Agotado"}
     </button>
+  );
+}
+
+/**
+ * Instructivo mínimo para compradores (Norma): cómo pedir.
+ * Cambia según Lo quiero (WhatsApp) o pedido con carrito.
+ */
+export function HowToOrderNote({
+  checkoutMode,
+  compact = false,
+}: {
+  checkoutMode: CheckoutMode;
+  /** Variante más corta (ficha de producto / panel). */
+  compact?: boolean;
+}) {
+  const text =
+    checkoutMode === "cart"
+      ? compact
+        ? "Agregá lo que quieras. Después abrí Pedido y mandalo por WhatsApp."
+        : "Para pedir: tocá Agregar al pedido en cada producto. Cuando termines, abrí Pedido (abajo a la derecha) y mandalo por WhatsApp. No se cobra acá."
+      : compact
+        ? "Tocá Lo quiero para pedirlo por WhatsApp."
+        : "Para pedir: tocá Lo quiero en el producto que te gusta. Se abre WhatsApp para escribirle al dueño. No se cobra acá.";
+
+  return (
+    <p
+      className={
+        compact
+          ? "mt-4 text-[1.1rem] leading-relaxed text-[var(--ink)]"
+          : "mt-5 rounded border border-[var(--border)] bg-[var(--paper)] px-4 py-4 text-[1.15rem] leading-relaxed text-[var(--ink)]"
+      }
+      role="note"
+    >
+      {text}
+    </p>
   );
 }
 
