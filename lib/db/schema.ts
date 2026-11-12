@@ -51,6 +51,11 @@ export const stores = pgTable("stores", {
    * Migrar con `npm run db:push` si hay DATABASE_URL.
    */
   accentColor: text("accent_color"),
+  /**
+   * Rubro del negocio → plantilla de card (`artesanal` | `comida` | `ropa`).
+   * Null = layout default. Migrar con `npm run db:push` si hay DATABASE_URL.
+   */
+  businessKind: text("business_kind"),
   isDemo: boolean("is_demo").default(false).notNull(),
   status: text("status").default("onboarding").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })

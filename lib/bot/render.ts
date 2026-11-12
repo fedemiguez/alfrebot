@@ -16,8 +16,12 @@ export const CHOICE = {
   MENU_PERSONALIZE: "menu_personalize",
   /** Personalizar → Color de acento. */
   PERSONALIZE_COLOR: "personalize_color",
+  /** Personalizar → Rubro del negocio. */
+  PERSONALIZE_KIND: "personalize_kind",
   /** Prefijo al elegir swatch: accent_<id> (ej. accent_verde). */
   ACCENT_PREFIX: "accent_",
+  /** Prefijo al elegir rubro: kind_<id> (ej. kind_artesanal). */
+  KIND_PREFIX: "kind_",
   MENU_CONTACT: "menu_contact",
   /** Generar código para gestionar la misma tienda desde WhatsApp. */
   MENU_LINK_WA: "menu_link_wa",

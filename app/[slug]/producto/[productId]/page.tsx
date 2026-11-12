@@ -14,6 +14,7 @@ import { formatPriceArs } from "@/lib/format";
 import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
 import { accentStyleVars } from "@/lib/store-accent";
+import { businessKindClassName } from "@/lib/store-business-kind";
 import { getCachedProduct } from "@/lib/store-data";
 
 export async function generateMetadata({
@@ -42,11 +43,12 @@ async function ProductBody({
   if (!purchase) notFound();
 
   const accentVars = accentStyleVars(store.accentColor);
+  const kindClass = businessKindClassName(store.businessKind);
 
   return (
     <StorePurchaseProvider store={purchase}>
       <div
-        className="fade-in mx-auto w-full max-w-3xl px-5 py-10"
+        className={`fade-in mx-auto w-full max-w-3xl px-5 py-10 ${kindClass}`}
         style={accentVars as CSSProperties}
       >
         <StoreHomeLink slug={slug} />
