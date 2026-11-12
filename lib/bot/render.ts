@@ -30,6 +30,8 @@ export const CHOICE = {
   ICON_GENERATE: "icon_generate",
   /** Subir imagen propia como icono de la tienda. */
   ICON_UPLOAD: "icon_upload",
+  /** Usar foto de perfil Clerk/Google como icono de la tienda. */
+  ICON_FROM_PROFILE: "icon_from_profile",
   /** Regenerar icono PWA. */
   ICON_REGEN: "icon_regen",
   /** Cerrar flujo de icono. */

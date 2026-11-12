@@ -1,5 +1,10 @@
 import { revalidateTag } from "next/cache";
-import type { ChannelCapabilities, InboundMessage, OutboundMessage } from "@/lib/channels/types";
+import type {
+  ChannelCapabilities,
+  InboundMessage,
+  Option,
+  OutboundMessage,
+} from "@/lib/channels/types";
 import {
   CHOICE,
   imageWithOptions,
@@ -42,6 +47,10 @@ import {
   clerkUserIdFromIdentity,
   isClerkIdentity,
 } from "@/lib/channel-identity";
+import {
+  fetchClerkProfileImageBytes,
+  resolveClerkProfileImageUrl,
+} from "@/lib/clerk";
 import {
   formatPhoneDisplay,
   isWhatsAppContactPhone,
@@ -197,7 +206,7 @@ async function flushPendingSetupPlan(
   draft: ConversationDraft,
   setState: DraftSetState,
   caps: ChannelCapabilities,
-  from: string,
+  msg: InboundMessage,
   baseReplies: OutboundMessage[],
 ): Promise<OutboundMessage[]> {
   const plan = draft.pendingSetupPlan;
@@ -228,7 +237,7 @@ async function flushPendingSetupPlan(
       nextDraft,
       setState,
       caps,
-      from,
+      msg,
     );
     return [...replies, ...uploadReplies];
   }
@@ -251,7 +260,7 @@ async function flushPendingSetupPlan(
       nextDraft,
       setState,
       caps,
-      from,
+      msg,
       hintText,
     );
     if (plan.productTitles?.length) {
@@ -1441,7 +1450,7 @@ async function handleMessageBody(
         draft,
         setState,
         caps,
-        msg.from,
+        msg,
         replies,
       );
     }
@@ -1515,7 +1524,7 @@ async function handleMessageBody(
         replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
         return replies;
       }
-      return openStoreIconHub(store, draft, setState, caps, msg.from);
+      return openStoreIconHub(store, draft, setState, caps, msg);
     }
     if (
       choice === CHOICE.ICON_UPLOAD ||
@@ -1526,16 +1535,19 @@ async function handleMessageBody(
         return replies;
       }
       if (msg.media?.kind === "image") {
-        return applyUploadedStoreIcon(
-          store,
-          draft,
-          setState,
-          caps,
-          msg.from,
-          msg,
-        );
+        return applyUploadedStoreIcon(store, draft, setState, caps, msg);
       }
-      return askStoreIconUpload(store, draft, setState, caps, msg.from);
+      return askStoreIconUpload(store, draft, setState, caps, msg);
+    }
+    if (
+      choice === CHOICE.ICON_FROM_PROFILE ||
+      msg.choiceId === CHOICE.ICON_FROM_PROFILE
+    ) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      return applyProfileStoreIcon(store, draft, setState, caps, msg);
     }
     if (
       choice === CHOICE.ICON_GENERATE ||
@@ -1550,7 +1562,7 @@ async function handleMessageBody(
         draft,
         setState,
         caps,
-        msg.from,
+        msg,
         msg.text,
       );
     }
@@ -1562,14 +1574,7 @@ async function handleMessageBody(
           /logo de (la )?(app|tienda)/.test(caption) ||
           /sub(ir|í|i).*(icono|ícono|logo)/.test(caption))
       ) {
-        return applyUploadedStoreIcon(
-          store,
-          draft,
-          setState,
-          caps,
-          msg.from,
-          msg,
-        );
+        return applyUploadedStoreIcon(store, draft, setState, caps, msg);
       }
       return startProductFromImage(msg, draft, caps, setState);
     }
@@ -1606,7 +1611,7 @@ async function handleMessageBody(
           ...draft,
           pendingSetupPlan: mergeSetupPlan(draft.pendingSetupPlan, idlePlan),
         };
-        return flushPendingSetupPlan(store, draft, setState, caps, msg.from, []);
+        return flushPendingSetupPlan(store, draft, setState, caps, msg, []);
       }
     }
 
@@ -1661,16 +1666,26 @@ async function handleMessageBody(
         msg.text ?? action.productHint,
       );
     }
+    if (action.intent === "profile_icon" && store) {
+      return applyProfileStoreIcon(store, draft, setState, caps, msg);
+    }
     if (action.intent === "upload_icon" && store) {
       // Imagen + choice icon_upload ya se resolvió arriba; acá pedimos la foto.
-      return askStoreIconUpload(store, draft, setState, caps, msg.from);
+      return askStoreIconUpload(store, draft, setState, caps, msg);
     }
     if (action.intent === "generate_icon" && store) {
+      const wantsProfile =
+        /foto de (google|cuenta|perfil)|usar mi foto/.test(
+          normalizeLoose(msg.text ?? ""),
+        );
+      if (wantsProfile) {
+        return applyProfileStoreIcon(store, draft, setState, caps, msg);
+      }
       const wantsUpload = /sub(ir|í|i)|mand(ar|á|a)|cargar|propio/.test(
         normalizeLoose(msg.text ?? ""),
       );
       if (wantsUpload) {
-        return askStoreIconUpload(store, draft, setState, caps, msg.from);
+        return askStoreIconUpload(store, draft, setState, caps, msg);
       }
       // Pedidos claros de armar → generar; “icono” genérico → hub (armar o subir).
       const wantsGenerate =
@@ -1683,11 +1698,11 @@ async function handleMessageBody(
           draft,
           setState,
           caps,
-          msg.from,
+          msg,
           msg.text,
         );
       }
-      return openStoreIconHub(store, draft, setState, caps, msg.from);
+      return openStoreIconHub(store, draft, setState, caps, msg);
     }
     if (action.intent === "mark_out_of_stock" && store) {
       const spoken = await trySpokenStockConfirm(
@@ -2028,14 +2043,15 @@ async function handleMessageBody(
 
   if (state === "ICON_WAIT_UPLOAD" && store) {
     if (msg.media?.kind === "image") {
-      return applyUploadedStoreIcon(
-        store,
-        draft,
-        setState,
-        caps,
-        msg.from,
-        msg,
-      );
+      return applyUploadedStoreIcon(store, draft, setState, caps, msg);
+    }
+    if (
+      choice === CHOICE.ICON_FROM_PROFILE ||
+      /usar mi foto|foto de (google|cuenta|perfil)/.test(
+        normalizeLoose(msg.text ?? ""),
+      )
+    ) {
+      return applyProfileStoreIcon(store, draft, setState, caps, msg);
     }
     if (
       choice === CHOICE.ICON_GENERATE ||
@@ -2046,10 +2062,15 @@ async function handleMessageBody(
         draft,
         setState,
         caps,
-        msg.from,
+        msg,
         msg.text,
       );
     }
+    const waitOpts: Option[] = [
+      { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
+      ...(await profileIconOption(msg, store)),
+      { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+    ];
     return [
       {
         kind: "text",
@@ -2057,14 +2078,7 @@ async function handleMessageBody(
           "Mandame la imagen del icono de tu tienda (cuadrada queda mejor). " +
           "Eso no cambia la foto de un producto. O tocá Que lo arme el bot.",
       },
-      withOptions(
-        "¿Qué preferís?",
-        [
-          { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
-          { id: CHOICE.MENU_BACK, label: "Volver al menú" },
-        ],
-        caps,
-      ),
+      withOptions("¿Qué preferís?", waitOpts, caps),
     ];
   }
 
@@ -2087,22 +2101,21 @@ async function handleMessageBody(
       ];
     }
     if (
+      choice === CHOICE.ICON_FROM_PROFILE ||
+      /usar mi foto|foto de (google|cuenta|perfil)/.test(normalizeLoose(text))
+    ) {
+      return applyProfileStoreIcon(store, draft, setState, caps, msg);
+    }
+    if (
       choice === CHOICE.ICON_UPLOAD ||
       /sub(ir|í|i)|mand(ar|á|a) (mi )?(icono|imagen|foto|logo)|cargar/.test(
         normalizeLoose(text),
       )
     ) {
       if (msg.media?.kind === "image") {
-        return applyUploadedStoreIcon(
-          store,
-          draft,
-          setState,
-          caps,
-          msg.from,
-          msg,
-        );
+        return applyUploadedStoreIcon(store, draft, setState, caps, msg);
       }
-      return askStoreIconUpload(store, draft, setState, caps, msg.from);
+      return askStoreIconUpload(store, draft, setState, caps, msg);
     }
     if (
       choice === CHOICE.ICON_REGEN ||
@@ -2115,24 +2128,23 @@ async function handleMessageBody(
         draft,
         setState,
         caps,
-        msg.from,
+        msg,
         msg.text,
       );
     }
     if (msg.media?.kind === "image") {
-      return applyUploadedStoreIcon(
-        store,
-        draft,
-        setState,
-        caps,
-        msg.from,
-        msg,
-      );
+      return applyUploadedStoreIcon(store, draft, setState, caps, msg);
     }
+    const previewOpts: Option[] = [
+      { id: CHOICE.ICON_REGEN, label: "Generar otro" },
+      { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
+      ...(await profileIconOption(msg, store)),
+      { id: CHOICE.ICON_DONE, label: "Listo" },
+    ];
     replies.push({
       kind: "text",
       text:
-        "Tocá Listo si te gusta. Podés pedir Generar otro o Subir mi icono (una imagen tuya). Escribí cancelar para salir.",
+        "Tocá Listo si te gusta. Podés pedir Generar otro, Subir mi icono o Usar mi foto de Google. Escribí cancelar para salir.",
     });
     if (store.icon512Url) {
       replies.push({
@@ -2141,17 +2153,7 @@ async function handleMessageBody(
         caption: "Tu icono actual",
       });
     }
-    replies.push(
-      withOptions(
-        "¿Qué hacemos?",
-        [
-          { id: CHOICE.ICON_REGEN, label: "Generar otro" },
-          { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
-          { id: CHOICE.ICON_DONE, label: "Listo" },
-        ],
-        caps,
-      ),
-    );
+    replies.push(withOptions("¿Qué hacemos?", previewOpts, caps));
     return replies;
   }
 
@@ -2498,24 +2500,62 @@ async function ensureStoreIconReady(
   return null;
 }
 
-/** Hub: armar con el bot o subir imagen propia (producto ≠ icono de tienda). */
+const PROFILE_ICON_LABEL = "Usar mi foto de Google";
+
+async function profileIconOption(
+  msg: InboundMessage,
+  store: Store,
+): Promise<Option[]> {
+  const url = await resolveClerkProfileImageUrl({
+    hint: msg.ownerImageUrl,
+    channelIdentity: msg.from,
+    clerkUserId: store.clerkUserId,
+  });
+  if (!url) return [];
+  return [{ id: CHOICE.ICON_FROM_PROFILE, label: PROFILE_ICON_LABEL }];
+}
+
+async function iconPreviewOptions(
+  msg: InboundMessage,
+  store: Store,
+  uploadLabel = "Subir mi icono",
+): Promise<Option[]> {
+  return [
+    { id: CHOICE.ICON_REGEN, label: "Generar otro" },
+    { id: CHOICE.ICON_UPLOAD, label: uploadLabel },
+    ...(await profileIconOption(msg, store)),
+    { id: CHOICE.ICON_DONE, label: "Listo" },
+  ];
+}
+
+/** Hub: armar con el bot, subir imagen o usar foto de cuenta (producto ≠ icono). */
 async function openStoreIconHub(
   store: Store,
   draft: ConversationDraft,
   setState: SetState,
   caps: ChannelCapabilities,
-  from: string,
+  msg: InboundMessage,
 ): Promise<OutboundMessage[]> {
-  const blocked = await ensureStoreIconReady(store, draft, setState, caps, from);
+  const blocked = await ensureStoreIconReady(
+    store,
+    draft,
+    setState,
+    caps,
+    msg.from,
+  );
   if (blocked) return blocked;
 
   await setState("ICON_HUB", clearStockDraft(draft));
+  const profileOpt = await profileIconOption(msg, store);
   const replies: OutboundMessage[] = [
     {
       kind: "text",
       text:
         "Icono de la tienda (el cuadrito de la app). No es la foto de un producto.\n\n" +
-        "Podés pedirme que lo arme (texto o audio: «armar icono»), o subir una imagen tuya.",
+        "Podés pedirme que lo arme (texto o audio: «armar icono»), subir una imagen tuya" +
+        (profileOpt.length
+          ? ", o usar tu foto de Google/cuenta."
+          : "."),
     },
   ];
   if (store.icon512Url) {
@@ -2531,6 +2571,7 @@ async function openStoreIconHub(
       [
         { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
         { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
+        ...profileOpt,
         { id: CHOICE.MENU_BACK, label: "Volver al menú" },
       ],
       caps,
@@ -2549,13 +2590,19 @@ async function handleStoreIconHub(
 ): Promise<OutboundMessage[]> {
   const text = normalizeLoose(msg.text ?? "");
   if (msg.media?.kind === "image") {
-    return applyUploadedStoreIcon(store, draft, setState, caps, msg.from, msg);
+    return applyUploadedStoreIcon(store, draft, setState, caps, msg);
+  }
+  if (
+    choice === CHOICE.ICON_FROM_PROFILE ||
+    /usar mi foto|foto de (google|cuenta|perfil)/.test(text)
+  ) {
+    return applyProfileStoreIcon(store, draft, setState, caps, msg);
   }
   if (
     choice === CHOICE.ICON_UPLOAD ||
     /sub(ir|í|i)|mand(ar|á|a)|cargar|propio/.test(text)
   ) {
-    return askStoreIconUpload(store, draft, setState, caps, msg.from);
+    return askStoreIconUpload(store, draft, setState, caps, msg);
   }
   if (
     choice === CHOICE.ICON_GENERATE ||
@@ -2567,7 +2614,7 @@ async function handleStoreIconHub(
       draft,
       setState,
       caps,
-      msg.from,
+      msg,
       msg.text,
     );
   }
@@ -2575,7 +2622,7 @@ async function handleStoreIconHub(
     await setState("IDLE", draft);
     return [menuMessage(caps, msg.from)];
   }
-  return openStoreIconHub(store, draft, setState, caps, msg.from);
+  return openStoreIconHub(store, draft, setState, caps, msg);
 }
 
 async function askStoreIconUpload(
@@ -2583,9 +2630,15 @@ async function askStoreIconUpload(
   draft: ConversationDraft,
   setState: SetState,
   caps: ChannelCapabilities,
-  from: string,
+  msg: InboundMessage,
 ): Promise<OutboundMessage[]> {
-  const blocked = await ensureStoreIconReady(store, draft, setState, caps, from);
+  const blocked = await ensureStoreIconReady(
+    store,
+    draft,
+    setState,
+    caps,
+    msg.from,
+  );
   if (blocked) return blocked;
 
   await setState("ICON_WAIT_UPLOAD", clearStockDraft(draft));
@@ -2600,6 +2653,7 @@ async function askStoreIconUpload(
       "Si preferís…",
       [
         { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
+        ...(await profileIconOption(msg, store)),
         { id: CHOICE.MENU_BACK, label: "Volver al menú" },
       ],
       caps,
@@ -2612,13 +2666,18 @@ async function applyUploadedStoreIcon(
   draft: ConversationDraft,
   setState: SetState,
   caps: ChannelCapabilities,
-  from: string,
   msg: InboundMessage,
 ): Promise<OutboundMessage[]> {
-  const blocked = await ensureStoreIconReady(store, draft, setState, caps, from);
+  const blocked = await ensureStoreIconReady(
+    store,
+    draft,
+    setState,
+    caps,
+    msg.from,
+  );
   if (blocked) return blocked;
   if (msg.media?.kind !== "image") {
-    return askStoreIconUpload(store, draft, setState, caps, from);
+    return askStoreIconUpload(store, draft, setState, caps, msg);
   }
 
   let icons;
@@ -2645,6 +2704,7 @@ async function applyUploadedStoreIcon(
         [
           { id: CHOICE.ICON_UPLOAD, label: "Probar otra imagen" },
           { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
+          ...(await profileIconOption(msg, store)),
           { id: CHOICE.MENU_BACK, label: "Volver al menú" },
         ],
         caps,
@@ -2671,11 +2731,105 @@ async function applyUploadedStoreIcon(
     },
     withOptions(
       "¿Lo dejamos así?",
-      [
-        { id: CHOICE.ICON_REGEN, label: "Generar otro" },
-        { id: CHOICE.ICON_UPLOAD, label: "Subir otro" },
-        { id: CHOICE.ICON_DONE, label: "Listo" },
-      ],
+      await iconPreviewOptions(msg, store, "Subir otro"),
+      caps,
+    ),
+  ];
+}
+
+/**
+ * Foto de perfil Clerk/Google → mismos PNG 192/512/180 que la subida manual.
+ */
+async function applyProfileStoreIcon(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  msg: InboundMessage,
+): Promise<OutboundMessage[]> {
+  const blocked = await ensureStoreIconReady(
+    store,
+    draft,
+    setState,
+    caps,
+    msg.from,
+  );
+  if (blocked) return blocked;
+
+  const imageUrl = await resolveClerkProfileImageUrl({
+    hint: msg.ownerImageUrl,
+    channelIdentity: msg.from,
+    clerkUserId: store.clerkUserId,
+  });
+  if (!imageUrl) {
+    return [
+      {
+        kind: "text",
+        text:
+          "Para usar tu foto de cuenta necesitás entrar con Google (u otra cuenta que tenga foto de perfil).",
+      },
+      withOptions(
+        "¿Qué querés hacer?",
+        [
+          { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
+          { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
+          { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+        ],
+        caps,
+      ),
+    ];
+  }
+
+  let icons;
+  try {
+    const bytes = await fetchClerkProfileImageBytes(imageUrl);
+    icons = await buildAndUploadStoreIconsFromImage({
+      storeId: store.id,
+      imageBytes: bytes,
+    });
+  } catch (err) {
+    const timedOut = err instanceof Error && /timeout/i.test(err.message);
+    console.warn("[bot] store icon from profile failed", err);
+    await setState("ICON_HUB", clearStockDraft(draft));
+    return [
+      {
+        kind: "text",
+        text: timedOut
+          ? "Tardó demasiado bajar tu foto de cuenta. Probá de nuevo en un rato."
+          : "No pude usar tu foto de cuenta ahora. Probá subir una imagen o que lo arme el bot.",
+      },
+      withOptions(
+        "¿Qué hacemos?",
+        [
+          { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
+          { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
+          { id: CHOICE.ICON_FROM_PROFILE, label: PROFILE_ICON_LABEL },
+          { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+        ],
+        caps,
+      ),
+    ];
+  }
+
+  const updated = await updateStoreIcons(store.id, {
+    icon192Url: icons.icon192Url,
+    icon512Url: icons.icon512Url,
+    iconAppleUrl: icons.iconAppleUrl,
+    iconSvgUrl: null,
+  });
+  if (updated) store = updated;
+  revalidateStore(store.slug);
+  await setState("ICON_PREVIEW", clearStockDraft(draft));
+
+  return [
+    {
+      kind: "image",
+      url: icons.icon512Url,
+      caption: "Así queda tu icono con tu foto de cuenta.",
+    },
+    withOptions(
+      "¿Lo dejamos así?",
+      await iconPreviewOptions(msg, store, "Subir otro"),
       caps,
     ),
   ];
@@ -2690,10 +2844,16 @@ async function startStoreIconGenerate(
   draft: ConversationDraft,
   setState: SetState,
   caps: ChannelCapabilities,
-  from: string,
+  msg: InboundMessage,
   chatHint?: string,
 ): Promise<OutboundMessage[]> {
-  const blocked = await ensureStoreIconReady(store, draft, setState, caps, from);
+  const blocked = await ensureStoreIconReady(
+    store,
+    draft,
+    setState,
+    caps,
+    msg.from,
+  );
   if (blocked) return blocked;
 
   const designHint = extractIconDesignHint(chatHint);
@@ -2717,7 +2877,7 @@ async function startStoreIconGenerate(
           ? "Tardó demasiado armar el icono (la IA o el dibujo se trabaron). Probá de nuevo en un rato, o pedime el menú."
           : "No pude armar el icono ahora. Probá de nuevo en un rato o pedime el menú.",
       },
-      menuMessage(caps, from),
+      menuMessage(caps, msg.from),
     ];
   }
 
@@ -2741,11 +2901,7 @@ async function startStoreIconGenerate(
     },
     withOptions(
       "¿Lo dejamos así?",
-      [
-        { id: CHOICE.ICON_REGEN, label: "Generar otro" },
-        { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
-        { id: CHOICE.ICON_DONE, label: "Listo" },
-      ],
+      await iconPreviewOptions(msg, store),
       caps,
     ),
   ];

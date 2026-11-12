@@ -16,6 +16,8 @@ export type InboundMessage = {
   choiceId?: string;
   /** Solo camino web (Clerk): email verificado del dueño. */
   ownerEmail?: string;
+  /** Foto de perfil Clerk (p. ej. Google); se usa como icono de tienda. */
+  ownerImageUrl?: string;
 };
 
 export type Option = { id: string; label: string };

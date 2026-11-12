@@ -11,6 +11,7 @@ const freeTextActionSchema = z.object({
     "change_photo",
     "generate_icon",
     "upload_icon",
+    "profile_icon",
     "help",
     "menu",
     "unknown",
@@ -458,6 +459,14 @@ export async function interpretFreeText(
   if (/cambia(r|le)? (la )?foto/.test(lowered)) {
     return { intent: "change_photo", productHint: text };
   }
+  // Foto de perfil Clerk/Google → icono de la TIENDA.
+  if (
+    /usar mi foto( de (google|cuenta|perfil))?|foto de (mi )?(google|cuenta|perfil)|mi foto de (google|cuenta)|icono (con|de) (mi )?foto/.test(
+      lowered,
+    )
+  ) {
+    return { intent: "profile_icon" };
+  }
   // Subir icono de la TIENDA (no foto de producto).
   if (
     /sub(ir|í|i) (mi )?(icono|ícono|logo)|mand(ar|á|a) (mi )?(icono|ícono|logo)|cargar (mi )?(icono|ícono|logo)|mi (propio )?(icono|ícono|logo)|icono propio/.test(
@@ -485,7 +494,7 @@ export async function interpretFreeText(
   }
 
   const nluPrompt = `Sos el NLU de un bot de tienda por WhatsApp para personas mayores en Argentina.
-Intents: change_photo = foto de un PRODUCTO; generate_icon = armar/cambiar el ICONO de la TIENDA (app); upload_icon = subir imagen propia como icono de la tienda.
+Intents: change_photo = foto de un PRODUCTO; generate_icon = armar/cambiar el ICONO de la TIENDA (app); upload_icon = subir imagen propia como icono de la tienda; profile_icon = usar la foto de Google/cuenta Clerk como icono de la tienda.
 Del mensaje, devolvé una acción tipada. No inventes. Mensaje: """${text}"""`;
 
   try {
