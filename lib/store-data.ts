@@ -22,7 +22,12 @@ async function readStore(slug: string): Promise<{
     const storeRaw =
       (await getStoreBySlug(slug)) ?? (slug === DEMO_STORE.slug ? DEMO_STORE : null);
     if (!storeRaw) return { store: null, products: [] };
-    const store = withCheckoutDefault(storeRaw);
+    // Cerámicas de Norma (tweet / demo): siempre "Lo quiero", nunca carrito.
+    const store = withCheckoutDefault(
+      storeRaw.slug === DEMO_STORE.slug
+        ? { ...storeRaw, checkoutMode: "whatsapp" }
+        : storeRaw,
+    );
 
     let products = await listProductsByStore(store.id);
     if (products.length === 0 && store.slug === DEMO_STORE.slug) {

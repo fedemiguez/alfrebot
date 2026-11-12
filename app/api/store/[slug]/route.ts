@@ -1,5 +1,5 @@
+import { toPublicCatalog } from "@/lib/public-store";
 import { getCachedStore } from "@/lib/store-data";
-
 
 export async function GET(
   _req: Request,
@@ -10,5 +10,6 @@ export async function GET(
   if (!store) {
     return Response.json({ ok: false, error: "not found" }, { status: 404 });
   }
-  return Response.json({ ok: true, store, products });
+  const catalog = toPublicCatalog(store, products);
+  return Response.json({ ok: true, ...catalog });
 }

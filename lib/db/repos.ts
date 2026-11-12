@@ -884,7 +884,14 @@ export async function markProcessed(messageId: string): Promise<boolean> {
 
 export async function ensureDemoStore(): Promise<Store> {
   const existing = await getStoreBySlug("ceramicas-de-norma");
-  if (existing) return existing;
+  if (existing) {
+    // Tweet / demo: siempre modo "Lo quiero" (sin carrito).
+    if (existing.checkoutMode !== "whatsapp") {
+      const fixed = await updateStoreCheckoutMode(existing.id, "whatsapp");
+      return fixed ?? existing;
+    }
+    return existing;
+  }
 
   const store = await upsertStore({
     channelIdentity: "+5491100000001",
