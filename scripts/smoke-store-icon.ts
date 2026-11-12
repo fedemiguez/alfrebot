@@ -1,14 +1,23 @@
 /**
- * Smoke: icono PWA — menú / NLU → hub → monograma SVG→PNG → preview;
- * subida manual de imagen → preview PNG. Sin LLM.
+ * Smoke: icono PWA — menú / NLU → hub → composición SVG→PNG → preview;
+ * pedido específico (pelota+fuego); productos (lámpara+sushi); subida.
+ * Sin LLM.
  */
 import { handleMessage } from "../lib/bot/engine";
 import type { OutboundMessage } from "../lib/channels/types";
 import { getMemoryDb } from "../lib/db/memory";
-import { getStoreForChannelIdentity } from "../lib/db/repos";
 import {
+  getStoreForChannelIdentity,
+  createProduct,
+} from "../lib/db/repos";
+import {
+  buildAndUploadStoreIcons,
   buildAndUploadStoreIconsFromImage,
+  composeStoreIconSvg,
+  detectIconMotifs,
+  extractIconDesignHint,
   monogramSvg,
+  pickIconMotifs,
   storeInitials,
   svgToPng,
   withTimeout,
@@ -85,6 +94,13 @@ function hasOption(replies: OutboundMessage[], id: string): boolean {
   );
 }
 
+function captionOf(replies: OutboundMessage[]): string {
+  return replies
+    .filter((r) => r.kind === "image")
+    .map((r) => r.caption || "")
+    .join(" ");
+}
+
 async function onboard() {
   await say("Empezar");
   await say("Norma");
@@ -98,7 +114,56 @@ async function onboard() {
 }
 
 async function main() {
-  // Unit: monograma + raster
+  // Unit: hint extraction
+  assert(
+    extractIconDesignHint("Armar icono, pelota de fútbol con fuego") ===
+      "pelota de fútbol con fuego",
+    "extract design hint from armar icono…",
+  );
+  assert(
+    extractIconDesignHint("Generar otro") === undefined,
+    "Generar otro is not a design hint",
+  );
+  assert(
+    extractIconDesignHint("Que lo arme el bot") === undefined,
+    "UI label is not a design hint",
+  );
+
+  // Unit: motifs + composed SVG (pedido específico)
+  const ballFire = detectIconMotifs("pelota de fútbol con fuego");
+  assert(ballFire.includes("ball") && ballFire.includes("fire"), "ball+fire motifs");
+  const composedPedido = composeStoreIconSvg({
+    storeName: "Test",
+    designHint: "pelota de fútbol con fuego",
+  });
+  assert(/<svg[\s>]/i.test(composedPedido), "composed svg pedido");
+  assert(!/<text[\s>]/i.test(composedPedido), "composed has no text/iniciales");
+  const pngPedido = await svgToPng(composedPedido, 192);
+  assert(pngPedido.length > 100 && pngPedido[0] === 0x89, "pedido png");
+  console.log("OK: pedido pelota+fuego → composed png");
+
+  // Unit: productos lámpara + sushi
+  const fakeProducts = [
+    { title: "Lámpara de pie", hidden: false },
+    { title: "Sushi nigiri", hidden: false },
+  ] as Parameters<typeof pickIconMotifs>[0]["products"];
+  const productMotifs = pickIconMotifs({
+    storeName: "Mi tienda",
+    products: fakeProducts,
+  });
+  assert(
+    productMotifs.includes("lamp") && productMotifs.includes("sushi"),
+    `product motifs lamp+sushi got ${productMotifs.join(",")}`,
+  );
+  const composedProducts = composeStoreIconSvg({
+    storeName: "Mi tienda",
+    products: fakeProducts,
+  });
+  assert(!/<text[\s>]/i.test(composedProducts), "product compose no initials");
+  await svgToPng(composedProducts, 64);
+  console.log("OK: productos lámpara+sushi → composed");
+
+  // Unit: monograma still works for on-the-fly route
   const initials = storeInitials("Cerámicas de Norma");
   assert(initials === "CN", `initials expected CN got ${initials}`);
   const svg = monogramSvg("Cerámicas de Norma");
@@ -106,7 +171,7 @@ async function main() {
   const png = await svgToPng(svg, 192);
   assert(png.length > 100, "png bytes");
   assert(png[0] === 0x89 && png[1] === 0x50, "png magic");
-  console.log("OK: monogram → png 192");
+  console.log("OK: monogram → png 192 (on-the-fly only)");
 
   const fromUpload = await buildAndUploadStoreIconsFromImage({
     storeId: "smoke-store",
@@ -163,6 +228,12 @@ async function main() {
     "regen/done options",
   );
   assert(hasOption(gen, "icon_upload"), "preview offers upload");
+  const autoCap = captionOf(gen);
+  assert(
+    /productos o al nombre|armé este icono/i.test(autoCap),
+    `auto copy mentions productos/nombre, got: ${autoCap}`,
+  );
+  assert(!/iniciales/i.test(autoCap), "auto copy must not mention iniciales");
 
   let store = await getStoreForChannelIdentity(from);
   assert(store?.icon192Url, "icon192Url saved");
@@ -170,10 +241,46 @@ async function main() {
   assert(store?.iconAppleUrl, "iconAppleUrl saved");
   console.log("OK: icons persisted after generate flow");
 
+  // Pedido específico vía NLU
+  const pedido = await say("Armar icono, pelota de fútbol con fuego");
+  assert(hasImage(pedido), "specific pedido shows image");
+  const pedidoCap = captionOf(pedido);
+  assert(
+    /pelota|fútbol|futbol|pediste/i.test(pedidoCap),
+    `pedido caption acknowledges request, got: ${pedidoCap}`,
+  );
+  assert(!/iniciales/i.test(pedidoCap), "pedido copy must not mention iniciales");
+  assert(hasOption(pedido, "icon_upload"), "pedido preview keeps Subir mi icono");
+  await say(undefined, "icon_done");
+
+  // Productos → composición
+  store = await getStoreForChannelIdentity(from);
+  assert(store, "store exists");
+  await createProduct({
+    storeId: store!.id,
+    title: "Lámpara de pie",
+    priceCents: 5000,
+    imageUrl: "data:image/png;base64,xx",
+  });
+  await createProduct({
+    storeId: store!.id,
+    title: "Sushi nigiri",
+    priceCents: 3000,
+    imageUrl: "data:image/png;base64,yy",
+  });
+  const built = await buildAndUploadStoreIcons({
+    store: store!,
+    products: fakeProducts,
+    forceComposed: true,
+  });
+  assert(built.source === "composed", "forceComposed source");
+  assert(!built.designHint, "no design hint on product path");
+  console.log("OK: buildAndUpload composed from products");
+
   const nlu = await say("armar icono");
   assert(
     hasImage(nlu) ||
-      nlu.some((r) => r.kind === "text" && /icono|Listo|Generar|Arme/i.test(r.text)),
+      nlu.some((r) => r.kind === "text" && /icono|Listo|Generar|Arme|armé/i.test(r.text)),
     "NLU armar icono responds",
   );
 

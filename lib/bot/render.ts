@@ -103,7 +103,7 @@ export const CHOICE = {
   MENU_HELP: "menu_help",
   /** Volver al menú principal (no confundir con Ayuda). */
   MENU_BACK: "menu_back",
-  /** Armar icono PWA con el bot (AI/monograma). */
+  /** Armar icono PWA con el bot (AI o composición por productos/pedido). */
   ICON_GENERATE: "icon_generate",
   /** Subir imagen propia como icono de la tienda. */
   ICON_UPLOAD: "icon_upload",
