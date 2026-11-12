@@ -102,9 +102,10 @@ async function main() {
       (r) =>
         r.kind === "text" &&
         /cuál producto querés cambiar el precio/i.test(r.text) &&
-        r.options?.some((o) => o.id.startsWith("stock_prod_")),
+        r.options?.some((o) => o.id.startsWith("stock_prod_")) &&
+        r.options?.some((o) => o.id === "menu_cancel" && o.label === "Cancelar"),
     ),
-    "debe listar productos para elegir",
+    "debe listar productos para elegir (con Cancelar)",
   );
   const convList = await getConversation(from);
   assert(convList?.state === "STOCK_PICK", `STOCK_PICK got ${convList?.state}`);
@@ -134,9 +135,10 @@ async function main() {
       (r) =>
         r.kind === "text" &&
         /Dejamos "Lámpara azul" a/.test(r.text) &&
-        r.options?.some((o) => o.id === "yes"),
+        r.options?.some((o) => o.id === "yes") &&
+        r.options?.some((o) => o.id === "menu_cancel" && o.label === "Cancelar"),
     ),
-    "confirmación Sí/No con precio",
+    "confirmación Sí/No con precio (y Cancelar)",
   );
   const convConfirm = await getConversation(from);
   assert(

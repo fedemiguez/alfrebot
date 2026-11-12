@@ -53,7 +53,8 @@ export function stockHubMessage(
 }
 
 export function productPickOptions(products: Product[]): Option[] {
-  return products.slice(0, 10).map((p) => ({
+  // Dejar 1 fila libre para Cancelar (maxListRows típico = 10).
+  return products.slice(0, 9).map((p) => ({
     id: `${CHOICE.STOCK_PROD_PREFIX}${p.id}`,
     label: truncateLabel(p.title, 24),
   }));
