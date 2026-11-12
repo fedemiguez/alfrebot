@@ -641,14 +641,34 @@ export function SimulatorChat({
                 {item.messages.map((m, idx) => (
                   <div
                     key={`${item.id}_${idx}`}
-                    className="flex items-start justify-start gap-2"
+                    className={
+                      isV2
+                        ? "relative pl-9"
+                        : "flex items-start justify-start gap-2"
+                    }
+                    style={
+                      isV2
+                        ? undefined
+                        : { alignItems: "flex-start" }
+                    }
                   >
                     {isV2 && idx === 0 && (
-                      <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 grow-0 basis-7 self-start overflow-hidden rounded-full shadow-sm">
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute left-0 top-0 overflow-hidden rounded-full shadow-sm"
+                        style={{
+                          width: 28,
+                          height: 28,
+                          minWidth: 28,
+                          minHeight: 28,
+                          maxWidth: 28,
+                          maxHeight: 28,
+                        }}
+                      >
                         <AlfrebotRobotAvatar size={28} />
-                      </span>
+                      </div>
                     )}
-                    <div className="fade-in min-w-0 max-w-[90%] flex-1 rounded-lg rounded-tl-sm bg-white px-3 py-2 text-[17px] text-[var(--ink)] shadow-sm">
+                    <div className="fade-in min-w-0 max-w-[90%] rounded-lg rounded-tl-sm bg-white px-3 py-2 text-[17px] text-[var(--ink)] shadow-sm">
                       {m.kind === "image" && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -709,11 +729,22 @@ export function SimulatorChat({
             </div>
           )}
           {(sending || pending) && !sendingAudio && !uploading && (
-            <div className="flex items-start justify-start gap-2">
+            <div className={isV2 ? "relative pl-9" : "flex items-start gap-2"}>
               {isV2 && (
-                <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 grow-0 basis-7 self-start overflow-hidden rounded-full">
+                <div
+                  aria-hidden
+                  className="absolute left-0 top-0 overflow-hidden rounded-full"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    minWidth: 28,
+                    minHeight: 28,
+                    maxWidth: 28,
+                    maxHeight: 28,
+                  }}
+                >
                   <AlfrebotRobotAvatar size={28} />
-                </span>
+                </div>
               )}
               <div className="rounded-lg bg-white/90 px-3 py-2 text-[16px] text-[var(--muted)] shadow-sm">
                 <span className="inline-flex gap-1">

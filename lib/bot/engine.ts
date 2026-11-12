@@ -989,7 +989,7 @@ async function handleMessageBody(
       : "";
     const prompt =
       confidence === "high"
-        ? `Encantado, ${name}. ¿Usamos ese nombre?${planNote}`
+        ? `Encantado, ${name}. ¿Usamos ese nombre?${planNote}` // masculino (alfrebot)
         : `¿Te llamás ${name}? Si no, tocá Cambiar nombre.${planNote}`;
     return replyWithChoices(
       draft,
