@@ -1,4 +1,5 @@
 import type { ChannelCapabilities, Option, OutboundMessage } from "@/lib/channels/types";
+import { formatPriceArs } from "@/lib/bot/nlu";
 import { CHOICE, withOptions } from "@/lib/bot/render";
 import type { ConversationDraft } from "@/lib/db/repos";
 import type { Product, Store } from "@/lib/db/schema";
@@ -71,6 +72,7 @@ export function productActionOptions(
   if (store.tracksQuantity) {
     options.push({ id: CHOICE.STOCK_SET_QTY, label: "Cambiar cantidad" });
   }
+  options.push({ id: CHOICE.STOCK_SET_PRICE, label: "Cambiar precio" });
   if (product.hidden) {
     options.push({ id: CHOICE.STOCK_SHOW, label: "Mostrar en tienda" });
   } else {
@@ -105,6 +107,8 @@ export function confirmStockMessage(
       text = `¿Ocultamos "${product.title}" de la tienda? (no se borra)`;
     } else if (action === "show") {
       text = `¿Volvemos a mostrar "${product.title}" en la tienda?`;
+    } else if (action === "set_price") {
+      text = `¿Dejamos "${product.title}" a ${formatPriceArs(draft.stockPricePending)}?`;
     }
   }
   return withOptions(
@@ -153,7 +157,7 @@ export function extractProductSearchHint(raw: string): string {
       " ",
     )
     .replace(
-      /\b(pausar|pausa|pause|reactivar|reactiva|marcar|marcalo|como|agotado|sin stock|stock|cantidad|unidades|listado|mostrame|ver)\b/g,
+      /\b(pausar|pausa|pause|reactivar|reactiva|marcar|marcalo|como|agotado|sin stock|stock|cantidad|unidades|listado|mostrame|ver|cambiar|cambiale|cambia|precio|sale|ahora|poner|ponele|pone|pon)\b/g,
       " ",
     )
     .replace(/\b(la|el|los|las|de|del|un|una|unos|unas|al)\b/g, " ")

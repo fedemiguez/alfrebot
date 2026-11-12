@@ -83,7 +83,8 @@ export type BotState =
   | "STOCK_PICK"
   | "STOCK_ACTIONS"
   | "STOCK_QTY"
-  | "STOCK_CONFIRM";
+  | "STOCK_CONFIRM"
+  | "PRICE_INPUT";
 
 const DEFAULT_CAPS: ChannelCapabilities = {
   buttons: true,
@@ -118,6 +119,7 @@ function clearStockDraft(d: ConversationDraft): ConversationDraft {
     stockProductId: undefined,
     stockAction: undefined,
     stockQtyPending: undefined,
+    stockPricePending: undefined,
     stockModePending: undefined,
     pendingChoices: undefined,
   };
@@ -184,6 +186,7 @@ function helpMessage(): OutboundMessage {
     text:
       "Soy tu ayudante para armar la tienda. Podés mandarme fotos de tus productos y te voy guiando. También podés mandarme audios (nombre, precio, stock).\n\n" +
       "Stock: menú → Stock / pausa, o pedime el listado, pausar, reactivar o cambiar cantidad (por texto o audio).\n" +
+      "Precio: pedime cambiar el precio y te listo los productos, o nombrá uno (ej. «cambiar el precio de la lámpara»).\n" +
       "WhatsApp de pedidos: el número donde te escriben los clientes (puede ser distinto al que usás para gestionar la tienda).\n" +
       "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
   };
@@ -370,6 +373,7 @@ async function handleMessageBody(
   if (
     cmd === "menu" &&
     (state === "IDLE" ||
+      state === "PRICE_INPUT" ||
       state.startsWith("STOCK_") ||
       state.startsWith("PRODUCT_"))
   ) {
@@ -960,23 +964,13 @@ async function handleMessageBody(
       return openStockHub(store, draft, setState, caps);
     }
     if (action.intent === "set_price" && store) {
-      const products = await listProductsByStore(store.id);
-      const price = action.priceHint ? parsePriceToCents(action.priceHint) : null;
-      if (products.length === 1 && price != null) {
-        await updateProduct(products[0]!.id, { priceCents: price });
-        revalidateStore(store.slug);
-        replies.push({
-          kind: "text",
-          text: `Listo, ${products[0]!.title} ahora sale ${formatPriceArs(price)}.`,
-        });
-        return replies;
-      }
-      replies.push(menuMessage(caps));
-      replies.unshift({
-        kind: "text",
-        text: "Para cambiar el precio decime cuál producto, o usá el menú.",
-      });
-      return replies;
+      return startPriceEditFlow(
+        store,
+        draft,
+        setState,
+        caps,
+        msg.text ?? action.productHint,
+      );
     }
     if (action.intent === "mark_out_of_stock" && store) {
       const spoken = await trySpokenStockConfirm(
@@ -1099,7 +1093,7 @@ async function handleMessageBody(
       replies.push({ kind: "text", text: "No encontré ese producto." });
       return openStockHub(store, draft, setState, caps);
     }
-    // Venimos de audio/texto "pausá X" con varios matches → ya sabemos la acción
+    // Venimos de audio/texto "pausá X" / "cambiar precio de X" con varios matches
     if (draft.stockAction === "pause" || draft.stockAction === "resume") {
       return goToStockConfirm(
         store,
@@ -1108,6 +1102,16 @@ async function handleMessageBody(
         caps,
         product,
         draft.stockAction,
+      );
+    }
+    if (draft.stockAction === "set_price") {
+      return continuePriceEdit(
+        store,
+        draft,
+        setState,
+        caps,
+        product,
+        draft.stockPricePending ?? null,
       );
     }
     draft = { ...draft, stockProductId: product.id };
@@ -1180,6 +1184,9 @@ async function handleMessageBody(
         },
       ];
     }
+    if (choice === CHOICE.STOCK_SET_PRICE) {
+      return continuePriceEdit(store, draft, setState, caps, product, null);
+    }
     if (choice === CHOICE.STOCK_HIDE) {
       draft = { ...draft, stockAction: "hide" };
       return replyWithChoices(
@@ -1240,7 +1247,15 @@ async function handleMessageBody(
 
   if (state === "STOCK_CONFIRM" && store) {
     const text = msg.text?.trim() ?? "";
+    const priceFlow = draft.stockAction === "set_price";
     if (choice === CHOICE.NO || isNegative(text)) {
+      if (priceFlow) {
+        await setState("IDLE", clearStockDraft(draft));
+        return [
+          { kind: "text", text: "No guardé nada." },
+          menuMessage(caps),
+        ];
+      }
       return openStockHub(store, clearStockDraft(draft), setState, caps, [
         { kind: "text", text: "No guardé nada." },
       ]);
@@ -1260,9 +1275,35 @@ async function handleMessageBody(
     const applied = await applyStockAction(store, draft);
     revalidateStore(store.slug);
     store = (await getStoreForChannelIdentity(msg.from)) ?? store;
+    if (priceFlow) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [{ kind: "text", text: applied }, menuMessage(caps)];
+    }
     return openStockHub(store, clearStockDraft(draft), setState, caps, [
       { kind: "text", text: applied },
     ]);
+  }
+
+  if (state === "PRICE_INPUT" && store) {
+    const product = draft.stockProductId
+      ? await getProduct(draft.stockProductId)
+      : null;
+    if (!product || product.storeId !== store.id) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [
+        { kind: "text", text: "No encontré ese producto." },
+        menuMessage(caps),
+      ];
+    }
+    const price = msg.text ? parsePriceToCents(msg.text) : null;
+    if (price == null) {
+      replies.push({
+        kind: "text",
+        text: `No entendí el precio. Hoy "${product.title}" sale ${formatPriceArs(product.priceCents)}. Probá con 15 mil o 15000 (texto o audio).`,
+      });
+      return replies;
+    }
+    return continuePriceEdit(store, draft, setState, caps, product, price);
   }
 
   if (state === "PRODUCT_PHOTO") {
@@ -1419,6 +1460,98 @@ async function openStockHub(
 }
 
 /**
+ * "cambiar el precio" / "cambiar el precio de la lámpara a 20 mil":
+ * lista productos o fuzzy + pide precio / confirma.
+ */
+async function startPriceEditFlow(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  rawText: string | undefined,
+): Promise<OutboundMessage[]> {
+  const products = await listProductsByStore(store.id, { includeHidden: true });
+  if (products.length === 0) {
+    await setState("IDLE", clearStockDraft(draft));
+    return [
+      {
+        kind: "text",
+        text: "Todavía no hay productos. Mandame una foto para cargar uno.",
+      },
+      menuMessage(caps),
+    ];
+  }
+
+  const priceHint = rawText ? parsePriceToCents(rawText) : null;
+  const matches = rawText ? findProductsByHint(products, rawText) : [];
+
+  if (matches.length === 1) {
+    return continuePriceEdit(
+      store,
+      draft,
+      setState,
+      caps,
+      matches[0]!,
+      priceHint,
+    );
+  }
+
+  const pickFrom = matches.length > 1 ? matches : products;
+  const nextDraft: ConversationDraft = {
+    ...clearStockDraft(draft),
+    stockAction: "set_price",
+    stockPricePending: priceHint ?? undefined,
+  };
+  const prompt =
+    matches.length > 1
+      ? "Encontré más de uno. ¿De cuál querés cambiar el precio?"
+      : "¿De cuál producto querés cambiar el precio?";
+  return replyWithChoices(
+    nextDraft,
+    setState,
+    "STOCK_PICK",
+    withOptions(prompt, productPickOptions(pickFrom), caps),
+  );
+}
+
+async function continuePriceEdit(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  product: Product,
+  priceHint: number | null,
+): Promise<OutboundMessage[]> {
+  if (priceHint != null) {
+    const nextDraft: ConversationDraft = {
+      ...clearStockDraft(draft),
+      stockProductId: product.id,
+      stockAction: "set_price",
+      stockPricePending: priceHint,
+    };
+    return replyWithChoices(
+      nextDraft,
+      setState,
+      "STOCK_CONFIRM",
+      confirmStockMessage(nextDraft, product, store, caps),
+    );
+  }
+
+  const nextDraft: ConversationDraft = {
+    ...clearStockDraft(draft),
+    stockProductId: product.id,
+    stockAction: "set_price",
+  };
+  await setState("PRICE_INPUT", nextDraft);
+  return [
+    {
+      kind: "text",
+      text: `¿A cómo querés dejar "${product.title}"? Hoy sale ${formatPriceArs(product.priceCents)}. Decime el precio nuevo (texto o audio).`,
+    },
+  ];
+}
+
+/**
  * Audio/texto libre tipo "pausá la lata de cerveza":
  * matchea producto y pasa a confirmación (Sí/No) sin pasar por el hub.
  */
@@ -1549,6 +1682,12 @@ async function applyStockAction(store: Store, draft: ConversationDraft): Promise
   if (draft.stockAction === "show") {
     await updateProduct(product.id, { hidden: false });
     return `Volví a mostrar "${product.title}" en la tienda.`;
+  }
+  if (draft.stockAction === "set_price") {
+    const price = draft.stockPricePending;
+    if (price == null) return "No entendí el precio nuevo.";
+    await updateProduct(product.id, { priceCents: price });
+    return `Listo, "${product.title}" ahora sale ${formatPriceArs(price)}.`;
   }
   return "Listo.";
 }
