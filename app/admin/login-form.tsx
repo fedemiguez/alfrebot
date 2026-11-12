@@ -11,7 +11,7 @@ export function AdminLoginForm() {
       <div>
         <label
           htmlFor="password"
-          className="mb-2 block text-[16px] font-semibold text-[var(--ink)]"
+          className="mb-2 block text-[17px] font-semibold text-[var(--ink)]"
         >
           Clave de admin
         </label>
@@ -21,12 +21,12 @@ export function AdminLoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className="w-full border border-[var(--border)] bg-white px-4 py-3 text-[18px] text-[var(--ink)] outline-none focus:border-[var(--primary)]"
-          placeholder="ADMIN_SECRET"
+          className="min-h-12 w-full border border-[var(--border)] bg-white px-4 py-3 text-[18px] text-[var(--ink)] outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
+          placeholder="Tu clave"
         />
       </div>
       {state?.error && (
-        <p className="text-[16px] text-[var(--primary)]" role="alert">
+        <p className="text-[17px] text-[var(--primary)]" role="alert">
           {state.error}
         </p>
       )}

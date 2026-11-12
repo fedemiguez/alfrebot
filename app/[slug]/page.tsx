@@ -61,15 +61,15 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
           </div>
           <Link
             href="/"
-            className="hidden text-[15px] text-[var(--muted)] hover:text-[var(--primary)] sm:inline"
+            className="hidden min-h-11 items-center text-[17px] text-[var(--muted)] hover:text-[var(--primary)] sm:inline-flex"
           >
             alfrebot
           </Link>
         </div>
 
         {store.isDemo && (
-          <p className="mt-4 rounded border border-[var(--border)] bg-[var(--paper)] px-4 py-3 text-[16px] text-[var(--muted)]">
-            Tienda de prueba (sin celular registrado)
+          <p className="mt-4 rounded border border-[var(--border)] bg-[var(--paper)] px-4 py-3 text-[1.05rem] text-[var(--muted)]">
+            Tienda de prueba (sin celular cargado)
           </p>
         )}
 

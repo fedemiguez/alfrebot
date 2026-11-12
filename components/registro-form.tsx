@@ -52,14 +52,14 @@ export function RegistroForm() {
           <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
             WhatsApp todavía no está abierto
           </h1>
-          <p className="mt-4 text-[var(--muted)]">
+          <p className="mt-4 text-[1.15rem] leading-relaxed text-[var(--muted)]">
             {result.reason ||
               "Por ahora este número no puede hablar con el bot por WhatsApp."}
           </p>
           <Link href="/sign-up" className="btn btn-primary mt-8 inline-flex">
             Armá la tienda en la web con email
           </Link>
-          <p className="mt-6 text-[15px] text-[var(--muted)]">
+          <p className="mt-6 text-[1.05rem] text-[var(--muted)]">
             Número: {result.phone}
           </p>
         </div>
@@ -71,22 +71,22 @@ export function RegistroForm() {
         <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
           Abrí WhatsApp
         </h1>
-        <p className="mt-4 text-[var(--muted)]">
+        <p className="mt-4 text-[1.15rem] leading-relaxed text-[var(--muted)]">
           Tocá el botón verde y después <strong>Enviar</strong>. El bot te va a
           pedir tu nombre.
         </p>
         <a href={result.waLink} className="btn btn-wa mt-8 inline-flex w-full sm:w-auto">
           Abrir WhatsApp
         </a>
-        <p className="mt-6 text-[15px]">
+        <p className="mt-6 text-[1.05rem]">
           <Link
             href="/sign-up"
-            className="text-[var(--primary)] underline-offset-2 hover:underline"
+            className="inline-flex min-h-11 items-center text-[var(--primary)] underline-offset-2 hover:underline"
           >
             Prefiero armarla en la web con email
           </Link>
         </p>
-        <p className="mt-4 text-[15px] text-[var(--muted)]">
+        <p className="mt-4 text-[1.05rem] text-[var(--muted)]">
           Número: {result.phone}
         </p>
       </div>
@@ -98,7 +98,7 @@ export function RegistroForm() {
       <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
         Tu WhatsApp
       </h1>
-      <p className="mt-3 text-[var(--muted)]">
+      <p className="mt-3 text-[1.15rem] leading-relaxed text-[var(--muted)]">
         Con el +54 fijo. Ejemplo: 11 5555 1234. El bot te escribe a ese número.
       </p>
       <label className="mt-8 block">

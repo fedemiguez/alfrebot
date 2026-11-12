@@ -176,11 +176,11 @@ function CartPanel({ store }: { store: StorePurchaseInfo }) {
         type="button"
         onClick={() => setOpen(true)}
         className="fixed bottom-5 right-5 z-40 flex min-h-12 items-center gap-2 bg-[var(--primary)] px-4 py-3 font-[family-name:var(--font-display)] text-[1.05rem] font-semibold text-white shadow-md"
-        aria-label={`Ver carrito${count ? `, ${count} ítems` : ""}`}
+        aria-label={`Ver pedido${count ? `, ${count} productos` : ""}`}
       >
         Pedido
         {count > 0 && (
-          <span className="inline-flex min-w-7 justify-center bg-white/20 px-2 py-0.5 text-[15px]">
+          <span className="inline-flex min-w-7 justify-center bg-white/20 px-2 py-0.5 text-[16px]">
             {count}
           </span>
         )}
@@ -210,7 +210,7 @@ function CartPanel({ store }: { store: StorePurchaseInfo }) {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="text-[16px] text-[var(--muted)] hover:text-[var(--primary)]"
+                className="min-h-11 min-w-11 px-2 text-[17px] text-[var(--muted)] hover:text-[var(--primary)]"
               >
                 Cerrar
               </button>
@@ -235,7 +235,7 @@ function CartPanel({ store }: { store: StorePurchaseInfo }) {
                       <div className="mt-2 flex items-center gap-2">
                         <button
                           type="button"
-                          className="min-h-10 min-w-10 border border-[var(--border)] text-[18px]"
+                          className="min-h-11 min-w-11 border border-[var(--border)] text-[18px]"
                           onClick={() =>
                             setQuantity(item.productId, item.quantity - 1)
                           }
@@ -243,12 +243,12 @@ function CartPanel({ store }: { store: StorePurchaseInfo }) {
                         >
                           −
                         </button>
-                        <span className="min-w-8 text-center text-[17px]">
+                        <span className="min-w-8 text-center text-[18px]">
                           {item.quantity}
                         </span>
                         <button
                           type="button"
-                          className="min-h-10 min-w-10 border border-[var(--border)] text-[18px]"
+                          className="min-h-11 min-w-11 border border-[var(--border)] text-[18px]"
                           onClick={() =>
                             setQuantity(item.productId, item.quantity + 1)
                           }
@@ -277,9 +277,9 @@ function CartPanel({ store }: { store: StorePurchaseInfo }) {
                   </span>
                 </p>
                 {!accepts ? (
-                  <p className="text-[16px] text-[var(--muted)]">
-                    Esta tienda todavía no tiene número público para pedidos. Pedile
-                    a {store.ownerName || "la dueña"} que lo active en alfrebot.
+                  <p className="text-[17px] text-[var(--muted)]">
+                    Esta tienda todavía no tiene número para pedidos. Pedile a{" "}
+                    {store.ownerName || "el dueño"} que lo active en alfrebot.
                   </p>
                 ) : (
                   <a
@@ -295,7 +295,7 @@ function CartPanel({ store }: { store: StorePurchaseInfo }) {
                 <button
                   type="button"
                   onClick={clear}
-                  className="w-full text-center text-[15px] text-[var(--muted)] hover:text-[var(--primary)]"
+                  className="min-h-11 w-full text-center text-[16px] text-[var(--muted)] hover:text-[var(--primary)]"
                 >
                   Vaciar pedido
                 </button>
@@ -334,9 +334,8 @@ export function ProductBuyActions({
       <div className={wrap}>
         <AddToCartButton store={store} product={product} />
         {!accepts && (
-          <p className="w-full text-[15px] text-[var(--muted)]">
-            Sin número público: el pedido no se puede mandar por WhatsApp hasta
-            que lo activen.
+          <p className="w-full text-[16px] text-[var(--muted)]">
+            Todavía no se puede mandar por WhatsApp: falta el número de pedidos.
           </p>
         )}
       </div>
@@ -410,9 +409,9 @@ export function NoPublicPhoneNote({
   if (showPhone) return null;
   if (checkoutMode === "cart") return null;
   return (
-    <p className="mt-4 text-[16px] text-[var(--muted)]">
-      {ownerName || "La dueña"} todavía no configuró un número público para
-      pedidos por WhatsApp.
+    <p className="mt-4 text-[1.05rem] text-[var(--muted)]">
+      {ownerName || "El dueño"} todavía no cargó un número para pedidos por
+      WhatsApp.
     </p>
   );
 }

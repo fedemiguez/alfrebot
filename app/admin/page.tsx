@@ -76,7 +76,7 @@ async function AdminBody() {
         <form action={logoutAdminAction}>
           <button
             type="submit"
-            className="text-[16px] text-[var(--muted)] underline-offset-2 hover:text-[var(--primary)] hover:underline"
+            className="inline-flex min-h-11 items-center text-[17px] text-[var(--muted)] underline-offset-2 hover:text-[var(--primary)] hover:underline"
           >
             Salir
           </button>

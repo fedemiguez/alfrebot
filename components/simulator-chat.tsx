@@ -404,19 +404,19 @@ export function SimulatorChat({
             <p className="font-[family-name:var(--font-display)] text-lg font-semibold leading-tight">
               alfrebot
             </p>
-            <p className="text-sm text-white/80">Chat web · {displayIdentity}</p>
+            <p className="text-[15px] text-white/90">Chat web · {displayIdentity}</p>
           </div>
         </div>
 
         {continueWaLink && (
-          <div className="border-b border-black/5 bg-[#FFF8E7] px-4 py-3 text-[15px] text-[var(--ink)]">
+          <div className="border-b border-black/5 bg-[#FFF8E7] px-4 py-3 text-[17px] leading-relaxed text-[var(--ink)]">
             {identityMode === "clerk" ? (
               <>
                 Los pedidos de clientes van por WhatsApp. Cuando el bot te pida
                 el número de pedidos, cargalo ahí. También podés{" "}
                 <a
                   href={continueWaLink}
-                  className="font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
+                  className="inline-flex min-h-11 items-center font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -429,7 +429,7 @@ export function SimulatorChat({
                 Cuando quieras seguir desde el celu,{" "}
                 <a
                   href={continueWaLink}
-                  className="font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
+                  className="inline-flex min-h-11 items-center font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -443,7 +443,7 @@ export function SimulatorChat({
 
         <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4">
           {items.length === 0 && (
-            <div className="mx-auto max-w-sm rounded-lg bg-white/90 p-4 text-center text-[16px] text-[var(--ink)]">
+            <div className="mx-auto max-w-sm rounded-lg bg-white/90 p-4 text-center text-[17px] leading-relaxed text-[var(--ink)]">
               <p>Este chat usa el mismo ayudante que WhatsApp.</p>
               <button
                 type="button"
@@ -530,13 +530,13 @@ export function SimulatorChat({
           )}
           {pending && !sendingAudio && !uploading && (
             <div className="flex justify-start">
-              <div className="rounded-lg bg-white/90 px-3 py-2 text-[15px] text-[var(--muted)] shadow-sm">
-                Escuchando / pensando…
+              <div className="rounded-lg bg-white/90 px-3 py-2 text-[16px] text-[var(--muted)] shadow-sm">
+                Un momento…
               </div>
             </div>
           )}
           {error && (
-            <p className="text-center text-[14px] text-[#9A3412]" role="alert">
+            <p className="text-center text-[16px] text-[#9A3412]" role="alert">
               {error}
             </p>
           )}
@@ -666,7 +666,7 @@ export function SimulatorChat({
                 </button>
                 <button
                   type="button"
-                  className="w-full py-2 text-[16px] text-[var(--muted)] hover:text-[var(--primary)]"
+                  className="min-h-11 w-full text-[17px] text-[var(--muted)] hover:text-[var(--primary)]"
                   onClick={() => setPickSourceOpen(false)}
                 >
                   Cancelar
@@ -681,7 +681,7 @@ export function SimulatorChat({
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
           Tu tienda en vivo
         </h2>
-        <p className="mt-2 text-[16px] text-[var(--muted)]">
+        <p className="mt-2 text-[1.05rem] leading-relaxed text-[var(--muted)]">
           Cuando publiques un producto, el link aparece acá.
         </p>
         {storePreviewUrl ? (
@@ -706,9 +706,9 @@ export function SimulatorChat({
             Todavía no hay tienda. Empezá el chat y seguí los pasos.
           </div>
         )}
-        <div className="mt-4 flex items-center gap-3 text-[14px] text-[var(--muted)]">
+        <div className="mt-4 flex items-center gap-3 text-[15px] text-[var(--muted)]">
           <Image src="/demo/sello.svg" alt="" width={40} height={40} />
-          Simulador de prueba · no usa Meta
+          Chat de prueba en la web
         </div>
       </aside>
     </div>

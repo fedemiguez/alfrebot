@@ -48,20 +48,20 @@ export default function SignUpPage() {
         <h1 className="mb-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
           Armá tu tienda en la web
         </h1>
-        <p className="mb-8 max-w-lg text-[var(--muted)]">
-          Entrá con Google o con tu email. Después usás el mismo asistente que por
+        <p className="mb-8 max-w-lg text-[1.15rem] leading-relaxed text-[var(--muted)]">
+          Entrá con Google o con tu email. Después usás el mismo ayudante que por
           WhatsApp y cargás el número de pedidos para el catálogo.
         </p>
         <Suspense fallback={<SignUpFallback />}>
           <AuthSignUpForm />
         </Suspense>
-        <p className="mt-8 text-[15px] text-[var(--muted)]">
+        <p className="mt-8 text-[1.05rem] text-[var(--muted)]">
           ¿Preferís WhatsApp?{" "}
           <Link
             href="/registro"
-            className="font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
+            className="inline-flex min-h-11 items-center font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
           >
-            Registrate con tu celular
+            Empezá con tu celular
           </Link>
           .
         </p>

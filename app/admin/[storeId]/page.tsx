@@ -48,14 +48,14 @@ async function AdminStoreBody({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/admin"
-          className="text-[16px] text-[var(--muted)] hover:text-[var(--primary)]"
+          className="inline-flex min-h-11 items-center text-[17px] text-[var(--muted)] hover:text-[var(--primary)]"
         >
           ← Usuarios
         </Link>
         <form action={logoutAdminAction}>
           <button
             type="submit"
-            className="text-[16px] text-[var(--muted)] underline-offset-2 hover:text-[var(--primary)] hover:underline"
+            className="inline-flex min-h-11 items-center text-[17px] text-[var(--muted)] underline-offset-2 hover:text-[var(--primary)] hover:underline"
           >
             Salir
           </button>
@@ -120,11 +120,11 @@ async function AdminStoreBody({
           <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--ink)]">
             Pedidos en el catálogo
           </h2>
-          <p className="text-[16px] text-[var(--muted)]">
+          <p className="text-[1.05rem] leading-relaxed text-[var(--muted)]">
             Ambos modos cierran por WhatsApp. El carrito no cobra online: arma el
             pedido y manda el listado al dueño.
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             <form action={setCheckoutModeAction}>
               <input type="hidden" name="storeId" value={store.id} />
               <input type="hidden" name="checkoutMode" value="whatsapp" />
@@ -133,7 +133,7 @@ async function AdminStoreBody({
                 className={
                   (store.checkoutMode ?? "whatsapp") === "whatsapp"
                     ? "btn btn-primary"
-                    : "border border-[var(--border)] bg-[var(--paper)] px-3 py-2 text-[15px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
+                    : "min-h-11 border border-[var(--border)] bg-[var(--paper)] px-4 py-2 text-[16px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
                 }
               >
                 Solo Lo quiero
@@ -147,15 +147,15 @@ async function AdminStoreBody({
                 className={
                   store.checkoutMode === "cart"
                     ? "btn btn-primary"
-                    : "border border-[var(--border)] bg-[var(--paper)] px-3 py-2 text-[15px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
+                    : "min-h-11 border border-[var(--border)] bg-[var(--paper)] px-4 py-2 text-[16px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
                 }
               >
                 Con carrito
               </button>
             </form>
           </div>
-          <div className="flex flex-wrap items-center gap-2 pt-2">
-            <p className="text-[16px] text-[var(--muted)]">
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <p className="text-[1.05rem] text-[var(--muted)]">
               Número público: {store.showPhone ? "sí" : "no"}
               {resolveStoreContactPhone(store)
                 ? ` · ${formatPhoneDisplay(resolveStoreContactPhone(store))}`
@@ -170,7 +170,7 @@ async function AdminStoreBody({
               />
               <button
                 type="submit"
-                className="border border-[var(--border)] bg-[var(--paper)] px-3 py-2 text-[15px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
+                className="min-h-11 border border-[var(--border)] bg-[var(--paper)] px-4 py-2 text-[16px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
               >
                 {store.showPhone ? "Ocultar número" : "Mostrar número"}
               </button>
@@ -258,13 +258,13 @@ async function AdminStoreBody({
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-3">
                 <form action={toggleProductStockAction}>
                   <input type="hidden" name="productId" value={product.id} />
                   <input type="hidden" name="storeId" value={store.id} />
                   <button
                     type="submit"
-                    className="border border-[var(--border)] bg-[var(--paper)] px-3 py-2 text-[15px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
+                    className="min-h-11 border border-[var(--border)] bg-[var(--paper)] px-4 py-2 text-[16px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
                   >
                     {product.inStock ? "Marcar agotado" : "Marcar en stock"}
                   </button>
@@ -274,7 +274,7 @@ async function AdminStoreBody({
                   <input type="hidden" name="storeId" value={store.id} />
                   <button
                     type="submit"
-                    className="border border-[var(--border)] bg-[var(--paper)] px-3 py-2 text-[15px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
+                    className="min-h-11 border border-[var(--border)] bg-[var(--paper)] px-4 py-2 text-[16px] font-medium text-[var(--ink)] hover:border-[var(--primary)]"
                   >
                     {product.hidden ? "Mostrar" : "Ocultar"}
                   </button>
@@ -284,7 +284,7 @@ async function AdminStoreBody({
                   <input type="hidden" name="storeId" value={store.id} />
                   <button
                     type="submit"
-                    className="border border-[var(--border)] px-3 py-2 text-[15px] font-medium text-[var(--primary)] hover:bg-[var(--paper)]"
+                    className="min-h-11 border border-[var(--border)] px-4 py-2 text-[16px] font-medium text-[var(--primary)] hover:bg-[var(--paper)]"
                   >
                     Borrar
                   </button>

@@ -6,13 +6,22 @@ import { useAuth, UserButton } from "@clerk/nextjs";
 function GuestLinks() {
   return (
     <>
-      <Link href="/registro" className="text-[var(--ink)] hover:text-[var(--primary)]">
+      <Link
+        href="/registro"
+        className="inline-flex min-h-11 items-center px-1 text-[var(--ink)] hover:text-[var(--primary)]"
+      >
         Por WhatsApp
       </Link>
-      <Link href="/sign-up" className="text-[var(--ink)] hover:text-[var(--primary)]">
+      <Link
+        href="/sign-up"
+        className="inline-flex min-h-11 items-center px-1 text-[var(--ink)] hover:text-[var(--primary)]"
+      >
         En la web
       </Link>
-      <Link href="/sign-in" className="text-[var(--muted)] hover:text-[var(--primary)]">
+      <Link
+        href="/sign-in"
+        className="inline-flex min-h-11 items-center px-1 text-[var(--muted)] hover:text-[var(--primary)]"
+      >
         Entrar
       </Link>
     </>
@@ -31,14 +40,14 @@ function ClerkNav() {
       <>
         <Link
           href="/asistente"
-          className="text-[var(--ink)] hover:text-[var(--primary)]"
+          className="inline-flex min-h-11 items-center px-1 text-[var(--ink)] hover:text-[var(--primary)]"
         >
           Asistente
         </Link>
         <UserButton
           appearance={{
             elements: {
-              avatarBox: "h-9 w-9",
+              avatarBox: "h-11 w-11",
             },
           }}
         />
@@ -51,7 +60,7 @@ function ClerkNav() {
 
 export function SiteHeaderNav({ clerkEnabled }: { clerkEnabled: boolean }) {
   return (
-    <nav className="flex items-center gap-4 text-[17px]">
+    <nav className="flex items-center gap-3 text-[18px] sm:gap-4">
       {clerkEnabled ? <ClerkNav /> : <GuestLinks />}
     </nav>
   );
