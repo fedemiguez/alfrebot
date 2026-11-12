@@ -41,6 +41,13 @@ Clerk se provisiona desde Vercel Marketplace (`CLERK_*` en preview/production). 
 
 - Default: botón **Lo quiero** → `wa.me` al dueño con el producto (requiere número público / `showPhone`).
 - Opcional: `checkoutMode: 'cart'` (bot en el alta o panel `/admin`) → carrito local y checkout por WhatsApp con el listado. **Sin pasarela de pago.**
+- **Voz (comprador):** en `/{slug}` hay **Hablar** (Web Speech + `speechSynthesis`). Búsqueda determinística sobre el catálogo; “Lo quiero” abre el mismo `wa.me`. Sin LLM. Si el navegador no entiende, fallback cloud STT (**Groq primero**) en `POST /api/store/[slug]/transcribe` — no cambia el pipeline Gemini→Groq del bot de la dueña.
+
+Smoke búsqueda/intención (sin micrófono ni API):
+
+```bash
+npx tsx scripts/smoke-store-voice.ts
+```
 
 ### Migración schema
 
