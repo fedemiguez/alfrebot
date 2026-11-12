@@ -281,9 +281,11 @@ export function SimulatorChat({
       const form = new FormData();
       form.append("file", file);
 
+      // Cookies de sesión Clerk (same-origin); /api/upload exige auth.
       const up = await fetch("/api/upload", {
         method: "POST",
         body: form,
+        credentials: "same-origin",
         signal: controller.signal,
       });
       const json = (await up.json()) as { url?: string; error?: string };
@@ -330,9 +332,11 @@ export function SimulatorChat({
       const form = new FormData();
       form.append("file", prepared);
 
+      // Cookies de sesión Clerk (same-origin); /api/upload exige auth.
       const up = await fetch("/api/upload", {
         method: "POST",
         body: form,
+        credentials: "same-origin",
       });
       const json = (await up.json()) as { url?: string; error?: string; ok?: boolean };
       if (!up.ok || !json.url) {
