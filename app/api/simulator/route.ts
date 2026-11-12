@@ -21,6 +21,7 @@ export async function POST(req: Request) {
     // conversación / crear tienda exige sesión Clerk.
     let clerkFrom: string | null = null;
     let ownerEmail: string | undefined;
+    let ownerImageUrl: string | undefined;
     if (isClerkConfigured()) {
       const { userId } = await auth();
       if (!userId) {
@@ -35,12 +36,14 @@ export async function POST(req: Request) {
         user?.primaryEmailAddress?.emailAddress ??
         user?.emailAddresses?.[0]?.emailAddress ??
         undefined;
+      ownerImageUrl = user?.imageUrl?.trim() || undefined;
     }
 
     for (const msg of messages) {
       if (clerkFrom) {
         msg.from = clerkFrom;
         if (ownerEmail) msg.ownerEmail = ownerEmail;
+        if (ownerImageUrl) msg.ownerImageUrl = ownerImageUrl;
       } else if (!msg.from) {
         return Response.json(
           { ok: false, error: "from (teléfono) requerido" },

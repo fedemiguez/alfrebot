@@ -38,6 +38,7 @@ function reset() {
 }
 
 let n = 0;
+let ownerImageUrl: string | undefined;
 async function say(
   text?: string,
   choiceId?: string,
@@ -56,6 +57,7 @@ async function say(
       text,
       choiceId,
       media,
+      ownerImageUrl,
     },
     caps,
   );
@@ -244,6 +246,10 @@ async function main() {
   const hub = await say(undefined, "menu_icon");
   assert(hasOption(hub, "icon_generate"), "hub has Que lo arme el bot");
   assert(hasOption(hub, "icon_upload"), "hub has Subir mi icono");
+  assert(
+    !hasOption(hub, "icon_from_profile"),
+    "hub hides Google photo without imageUrl",
+  );
   assert(hasOption(hub, "menu_cancel"), "icon hub has Cancelar");
   assert(
     hub.some(
@@ -266,6 +272,10 @@ async function main() {
   );
   assert(hasOption(gen, "menu_cancel"), "icon preview has Cancelar");
   assert(hasOption(gen, "icon_upload"), "preview offers upload");
+  assert(
+    !hasOption(gen, "icon_from_profile"),
+    "preview hides Google photo without imageUrl",
+  );
   const autoCap = captionOf(gen);
   assert(
     /productos o al nombre|armé este icono/i.test(autoCap),
@@ -351,6 +361,41 @@ async function main() {
   assert(!store?.iconSvgUrl, "manual upload clears svg source");
 
   await say(undefined, "icon_done");
+
+  // Foto de perfil Clerk/Google (data URL → mismo pipeline de subida).
+  const profilePng = await svgToPng(monogramSvg("GP"), 128);
+  ownerImageUrl = `data:image/png;base64,${profilePng.toString("base64")}`;
+  const hubWithPhoto = await say(undefined, "menu_icon");
+  assert(
+    hasOption(hubWithPhoto, "icon_from_profile"),
+    "hub shows Usar mi foto de Google when imageUrl present",
+  );
+  assert(hasOption(hubWithPhoto, "menu_cancel"), "hub with photo keeps Cancelar");
+  const fromProfile = await say(undefined, "icon_from_profile");
+  assert(hasImage(fromProfile), "profile photo shows preview");
+  assert(
+    captionOf(fromProfile).match(/foto de cuenta/i),
+    "profile caption mentions foto de cuenta",
+  );
+  assert(hasOption(fromProfile, "icon_done"), "profile preview has Listo");
+  assert(hasOption(fromProfile, "menu_cancel"), "profile preview has Cancelar");
+  store = await getStoreForChannelIdentity(from);
+  assert(store?.icon512Url, "icon after profile photo");
+  assert(!store?.iconSvgUrl, "profile photo clears svg source");
+  await say(undefined, "icon_done");
+
+  // Sin foto: explicar en vez de colgar.
+  ownerImageUrl = undefined;
+  const noPhoto = await say("usar mi foto de google");
+  assert(
+    noPhoto.some(
+      (r) =>
+        r.kind === "text" &&
+        /entrar con google|foto de perfil|foto de cuenta/i.test(r.text),
+    ),
+    "explains need for Google/account photo when missing",
+  );
+
   console.log("OK: smoke-store-icon");
 }
 

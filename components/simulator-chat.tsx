@@ -1097,13 +1097,46 @@ export function SimulatorChat({
                 producto.
               </p>
               <div className="mt-5 flex flex-col gap-3">
+                {ownerImageUrl ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary w-full min-h-12"
+                    disabled={busy || !phone}
+                    onClick={() => {
+                      setIconPickOpen(false);
+                      sendPayload(
+                        {
+                          choiceId: "icon_from_profile",
+                          text: "Usar mi foto de Google",
+                        },
+                        {
+                          id: `u_${Date.now()}`,
+                          role: "user",
+                          text: "Usar mi foto de Google",
+                        },
+                      );
+                    }}
+                  >
+                    Usar mi foto de Google
+                  </button>
+                ) : null}
                 <button
                   type="button"
-                  className="btn btn-primary w-full min-h-12"
+                  className={
+                    ownerImageUrl
+                      ? "btn btn-secondary w-full min-h-12"
+                      : "btn btn-primary w-full min-h-12"
+                  }
                   onClick={() => iconInputRef.current?.click()}
                 >
                   Elegir imagen
                 </button>
+                {!ownerImageUrl ? (
+                  <p className="text-[15px] leading-relaxed text-[var(--muted)]">
+                    Para usar tu foto de cuenta, entrá con Google (u otra cuenta
+                    con foto de perfil).
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   className="min-h-11 w-full text-[17px] text-[var(--muted)] hover:text-[var(--primary)]"

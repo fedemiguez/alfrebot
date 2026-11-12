@@ -222,7 +222,7 @@ export function extractIconDesignHint(
 
   // Labels de UI / meta — no son diseño.
   if (
-    /^(generar otro|que lo arme( el bot)?|subir mi icono|subir otro|listo|icono de la tienda|armar icono|generar icono|hacer icono|crear icono|dibujar icono)$/i.test(
+    /^(generar otro|que lo arme( el bot)?|subir mi icono|subir otro|listo|icono de la tienda|armar icono|generar icono|hacer icono|crear icono|dibujar icono|usar mi foto de (google|cuenta)|usar mi foto)$/i.test(
       t,
     )
   ) {
