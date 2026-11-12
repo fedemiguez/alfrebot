@@ -51,7 +51,7 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
           </h1>
           {store.ownerName && (
             <p className="mt-3 text-[1.1rem] text-[var(--muted)]">
-              Piezas de {store.ownerName}
+              Productos de {store.ownerName}
             </p>
           )}
         </header>
