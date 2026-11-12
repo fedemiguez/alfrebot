@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const probarPath = `/probar?phone=${encodeURIComponent(phone)}&code=${encodeURIComponent(code)}`;
+  const asistentePath = `/asistente?phone=${encodeURIComponent(phone)}&code=${encodeURIComponent(code)}`;
 
   return Response.json({
     ok: true,
@@ -63,6 +63,6 @@ export async function POST(req: Request) {
     waLink,
     forceSimulator,
     reason,
-    probarPath,
+    asistentePath,
   });
 }

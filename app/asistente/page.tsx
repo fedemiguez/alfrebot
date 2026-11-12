@@ -8,11 +8,11 @@ import { clerkIdentityKey, isClerkConfigured } from "@/lib/clerk";
 import { metaBotNumber } from "@/lib/env";
 
 export const metadata: Metadata = {
-  title: "Armar en la web",
-  description: "Armá tu tienda en el chat web con el mismo motor de alfrebot.",
+  title: "Asistente",
+  description: "Armá tu tienda en el chat web con el mismo asistente de alfrebot.",
 };
 
-async function ProbarBody() {
+async function AsistenteBody() {
   if (!isClerkConfigured()) {
     redirect("/sign-up");
   }
@@ -43,7 +43,7 @@ async function ProbarBody() {
   );
 }
 
-export default function ProbarPage() {
+export default function AsistentePage() {
   return (
     <>
       <SiteHeader />
@@ -55,7 +55,7 @@ export default function ProbarPage() {
           Armá tu tienda en la web
         </h1>
         <p className="mt-2 max-w-2xl text-[var(--muted)]">
-          Mismo ayudante que por WhatsApp. Estás registrada con email; cuando
+          Mismo asistente que por WhatsApp. Estás registrada con email; cuando
           el bot te pida el WhatsApp de pedidos, ese número es el que ven tus
           clientes.
         </p>
@@ -67,7 +67,7 @@ export default function ProbarPage() {
               </div>
             }
           >
-            <ProbarBody />
+            <AsistenteBody />
           </Suspense>
         </div>
       </main>

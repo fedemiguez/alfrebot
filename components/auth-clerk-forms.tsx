@@ -6,7 +6,7 @@ import { alfrebotClerkAppearance } from "@/lib/clerk-appearance";
 export function AuthSignUpForm() {
   return (
     <SignUp
-      forceRedirectUrl="/probar"
+      forceRedirectUrl="/asistente"
       signInUrl="/sign-in"
       appearance={alfrebotClerkAppearance}
     />
@@ -16,7 +16,7 @@ export function AuthSignUpForm() {
 export function AuthSignInForm() {
   return (
     <SignIn
-      forceRedirectUrl="/probar"
+      forceRedirectUrl="/asistente"
       signUpUrl="/sign-up"
       appearance={alfrebotClerkAppearance}
     />

@@ -18,7 +18,7 @@ export async function POST(req: Request) {
         {
           ok: false,
           error:
-            "Meta no configurado. Usá /probar o seteá META_APP_SECRET y el resto de variables.",
+            "Meta no configurado. Usá /asistente o seteá META_APP_SECRET y el resto de variables.",
         },
         { status: 503 },
       );
