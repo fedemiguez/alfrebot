@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import { AlfrebotRobotAvatar } from "@/components/alfrebot-robot-avatar";
 import type { OutboundMessage } from "@/lib/channels/types";
 import { segmentUrls } from "@/lib/bot/render";
 
@@ -12,6 +13,24 @@ type ChatItem =
 
 const MAX_EDGE_PX = 1600;
 const JPEG_QUALITY = 0.85;
+const V2_INTRO_ID = "v2_intro";
+const V2_CHANNEL_WEB = "v2_channel_web";
+const V2_CHANNEL_WA = "v2_channel_wa";
+
+const V2_INTRO_ITEM: ChatItem = {
+  id: V2_INTRO_ID,
+  role: "bot",
+  messages: [
+    {
+      kind: "text",
+      text: "¡Hola! Soy Alfre, tu ayudante para armar la tienda. ¿Cómo preferís seguir?",
+      options: [
+        { id: V2_CHANNEL_WEB, label: "Seguir en este chat" },
+        { id: V2_CHANNEL_WA, label: "Ir a WhatsApp" },
+      ],
+    },
+  ],
+};
 
 function defaultSimPhone(): string {
   if (typeof window === "undefined") return "+01155550001";
@@ -29,16 +48,22 @@ export function SimulatorChat({
   continueWaLink,
   ownerEmail,
   identityMode = "phone",
+  variant = "classic",
 }: {
   initialPhone?: string;
   initialCode?: string;
   continueWaLink?: string;
   ownerEmail?: string;
   identityMode?: "phone" | "clerk";
+  /** classic = shell v1 con aside; v2 = chat WhatsApp-like a pantalla completa. */
+  variant?: "classic" | "v2";
 }) {
+  const isV2 = variant === "v2";
   const [phone, setPhone] = useState(initialPhone || "");
   const [input, setInput] = useState("");
-  const [items, setItems] = useState<ChatItem[]>([]);
+  const [items, setItems] = useState<ChatItem[]>(() =>
+    variant === "v2" ? [V2_INTRO_ITEM] : [],
+  );
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   /** Busy real del fetch (useTransition no cubre bien async largos). */
@@ -49,6 +74,7 @@ export function SimulatorChat({
   const [error, setError] = useState<string | null>(null);
   const [pickSourceOpen, setPickSourceOpen] = useState(false);
   const [iconPickOpen, setIconPickOpen] = useState(false);
+  const [channelPicked, setChannelPicked] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -95,6 +121,7 @@ export function SimulatorChat({
       if (
         urlMatch?.[1] &&
         urlMatch[1] !== "asistente" &&
+        urlMatch[1] !== "asistente-v1" &&
         urlMatch[1] !== "probar" &&
         urlMatch[1] !== "registro"
       ) {
@@ -198,6 +225,38 @@ export function SimulatorChat({
 
   function onChoice(choiceId: string, label: string) {
     if (busy) return;
+    if (choiceId === V2_CHANNEL_WA) {
+      setChannelPicked(true);
+      setItems((prev) => [
+        ...prev,
+        { id: `u_${Date.now()}`, role: "user", text: label },
+        {
+          id: `bot_wa_${Date.now()}`,
+          role: "bot",
+          messages: [
+            {
+              kind: "text",
+              text: continueWaLink
+                ? "Dale. Te abro WhatsApp para seguir ahí con el mismo ayudante."
+                : "Para ir a WhatsApp necesitás el link del bot. Probá más tarde o seguí en este chat.",
+            },
+          ],
+        },
+      ]);
+      if (continueWaLink) {
+        window.open(continueWaLink, "_blank", "noopener,noreferrer");
+      }
+      return;
+    }
+    if (choiceId === V2_CHANNEL_WEB) {
+      setChannelPicked(true);
+      const codePart = signupCode ? ` Código ${signupCode}` : "";
+      sendPayload(
+        { text: `Hola! Quiero armar mi tienda.${codePart}` },
+        { id: `u_${Date.now()}`, role: "user", text: label },
+      );
+      return;
+    }
     sendPayload(
       { choiceId, text: label },
       { id: `u_${Date.now()}`, role: "user", text: label },
@@ -474,22 +533,42 @@ export function SimulatorChat({
     );
   }
 
-  return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-      <section className="flex h-[min(70vh,calc(100dvh-10rem))] min-h-[28rem] flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[#ECE5DD] shadow-sm">
+  const chatPanel = (
+      <section
+        className={
+          isV2
+            ? "flex h-dvh min-h-0 w-full flex-col overflow-hidden bg-[#ECE5DD]"
+            : "flex h-[min(70vh,calc(100dvh-10rem))] min-h-[28rem] flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[#ECE5DD] shadow-sm"
+        }
+      >
         <div className="flex shrink-0 items-center gap-3 bg-[#075E54] px-4 py-3 text-white">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 font-[family-name:var(--font-display)] font-semibold">
-            A
-          </div>
-          <div>
+          {isV2 ? (
+            <AlfrebotRobotAvatar size={40} className="ring-2 ring-white/30" />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 font-[family-name:var(--font-display)] font-semibold">
+              A
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
             <p className="font-[family-name:var(--font-display)] text-lg font-semibold leading-tight">
-              alfrebot
+              Alfre
             </p>
-            <p className="text-[15px] text-white/90">Chat web · {displayIdentity}</p>
+            <p className="truncate text-[15px] text-white/90">
+              {isV2 ? "en línea · chat web" : `Chat web · ${displayIdentity}`}
+            </p>
           </div>
+          {isV2 && storePreviewUrl && (
+            <Link
+              href={storePreviewUrl}
+              target="_blank"
+              className="shrink-0 rounded-full bg-white/15 px-3 py-2 text-[14px] font-semibold text-white transition-colors duration-200 hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              Ver tienda
+            </Link>
+          )}
         </div>
 
-        {continueWaLink && (
+        {!isV2 && continueWaLink && (
           <div className="shrink-0 border-b border-black/5 bg-[#FFF8E7] px-4 py-3 text-[17px] leading-relaxed text-[var(--ink)]">
             {identityMode === "clerk" ? (
               <>
@@ -522,8 +601,14 @@ export function SimulatorChat({
           </div>
         )}
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-4">
-          {items.length === 0 && (
+        <div
+          className={
+            isV2
+              ? "min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain bg-[#E5DDD5] px-3 py-4"
+              : "min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-4"
+          }
+        >
+          {!isV2 && items.length === 0 && (
             <div className="mx-auto max-w-sm rounded-lg bg-white/90 p-4 text-center text-[17px] leading-relaxed text-[var(--ink)]">
               <p>Este chat usa el mismo ayudante que WhatsApp.</p>
               <button
@@ -539,7 +624,7 @@ export function SimulatorChat({
           {items.map((item) =>
             item.role === "user" ? (
               <div key={item.id} className="flex justify-end">
-                <div className="max-w-[85%] rounded-lg rounded-tr-sm bg-[#DCF8C6] px-3 py-2 text-[17px] text-[var(--ink)] shadow-sm">
+                <div className="fade-in max-w-[85%] rounded-lg rounded-tr-sm bg-[#DCF8C6] px-3 py-2 text-[17px] text-[var(--ink)] shadow-sm">
                   {item.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -554,8 +639,14 @@ export function SimulatorChat({
             ) : (
               <div key={item.id} className="space-y-2">
                 {item.messages.map((m, idx) => (
-                  <div key={`${item.id}_${idx}`} className="flex justify-start">
-                    <div className="max-w-[90%] rounded-lg rounded-tl-sm bg-white px-3 py-2 text-[17px] text-[var(--ink)] shadow-sm">
+                  <div key={`${item.id}_${idx}`} className="flex justify-start gap-2">
+                    {isV2 && idx === 0 && (
+                      <AlfrebotRobotAvatar
+                        size={28}
+                        className="mt-1 shrink-0 shadow-sm"
+                      />
+                    )}
+                    <div className="fade-in max-w-[90%] rounded-lg rounded-tl-sm bg-white px-3 py-2 text-[17px] text-[var(--ink)] shadow-sm">
                       {m.kind === "image" && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -569,17 +660,23 @@ export function SimulatorChat({
                       </p>
                       {m.options && m.options.length > 0 && (
                         <div className="mt-3 flex flex-col gap-2">
-                          {m.options.map((o) => (
-                            <button
-                              key={o.id}
-                              type="button"
-                              disabled={busy}
-                              onClick={() => onChoice(o.id, o.label)}
-                              className="min-h-12 rounded border border-[#25D366]/40 bg-[#F0FFF4] px-3 py-2 text-left font-semibold text-[#075E54]"
-                            >
-                              {o.label}
-                            </button>
-                          ))}
+                          {m.options.map((o) => {
+                            const introLocked =
+                              item.id === V2_INTRO_ID &&
+                              channelPicked &&
+                              (o.id === V2_CHANNEL_WEB || o.id === V2_CHANNEL_WA);
+                            return (
+                              <button
+                                key={o.id}
+                                type="button"
+                                disabled={busy || introLocked}
+                                onClick={() => onChoice(o.id, o.label)}
+                                className="min-h-12 cursor-pointer rounded border border-[#25D366]/40 bg-[#F0FFF4] px-3 py-2 text-left font-semibold text-[#075E54] transition-colors duration-200 hover:bg-[#E6F9ED] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54] disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {o.label}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -610,9 +707,14 @@ export function SimulatorChat({
             </div>
           )}
           {(sending || pending) && !sendingAudio && !uploading && (
-            <div className="flex justify-start">
+            <div className="flex justify-start gap-2">
+              {isV2 && <AlfrebotRobotAvatar size={28} className="mt-1 shrink-0" />}
               <div className="rounded-lg bg-white/90 px-3 py-2 text-[16px] text-[var(--muted)] shadow-sm">
-                Un momento… (si tarda mucho, cancelamos y te avisamos)
+                <span className="inline-flex gap-1">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-[#075E54]/50" />
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-[#075E54]/50 [animation-delay:120ms]" />
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-[#075E54]/50 [animation-delay:240ms]" />
+                </span>
               </div>
             </div>
           )}
@@ -626,7 +728,7 @@ export function SimulatorChat({
 
         <form
           onSubmit={onSendText}
-          className="flex shrink-0 min-w-0 items-end gap-1.5 border-t border-black/5 bg-[#F0F0F0] p-3 sm:gap-2"
+          className="sticky bottom-0 flex shrink-0 min-w-0 items-end gap-1.5 border-t border-black/5 bg-[#F0F0F0] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:gap-2"
         >
           {/*
             Inputs fuera de display:none: en varios Android/iOS el capture
@@ -817,7 +919,15 @@ export function SimulatorChat({
           </div>
         )}
       </section>
+  );
 
+  if (isV2) {
+    return chatPanel;
+  }
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      {chatPanel}
       <aside className="hidden min-h-[70vh] flex-col rounded-lg border border-[var(--border)] bg-white/80 p-5 lg:flex">
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
           Tu tienda en vivo

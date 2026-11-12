@@ -4,7 +4,9 @@ import type { NextRequest } from "next/server";
 import { isClerkConfigured } from "@/lib/clerk";
 
 const isProtectedRoute = createRouteMatcher([
-  "/asistente(.*)",
+  // /asistente-v2-preview queda afuera a propósito (UI sin login).
+  "/asistente",
+  "/asistente-v1(.*)",
   "/probar(.*)",
 ]);
 

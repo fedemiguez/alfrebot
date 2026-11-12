@@ -24,6 +24,8 @@ Dos caminos para la dueña (misma tabla `stores`):
 2. **Web (Google / email):** [http://localhost:3000/sign-up](http://localhost:3000/sign-up) → `/asistente` con el mismo motor. Pedidos del catálogo siguen por WhatsApp (`contact_phone`).
 
 > **Migración:** la ruta canónica del chat web es `/asistente`. `/probar` responde **308** hacia `/asistente` (compatibilidad de links viejos).
+>
+> **Chat v2:** con `ALFREBOT_CHAT_V2=1` (default), `/asistente` abre el chat WhatsApp-like. Para volver al shell clásico: `ALFREBOT_CHAT_V2=0` o abrí `/asistente-v1`. Preview de UI sin login: `/asistente-v2-preview`.
 
 La key de dueña es `stores.channel_identity` (`+549…` o `clerk:{userId}`). El WhatsApp de pedidos (`contact_phone`) **no** vincula cuentas: solo lo ven los compradores.
 

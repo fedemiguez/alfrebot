@@ -7,15 +7,19 @@ import {
   withOptions,
 } from "@/lib/bot/render";
 import {
+  describeSetupPlan,
   extractPersonName,
   extractSignupCode,
   formatPriceArs,
   interpretFreeText,
   isAffirmative,
   isNegative,
+  mergeSetupPlan,
   parseCaptionHints,
   parsePriceToCents,
+  parseSetupPlan,
 } from "@/lib/bot/nlu";
+import type { PendingSetupPlan } from "@/lib/db/repos";
 import { uniqueSlug } from "@/lib/bot/slug";
 import {
   confirmStockMessage,
@@ -142,6 +146,142 @@ function clearStockDraft(d: ConversationDraft): ConversationDraft {
     stockModePending: undefined,
     pendingChoices: undefined,
   };
+}
+
+function absorbSetupPlan(
+  draft: ConversationDraft,
+  text: string | undefined,
+): ConversationDraft {
+  if (!text?.trim()) return draft;
+  const parsed = parseSetupPlan(text);
+  if (!parsed) return draft;
+  return {
+    ...draft,
+    pendingSetupPlan: mergeSetupPlan(draft.pendingSetupPlan, parsed),
+    ownerName: draft.ownerName ?? parsed.ownerName,
+    storeName: draft.storeName ?? parsed.storeName,
+  };
+}
+
+function takeNextQueuedProductTitle(
+  draft: ConversationDraft,
+): { draft: ConversationDraft; title?: string } {
+  const titles = draft.pendingSetupPlan?.productTitles;
+  if (!titles?.length) return { draft };
+  const [title, ...rest] = titles;
+  const pendingSetupPlan: PendingSetupPlan | undefined =
+    rest.length > 0 ||
+    draft.pendingSetupPlan?.iconMode ||
+    draft.pendingSetupPlan?.storeName
+      ? {
+          ...draft.pendingSetupPlan,
+          productTitles: rest.length > 0 ? rest : undefined,
+        }
+      : undefined;
+  return {
+    draft: { ...draft, pendingSetupPlan },
+    title,
+  };
+}
+
+type DraftSetState = (
+  next: BotState,
+  nextDraft?: ConversationDraft,
+) => Promise<void>;
+
+/**
+ * Tras el alta (IDLE): aplica logo / cola de productos del plan multi-intent.
+ */
+async function flushPendingSetupPlan(
+  store: Store,
+  draft: ConversationDraft,
+  setState: DraftSetState,
+  caps: ChannelCapabilities,
+  from: string,
+  baseReplies: OutboundMessage[],
+): Promise<OutboundMessage[]> {
+  const plan = draft.pendingSetupPlan;
+  if (!plan) return baseReplies;
+
+  const replies = [...baseReplies];
+  const summary = describeSetupPlan(plan);
+  if (summary) {
+    replies.push({
+      kind: "text",
+      text: `Anoté lo que me pediste: ${summary}.`,
+    });
+  }
+
+  let nextDraft: ConversationDraft = { ...draft };
+
+  if (plan.iconMode === "upload") {
+    nextDraft = {
+      ...nextDraft,
+      pendingSetupPlan: {
+        ...plan,
+        iconMode: undefined,
+        iconHint: undefined,
+      },
+    };
+    const uploadReplies = await askStoreIconUpload(
+      store,
+      nextDraft,
+      setState,
+      caps,
+      from,
+    );
+    return [...replies, ...uploadReplies];
+  }
+
+  if (plan.iconMode === "generate") {
+    const hintText = plan.iconHint
+      ? `armar icono ${plan.iconHint}`
+      : "armar icono";
+    nextDraft = {
+      ...nextDraft,
+      pendingSetupPlan: {
+        ...plan,
+        iconMode: undefined,
+        iconHint: undefined,
+      },
+    };
+    // Icono primero; la cola de productos queda en el draft para después.
+    const iconReplies = await startStoreIconGenerate(
+      store,
+      nextDraft,
+      setState,
+      caps,
+      from,
+      hintText,
+    );
+    if (plan.productTitles?.length) {
+      const list = plan.productTitles.join(", ");
+      const defer = plan.deferPhotos
+        ? " Cuando quieras mandame la foto de cada uno (podés poner el nombre en el texto)."
+        : " Mandame la foto del primero cuando puedas.";
+      replies.push({
+        kind: "text",
+        text: `Productos en cola: ${list}.${defer}`,
+      });
+    }
+    return [...replies, ...iconReplies];
+  }
+
+  if (plan.productTitles?.length) {
+    const list = plan.productTitles.join(", ");
+    const first = plan.productTitles[0];
+    replies.push({
+      kind: "text",
+      text: plan.deferPhotos
+        ? `Dejé en cola: ${list}. Cuando quieras, mandame la foto (si podés, escribí el nombre; si no, uso «${first}»).`
+        : `Empecemos por «${first}». Mandame la foto (o escribí el nombre en el mensaje con la foto).`,
+    });
+    await setState("IDLE", nextDraft);
+    return replies;
+  }
+
+  await setState("IDLE", { ...nextDraft, pendingSetupPlan: undefined });
+  return replies;
 }
 
 function globalCommands(text?: string, choiceId?: string): "menu" | "help" | "cancel" | null {
@@ -770,6 +910,7 @@ async function handleMessageBody(
   }
 
   if (state === "ASK_NAME") {
+    draft = absorbSetupPlan(draft, msg.text);
     if (
       choice === CHOICE.LINK_EXISTING ||
       (msg.text && wantsLinkExistingAccountText(msg.text))
@@ -806,19 +947,50 @@ async function handleMessageBody(
       replies.push({ kind: "text", text: "Decime tu nombre, así te hablo de vos." });
       return replies;
     }
+    // Re-entrada desde el chat v2 («Seguir en este chat») u hola suelto.
+    if (
+      /^(hola|buenas)[\s!.]*$/i.test(raw) ||
+      /quiero armar mi tienda/i.test(raw)
+    ) {
+      replies.push({
+        kind: "text",
+        text: "Dale, ¿cómo te llamás?",
+      });
+      return replies;
+    }
     const extracted = extractPersonName(raw);
-    if (!extracted.name || extracted.confidence === "none") {
+    const planName = draft.pendingSetupPlan?.ownerName;
+    const name = extracted.name ?? planName;
+    if (!name || (extracted.confidence === "none" && !planName)) {
+      // Multi-intent sin nombre claro: guardamos el plan y pedimos solo el nombre.
+      if (draft.pendingSetupPlan) {
+        replies.push({
+          kind: "text",
+          text: `Anoté el plan (${describeSetupPlan(draft.pendingSetupPlan)}). ¿Cómo te llamás?`,
+        });
+        await setState("ASK_NAME", draft);
+        return replies;
+      }
       replies.push({
         kind: "text",
         text: "No entendí bien el nombre. Escribí solo cómo te llamás, por ejemplo: Norma.",
       });
       return replies;
     }
-    draft = { ...draft, ownerName: extracted.name };
+    const confidence =
+      extracted.name && extracted.confidence !== "none"
+        ? extracted.confidence
+        : planName
+          ? "high"
+          : "low";
+    draft = { ...draft, ownerName: name };
+    const planNote = draft.pendingSetupPlan
+      ? `\n\nTambién anoté: ${describeSetupPlan(draft.pendingSetupPlan)}.`
+      : "";
     const prompt =
-      extracted.confidence === "high"
-        ? `Encantada, ${extracted.name}. ¿Usamos ese nombre?`
-        : `¿Te llamás ${extracted.name}? Si no, tocá Cambiar nombre.`;
+      confidence === "high"
+        ? `Encantada, ${name}. ¿Usamos ese nombre?${planNote}`
+        : `¿Te llamás ${name}? Si no, tocá Cambiar nombre.${planNote}`;
     return replyWithChoices(
       draft,
       setState,
@@ -846,6 +1018,24 @@ async function handleMessageBody(
       return replies;
     }
     if (choice === CHOICE.YES || isAffirmative(text)) {
+      const plannedStore = draft.pendingSetupPlan?.storeName ?? draft.storeName;
+      if (plannedStore) {
+        const slug = await uniqueSlug(plannedStore, slugExists);
+        draft = { ...draft, storeName: plannedStore, slug };
+        return replyWithChoices(
+          draft,
+          setState,
+          "CONFIRM_SLUG",
+          withOptions(
+            `Perfecto, ${draft.ownerName}. Tu tienda va a estar en ${appBaseUrl()}/${slug} («${plannedStore}»). ¿Está bien?`,
+            [
+              { id: CHOICE.YES, label: "Sí" },
+              { id: CHOICE.CHANGE, label: "Cambiar nombre" },
+            ],
+            caps,
+          ),
+        );
+      }
       await setState("ASK_STORE", draft);
       replies.push({
         kind: "text",
@@ -886,19 +1076,34 @@ async function handleMessageBody(
   }
 
   if (state === "ASK_STORE") {
-    const storeName = msg.text?.trim();
+    draft = absorbSetupPlan(draft, msg.text);
+    const storeName =
+      draft.pendingSetupPlan?.storeName ??
+      draft.storeName ??
+      msg.text?.trim();
     if (!storeName) {
       replies.push({ kind: "text", text: "¿Cómo se va a llamar tu tienda?" });
       return replies;
     }
-    const slug = await uniqueSlug(storeName, slugExists);
-    draft = { ...draft, storeName, slug };
+    // Si el mensaje era un plan largo, no usar el texto entero como nombre.
+    const fromPlanOnly =
+      Boolean(draft.pendingSetupPlan?.storeName) &&
+      Boolean(msg.text && parseSetupPlan(msg.text));
+    const resolvedName = fromPlanOnly
+      ? draft.pendingSetupPlan!.storeName!
+      : storeName;
+    const slug = await uniqueSlug(resolvedName, slugExists);
+    draft = { ...draft, storeName: resolvedName, slug };
+    const planNote =
+      draft.pendingSetupPlan && describeSetupPlan(draft.pendingSetupPlan)
+        ? `\n\nAnoté también: ${describeSetupPlan(draft.pendingSetupPlan)}.`
+        : "";
     return replyWithChoices(
       draft,
       setState,
       "CONFIRM_SLUG",
       withOptions(
-        `Tu tienda va a estar en ${appBaseUrl()}/${slug}. ¿Está bien?`,
+        `Tu tienda va a estar en ${appBaseUrl()}/${slug}. ¿Está bien?${planNote}`,
         [
           { id: CHOICE.YES, label: "Sí" },
           { id: CHOICE.CHANGE, label: "Cambiar nombre" },
@@ -1217,10 +1422,25 @@ async function handleMessageBody(
       : msg.channel === "simulator" && isWhatsAppContactPhone(msg.from)
         ? " Cuando quieras, escribile al bot por WhatsApp desde este mismo número y seguís la conversación."
         : "";
+    const hasPlan =
+      Boolean(draft.pendingSetupPlan?.iconMode) ||
+      Boolean(draft.pendingSetupPlan?.productTitles?.length);
     replies.push({
       kind: "text",
-      text: `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${checkoutHint} ${stockHint}${continuityHint}\n\nMandame una foto de tu primer producto.`,
+      text: hasPlan
+        ? `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${checkoutHint} ${stockHint}${continuityHint}`
+        : `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${checkoutHint} ${stockHint}${continuityHint}\n\nMandame una foto de tu primer producto.`,
     });
+    if (hasPlan) {
+      return flushPendingSetupPlan(
+        store,
+        draft,
+        setState,
+        caps,
+        msg.from,
+        replies,
+      );
+    }
     return replies;
   }
 
@@ -1369,6 +1589,21 @@ async function handleMessageBody(
     }
     if (msg.text && store && wantsContactPhoneText(msg.text)) {
       return startContactEditFlow(store, draft, setState, caps, msg);
+    }
+
+    // Multi-intent en IDLE: logo + lista de productos en un solo mensaje.
+    if (msg.text && store) {
+      const idlePlan = parseSetupPlan(msg.text);
+      if (
+        idlePlan &&
+        (idlePlan.iconMode || (idlePlan.productTitles?.length ?? 0) > 0)
+      ) {
+        draft = {
+          ...draft,
+          pendingSetupPlan: mergeSetupPlan(draft.pendingSetupPlan, idlePlan),
+        };
+        return flushPendingSetupPlan(store, draft, setState, caps, msg.from, []);
+      }
     }
 
     const action = msg.text ? await interpretFreeText(msg.text) : { intent: "unknown" as const };
@@ -2769,13 +3004,20 @@ async function startProductFromImage(
   const { imageUrl, imageBlobKey } = await resolveInboundImage(msg);
 
   const hints = msg.text ? parseCaptionHints(msg.text) : {};
+  let workingDraft = draft;
+  let queuedTitle: string | undefined;
+  if (!hints.title) {
+    const taken = takeNextQueuedProductTitle(workingDraft);
+    workingDraft = taken.draft;
+    queuedTitle = taken.title;
+  }
   const product: ProductDraft = {
     imageUrl,
     imageBlobKey,
-    title: hints.title,
+    title: hints.title ?? queuedTitle,
     priceCents: hints.priceCents,
   };
-  const nextDraft = { ...draft, product };
+  const nextDraft = { ...workingDraft, product };
 
   if (!product.title) {
     await setState("PRODUCT_TITLE", nextDraft);

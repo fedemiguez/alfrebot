@@ -1,49 +1,15 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
-import { SimulatorChat } from "@/components/simulator-chat";
-import { clerkIdentityKey, isClerkConfigured } from "@/lib/clerk";
-import { metaBotNumber } from "@/lib/env";
+import { AsistenteChatBody } from "@/components/asistente-chat-body";
+import { isAlfrebotChatV2 } from "@/lib/env";
 
 export const metadata: Metadata = {
   title: "Asistente",
   description: "Armá tu tienda en el chat web con el mismo asistente de alfrebot.",
 };
 
-async function AsistenteBody() {
-  if (!isClerkConfigured()) {
-    redirect("/sign-up");
-  }
-
-  const { userId } = await auth();
-  if (!userId) {
-    redirect("/sign-up");
-  }
-
-  const user = await currentUser();
-  const email =
-    user?.primaryEmailAddress?.emailAddress ??
-    user?.emailAddresses?.[0]?.emailAddress ??
-    undefined;
-  const identity = clerkIdentityKey(userId);
-  const botDigits = metaBotNumber();
-  const continueWaLink = `https://wa.me/${botDigits}?text=${encodeURIComponent(
-    "Hola! Quiero seguir armando mi tienda desde la web.",
-  )}`;
-
-  return (
-    <SimulatorChat
-      initialPhone={identity}
-      ownerEmail={email}
-      continueWaLink={continueWaLink}
-      identityMode="clerk"
-    />
-  );
-}
-
-export default function AsistentePage() {
+function ClassicShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <SiteHeader />
@@ -69,18 +35,40 @@ export default function AsistentePage() {
           para armarlo o subir tu imagen. No es lo mismo que la foto de un
           producto.
         </p>
-        <div className="mt-8">
-          <Suspense
-            fallback={
-              <div className="rounded-lg border border-[var(--border)] bg-white/80 p-8 text-[var(--muted)]">
-                Cargando el chat…
-              </div>
-            }
-          >
-            <AsistenteBody />
-          </Suspense>
-        </div>
+        <div className="mt-8">{children}</div>
       </main>
     </>
+  );
+}
+
+export default function AsistentePage() {
+  const v2 = isAlfrebotChatV2();
+
+  if (v2) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-dvh items-center justify-center bg-[#ECE5DD] text-[var(--muted)]">
+            Cargando Alfre…
+          </div>
+        }
+      >
+        <AsistenteChatBody variant="v2" />
+      </Suspense>
+    );
+  }
+
+  return (
+    <ClassicShell>
+      <Suspense
+        fallback={
+          <div className="rounded-lg border border-[var(--border)] bg-white/80 p-8 text-[var(--muted)]">
+            Cargando el chat…
+          </div>
+        }
+      >
+        <AsistenteChatBody variant="classic" />
+      </Suspense>
+    </ClassicShell>
   );
 }

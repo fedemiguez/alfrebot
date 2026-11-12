@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { PendingSetupPlan } from "@/lib/db/repos";
 
 const freeTextActionSchema = z.object({
   intent: z.enum([
@@ -20,6 +21,8 @@ const freeTextActionSchema = z.object({
 });
 
 export type FreeTextAction = z.infer<typeof freeTextActionSchema>;
+
+export type { PendingSetupPlan };
 
 const SPOKEN_UNITS: Record<string, number> = {
   cero: 0,
@@ -240,6 +243,170 @@ export function parseCaptionHints(text: string): {
     title: title || undefined,
     priceCents,
   };
+}
+
+function cleanPlanFragment(raw: string): string {
+  return raw
+    .replace(/^["«]|["»]$/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[.!]+$/, "")
+    .trim();
+}
+
+function splitProductTitles(raw: string): string[] {
+  const cleaned = raw
+    .replace(/\b(despu[eé]s|luego).*$/i, "")
+    .replace(/\by\s+despu[eé]s\b.*$/i, "")
+    .trim();
+  return cleaned
+    .split(/\s*(?:,|;|\by\b|\bnada m[aá]s\b)\s*/i)
+    .map((p) => cleanPlanFragment(p))
+    .filter((p) => p.length >= 2 && p.length <= 60)
+    .filter(
+      (p) =>
+        !/^(fotos?|despu[eé]s|luego|cargar|mandar|el|la|los|las|un|una)$/i.test(
+          p,
+        ),
+    )
+    .slice(0, 12);
+}
+
+/**
+ * Parsea varios intents en un solo mensaje (tienda + logo + lista de productos).
+ * Determinista; no inventa. Devuelve null si no hay al menos 2 señales o un plan claro.
+ */
+export function parseSetupPlan(text: string): PendingSetupPlan | null {
+  const raw = text.replace(/\s+/g, " ").trim();
+  if (!raw || raw.length < 8) return null;
+
+  const plan: PendingSetupPlan = {};
+
+  const storeMatch =
+    raw.match(
+      /(?:la\s+)?tienda\s+se\s+llama\s+([^,.:;]+?)(?=\s*,|\s*;|\s*\.\s|\s+el\s+(?:logo|icono)|$)/i,
+    ) ??
+    raw.match(
+      /(?:mi\s+)?tienda\s+(?:es|se\s+llama)\s+([^,.:;]+?)(?=\s*,|\s*;|\s*\.\s|\s+el\s+(?:logo|icono)|$)/i,
+    ) ??
+    raw.match(
+      /se\s+llama\s+(?:la\s+tienda\s+)?([^,.:;]+?)(?=\s*,|\s*;|\s+el\s+(?:logo|icono)|$)/i,
+    );
+  if (storeMatch?.[1]) {
+    const name = cleanPlanFragment(storeMatch[1]);
+    if (name.length >= 2 && !/\b(logo|icono|producto)/i.test(name)) {
+      plan.storeName = name;
+    }
+  }
+
+  const iconUpload =
+    /sub(ir|í|i)\s+(mi\s+)?(logo|icono|ícono)|mand(ar|á|a)\s+(mi\s+)?(logo|icono|ícono)/i.test(
+      raw,
+    );
+  const iconGen =
+    /(?:el\s+)?(?:logo|icono|ícono)\s+(?:sea|que\s+sea|de|con)\s+([^,.:;]+)/i.exec(
+      raw,
+    ) ??
+    /(?:arm(?:ar|á|a)|gener(?:ar|á|a)|hac(?:er|é|e)|cre(?:ar|á|a))\s+(?:el\s+)?(?:logo|icono|ícono)(?:\s+(?:con|de|tipo))?\s*([^,.;]*)/i.exec(
+      raw,
+    );
+  if (iconUpload) {
+    plan.iconMode = "upload";
+  } else if (iconGen || /\b(logo|icono|ícono)\b/i.test(raw)) {
+    const hint = iconGen?.[1] ? cleanPlanFragment(iconGen[1]) : undefined;
+    if (hint && hint.length >= 2) plan.iconHint = hint;
+    if (hint || /\b(logo|icono|ícono)\b/i.test(raw)) {
+      plan.iconMode = "generate";
+    }
+  }
+
+  const productsMatch =
+    raw.match(
+      /productos?\s*(?:son|ser[ií]an|a\s+cargar|:)\s*(.+?)(?=(?:[.;]\s*(?:despu[eé]s|luego))|$)/i,
+    ) ??
+    raw.match(
+      /(?:cargar|cargar[ií]amos|despu[eé]s)\s+(?:los\s+)?productos?\s*:?\s*(.+?)(?=(?:[.;]\s*(?:despu[eé]s|luego))|$)/i,
+    );
+  if (productsMatch?.[1]) {
+    const titles = splitProductTitles(productsMatch[1]);
+    if (titles.length > 0) plan.productTitles = titles;
+  }
+
+  if (
+    /despu[eé]s(?:\s+cargamos)?(?:\s+las)?\s+fotos|luego(?:\s+cargamos)?(?:\s+las)?\s+fotos|fotos?\s+despu[eé]s|sin\s+fotos?\s+por\s+ahora/i.test(
+      raw,
+    )
+  ) {
+    plan.deferPhotos = true;
+  }
+
+  // En mensajes largos, extractPersonName falla por el resto tras la coma.
+  const ownerMatch = raw.match(
+    /(?:me\s+llamo|me\s+digo|me\s+dicen|me\s+llaman|mi\s+nombre\s+es|soy)\s+([\p{L}][\p{L}'’.-]*(?:\s+(?:de|del|la|las|los|el|y|e|[\p{L}][\p{L}'’.-]*)){0,3})(?=\s*[,.;]|\s+la\s+tienda|\s+el\s+(?:logo|icono)|\s+productos?\b|$)/iu,
+  );
+  if (ownerMatch?.[1]) {
+    const candidate = cleanPlanFragment(ownerMatch[1]);
+    if (looksLikePersonName(candidate)) {
+      plan.ownerName = titleCaseName(candidate);
+    }
+  } else {
+    const person = extractPersonName(raw);
+    if (person.name && person.confidence !== "none") {
+      plan.ownerName = person.name;
+    }
+  }
+
+  const signals = [
+    plan.storeName,
+    plan.iconMode,
+    plan.productTitles?.length,
+    plan.ownerName && (plan.storeName || plan.iconMode || plan.productTitles),
+  ].filter(Boolean).length;
+
+  // Un solo campo aislado lo maneja el flujo paso a paso; pedimos plan real.
+  if (signals < 2 && !(plan.productTitles && plan.productTitles.length >= 2)) {
+    return null;
+  }
+
+  return plan;
+}
+
+export function mergeSetupPlan(
+  current: PendingSetupPlan | undefined,
+  incoming: PendingSetupPlan | null,
+): PendingSetupPlan | undefined {
+  if (!incoming) return current;
+  if (!current) return incoming;
+  return {
+    ownerName: incoming.ownerName ?? current.ownerName,
+    storeName: incoming.storeName ?? current.storeName,
+    iconHint: incoming.iconHint ?? current.iconHint,
+    iconMode: incoming.iconMode ?? current.iconMode,
+    productTitles:
+      incoming.productTitles && incoming.productTitles.length > 0
+        ? incoming.productTitles
+        : current.productTitles,
+    deferPhotos: incoming.deferPhotos ?? current.deferPhotos,
+  };
+}
+
+export function describeSetupPlan(plan: PendingSetupPlan): string {
+  const bits: string[] = [];
+  if (plan.storeName) bits.push(`tienda «${plan.storeName}»`);
+  if (plan.iconMode === "upload") bits.push("subir logo");
+  else if (plan.iconMode === "generate") {
+    bits.push(
+      plan.iconHint ? `logo «${plan.iconHint}»` : "armar logo",
+    );
+  }
+  if (plan.productTitles?.length) {
+    bits.push(
+      `productos: ${plan.productTitles.join(", ")}${
+        plan.deferPhotos ? " (fotos después)" : ""
+      }`,
+    );
+  }
+  return bits.join(" · ");
 }
 
 /** LLM opcional: si falla o no hay gateway, devolvemos unknown. */
