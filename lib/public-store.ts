@@ -14,6 +14,8 @@ export type PublicStore = {
   isDemo: boolean;
   /** Hex de acento (`#rrggbb`) o null = default de marca. */
   accentColor: string | null;
+  /** Rubro (`artesanal` | `comida` | `ropa`) o null = layout default. */
+  businessKind: string | null;
   /**
    * WhatsApp público resuelto, solo si `showPhone` (igual que el HTML del catálogo).
    * Nunca es `channelIdentity` crudo (`clerk:…`).
@@ -47,6 +49,7 @@ export function toPublicStore(store: Store): PublicStore {
     tracksQuantity: Boolean(store.tracksQuantity),
     isDemo: Boolean(store.isDemo),
     accentColor: store.accentColor ?? null,
+    businessKind: store.businessKind ?? null,
     contactPhone: showPhone ? resolved : null,
   };
 }

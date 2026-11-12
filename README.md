@@ -61,6 +61,7 @@ npx tsx scripts/smoke-store-voice.ts
 - `channel_link_intents` — códigos de un solo uso para vincular Clerk ↔ WhatsApp
 - `stores.icon_192_url` / `icon_512_url` / `icon_apple_url` / `icon_svg_url` — iconos PWA (PNG/SVG en Blob)
 - `stores.accent_color` — color de acento de la vitrina (`#rrggbb`, null = terracota de marca)
+- `stores.business_kind` — rubro (`artesanal` | `comida` | `ropa`, null = layout default de fichas)
 
 Con `DATABASE_URL` (después de pull/merge de columnas nuevas):
 

@@ -16,6 +16,10 @@ import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
 import { monogramIconPath } from "@/lib/store-icon";
 import { accentStyleVars } from "@/lib/store-accent";
+import {
+  businessKindClassName,
+  businessKindHeaderLabel,
+} from "@/lib/store-business-kind";
 import { getCachedStore } from "@/lib/store-data";
 
 export async function generateStaticParams() {
@@ -69,11 +73,13 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
   const iconSrc = store.icon192Url || monogramIconPath(slug, 192);
 
   const accentVars = accentStyleVars(store.accentColor);
+  const kindClass = businessKindClassName(store.businessKind);
+  const kindLabel = businessKindHeaderLabel(store.businessKind);
 
   return (
     <StorePurchaseProvider store={purchase}>
       <div
-        className="fade-in mx-auto w-full max-w-5xl px-5 py-10"
+        className={`fade-in mx-auto w-full max-w-5xl px-5 py-10 ${kindClass}`}
         style={accentVars as CSSProperties}
       >
         <header className="flex items-start gap-4">
@@ -94,9 +100,17 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
                 {store.name}
               </span>
             </h1>
-            {store.ownerName && (
+            {(store.ownerName || kindLabel) && (
               <p className="mt-3 text-[1.1rem] text-[var(--muted)]">
-                Productos de {store.ownerName}
+                {store.ownerName
+                  ? `Productos de ${store.ownerName}`
+                  : null}
+                {store.ownerName && kindLabel ? " · " : null}
+                {kindLabel ? (
+                  <span className="store-kind-label text-[var(--primary)]">
+                    {kindLabel}
+                  </span>
+                ) : null}
               </p>
             )}
           </div>
@@ -137,6 +151,7 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
               key={product.id}
               product={product}
               store={purchase}
+              businessKind={store.businessKind}
               priority={i < 3}
             />
           ))}

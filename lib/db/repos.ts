@@ -39,6 +39,10 @@ export type PendingSetupPlan = {
   accentColor?: string;
   /** Nombre legible del swatch (ej. Verde). */
   accentLabel?: string;
+  /** Rubro (`artesanal` | `comida` | `ropa`) — Fase B. */
+  businessKind?: string;
+  /** Label legible del rubro (ej. Artesanal). */
+  businessKindLabel?: string;
   productTitles?: string[];
   deferPhotos?: boolean;
 };
@@ -86,6 +90,10 @@ export type ConversationDraft = {
   accentColorPending?: string;
   /** Label del swatch pendiente de confirmar. */
   accentLabelPending?: string;
+  /** Rubro pendiente de confirmar (flujo Rubro). */
+  businessKindPending?: string;
+  /** Label del rubro pendiente. */
+  businessKindLabelPending?: string;
   [key: string]: unknown;
 };
 
@@ -284,6 +292,7 @@ export async function upsertStore(input: {
       iconAppleUrl: null,
       iconSvgUrl: null,
       accentColor: null,
+      businessKind: null,
       isDemo: input.isDemo ?? false,
       status: input.status ?? "onboarding",
       createdAt: now(),
@@ -685,6 +694,27 @@ export async function updateStoreAccentColor(
   const rows = await db
     .update(stores)
     .set({ accentColor, updatedAt: now() })
+    .where(eq(stores.id, storeId))
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function updateStoreBusinessKind(
+  storeId: string,
+  businessKind: string | null,
+): Promise<Store | null> {
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    const current = mem.stores.get(storeId);
+    if (!current) return null;
+    const updated = touchStore({ ...current, businessKind });
+    mem.stores.set(storeId, updated);
+    return updated;
+  }
+  const db = getDb();
+  const rows = await db
+    .update(stores)
+    .set({ businessKind, updatedAt: now() })
     .where(eq(stores.id, storeId))
     .returning();
   return rows[0] ?? null;

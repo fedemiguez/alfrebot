@@ -4,6 +4,10 @@ import {
   matchAccentFromText,
   wantsAccentColorText,
 } from "@/lib/store-accent";
+import {
+  matchBusinessKindFromText,
+  wantsBusinessKindText,
+} from "@/lib/store-business-kind";
 
 const freeTextActionSchema = z.object({
   intent: z.enum([
@@ -17,6 +21,7 @@ const freeTextActionSchema = z.object({
     "upload_icon",
     "profile_icon",
     "set_accent_color",
+    "set_business_kind",
     "help",
     "menu",
     "unknown",
@@ -26,6 +31,8 @@ const freeTextActionSchema = z.object({
   productHint: z.string().optional(),
   /** Hex `#rrggbb` si el NLU detectó color. */
   accentHint: z.string().optional(),
+  /** Rubro (`artesanal` | `comida` | `ropa`) si el NLU lo detectó. */
+  businessKindHint: z.string().optional(),
 });
 
 export type FreeTextAction = z.infer<typeof freeTextActionSchema>;
@@ -164,7 +171,7 @@ const NAME_TRAILING_NOISE_RE =
   /[,!.]+(?:\s*(?:mucho\s+gusto|un\s+placer|para\s+servirte|gracias|eh|che))?$/i;
 
 const NAME_REJECT_RE =
-  /\b(tienda|pieza|producto|foto|precio|armar|quiero|necesito|ayuda|menu|men[uú]|whatsapp|hola|buenas)\b/i;
+  /\b(tienda|pieza|producto|foto|precio|armar|quiero|necesito|ayuda|menu|men[uú]|whatsapp|hola|buenas|vendo|vendemos|rubro|comida|ropa|artesanal|ceramica|cer[aá]mica|negocio|gastronom[ií]a|indumentaria)\b/i;
 
 function titleCaseName(raw: string): string {
   return raw
@@ -360,6 +367,13 @@ export function parseSetupPlan(text: string): PendingSetupPlan | null {
     plan.accentLabel = accent.label;
   }
 
+  // Rubro (“vendo cerámica”, “tienda de comida”, “ropa”).
+  const kind = matchBusinessKindFromText(raw);
+  if (kind && (wantsBusinessKindText(raw) || /\b(rubro|vendo|tienda de|negocio de)\b/i.test(raw))) {
+    plan.businessKind = kind.id;
+    plan.businessKindLabel = kind.label;
+  }
+
   // En mensajes largos, extractPersonName falla por el resto tras la coma.
   const ownerMatch = raw.match(
     /(?:me\s+llamo|me\s+digo|me\s+dicen|me\s+llaman|mi\s+nombre\s+es|soy)\s+([\p{L}][\p{L}'’.-]*(?:\s+(?:de|del|la|las|los|el|y|e|[\p{L}][\p{L}'’.-]*)){0,3})(?=\s*[,.;]|\s+la\s+tienda|\s+el\s+(?:logo|icono)|\s+productos?\b|$)/iu,
@@ -381,8 +395,13 @@ export function parseSetupPlan(text: string): PendingSetupPlan | null {
     plan.iconMode,
     plan.productTitles?.length,
     plan.accentColor,
+    plan.businessKind,
     plan.ownerName &&
-      (plan.storeName || plan.iconMode || plan.productTitles || plan.accentColor),
+      (plan.storeName ||
+        plan.iconMode ||
+        plan.productTitles ||
+        plan.accentColor ||
+        plan.businessKind),
   ].filter(Boolean).length;
 
   // Un solo campo aislado lo maneja el flujo paso a paso; pedimos plan real.
@@ -406,6 +425,8 @@ export function mergeSetupPlan(
     iconMode: incoming.iconMode ?? current.iconMode,
     accentColor: incoming.accentColor ?? current.accentColor,
     accentLabel: incoming.accentLabel ?? current.accentLabel,
+    businessKind: incoming.businessKind ?? current.businessKind,
+    businessKindLabel: incoming.businessKindLabel ?? current.businessKindLabel,
     productTitles:
       incoming.productTitles && incoming.productTitles.length > 0
         ? incoming.productTitles
@@ -428,6 +449,13 @@ export function describeSetupPlan(plan: PendingSetupPlan): string {
       plan.accentLabel
         ? `color ${plan.accentLabel}`
         : `color ${plan.accentColor}`,
+    );
+  }
+  if (plan.businessKind) {
+    bits.push(
+      plan.businessKindLabel
+        ? `rubro ${plan.businessKindLabel}`
+        : `rubro ${plan.businessKind}`,
     );
   }
   if (plan.productTitles?.length) {
@@ -527,13 +555,22 @@ export async function interpretFreeText(
     };
   }
 
+  // Rubro del negocio (“vendo cerámica”, “mi tienda es de comida”).
+  if (wantsBusinessKindText(text)) {
+    const kind = matchBusinessKindFromText(text);
+    return {
+      intent: "set_business_kind",
+      businessKindHint: kind?.id,
+    };
+  }
+
   // LLM opcional: Gateway o Google directo
   if (!process.env.AI_GATEWAY_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     return { intent: "unknown" };
   }
 
   const nluPrompt = `Sos el NLU de un bot de tienda por WhatsApp para personas mayores en Argentina.
-Intents: change_photo = foto de un PRODUCTO; generate_icon = armar/cambiar el ICONO de la TIENDA (app); upload_icon = subir imagen propia como icono de la tienda; profile_icon = usar la foto de Google/cuenta Clerk como icono de la tienda; set_accent_color = color de acento de la vitrina (botones/links); accentHint = hex #rrggbb si lo deducís (verde≈#047857, azul≈#1d4ed8, terracota≈#9a3412).
+Intents: change_photo = foto de un PRODUCTO; generate_icon = armar/cambiar el ICONO de la TIENDA (app); upload_icon = subir imagen propia como icono de la tienda; profile_icon = usar la foto de Google/cuenta Clerk como icono de la tienda; set_accent_color = color de acento de la vitrina (botones/links); accentHint = hex #rrggbb si lo deducís (verde≈#047857, azul≈#1d4ed8, terracota≈#9a3412); set_business_kind = rubro del negocio (artesanal/cerámica, comida, ropa); businessKindHint = artesanal|comida|ropa.
 Del mensaje, devolvé una acción tipada. No inventes. Mensaje: """${text}"""`;
 
   try {

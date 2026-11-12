@@ -76,6 +76,7 @@ import {
   slugExists,
   updateProduct,
   updateStoreAccentColor,
+  updateStoreBusinessKind,
   updateStoreIcons,
   upsertStore,
   type ConversationDraft,
@@ -92,6 +93,15 @@ import {
   wantsAccentColorText,
   type AccentSwatch,
 } from "@/lib/store-accent";
+import {
+  BUSINESS_KINDS,
+  kindById,
+  matchBusinessKindFromText,
+  normalizeBusinessKind,
+  resolveBusinessKind,
+  wantsBusinessKindText,
+  type BusinessKindOption,
+} from "@/lib/store-business-kind";
 import {
   buildAndUploadStoreIcons,
   buildAndUploadStoreIconsFromImage,
@@ -128,7 +138,9 @@ export type BotState =
   | "ICON_PREVIEW"
   | "PERSONALIZE_HUB"
   | "ACCENT_PICK"
-  | "ACCENT_CONFIRM";
+  | "ACCENT_CONFIRM"
+  | "KIND_PICK"
+  | "KIND_CONFIRM";
 
 const DEFAULT_CAPS: ChannelCapabilities = {
   buttons: true,
@@ -170,6 +182,8 @@ function clearStockDraft(d: ConversationDraft): ConversationDraft {
     pendingChoices: undefined,
     accentColorPending: undefined,
     accentLabelPending: undefined,
+    businessKindPending: undefined,
+    businessKindLabelPending: undefined,
   };
 }
 
@@ -198,7 +212,8 @@ function takeNextQueuedProductTitle(
     rest.length > 0 ||
     draft.pendingSetupPlan?.iconMode ||
     draft.pendingSetupPlan?.storeName ||
-    draft.pendingSetupPlan?.accentColor
+    draft.pendingSetupPlan?.accentColor ||
+    draft.pendingSetupPlan?.businessKind
       ? {
           ...draft.pendingSetupPlan,
           productTitles: rest.length > 0 ? rest : undefined,
@@ -258,6 +273,27 @@ async function flushPendingSetupPlan(
       ...workingPlan,
       accentColor: undefined,
       accentLabel: undefined,
+    };
+    nextDraft = { ...nextDraft, pendingSetupPlan: workingPlan };
+  }
+
+  if (workingPlan.businessKind) {
+    const kind = normalizeBusinessKind(workingPlan.businessKind);
+    if (kind) {
+      const updated = await updateStoreBusinessKind(store.id, kind);
+      if (updated) store = updated;
+      revalidateStore(store.slug);
+      const label =
+        workingPlan.businessKindLabel || kindById(kind)?.label || kind;
+      replies.push({
+        kind: "text",
+        text: `Listo: rubro «${label}». Las fichas de producto de tu vitrina usan esa plantilla.\n${store.slug ? storeUrl(store.slug) : ""}`.trim(),
+      });
+    }
+    workingPlan = {
+      ...workingPlan,
+      businessKind: undefined,
+      businessKindLabel: undefined,
     };
     nextDraft = { ...nextDraft, pendingSetupPlan: workingPlan };
   }
@@ -416,8 +452,13 @@ function extractChannelLinkCode(text?: string): string | null {
 function wantsStoreLinkText(text: string): boolean {
   const t = normalizeLoose(text);
   // "tienda" solo abre el grupo del menú; el link pide “ver mi tienda” / “mi tienda”.
-  return /\b(ver (mi )?tienda|mi tienda|link( de)?( la)? tienda|catalogo|mi link)\b/.test(
-    t,
+  // No matchear “mi tienda es de ropa…” (personalización / multi-intent).
+  if (/\b(ver (mi )?tienda|link( de)?( la)? tienda|catalogo|mi link)\b/.test(t)) {
+    return true;
+  }
+  return (
+    /^mi tienda[.!?]*$/.test(t) ||
+    /^mi tienda\s+(por\s+favor|pls|please)[.!?]*$/.test(t)
   );
 }
 
@@ -488,6 +529,7 @@ function personalizeHubMessage(caps: ChannelCapabilities): OutboundMessage {
     "Personalizar — ¿qué cambiamos?",
     [
       { id: CHOICE.PERSONALIZE_COLOR, label: "Color" },
+      { id: CHOICE.PERSONALIZE_KIND, label: "Rubro" },
       { id: CHOICE.MENU_BACK, label: "Volver al menú" },
     ],
     caps,
@@ -529,6 +571,43 @@ function accentConfirmMessage(
   );
 }
 
+function kindPickMessage(
+  store: Store,
+  caps: ChannelCapabilities,
+): OutboundMessage {
+  const current = resolveBusinessKind(store.businessKind);
+  const currentLabel = current
+    ? (kindById(current)?.label ?? current)
+    : "Sin rubro (layout clásico)";
+  const options: Option[] = BUSINESS_KINDS.map((k) => ({
+    id: `${CHOICE.KIND_PREFIX}${k.id}`,
+    label: k.label,
+  }));
+  options.push({ id: CHOICE.MENU_BACK, label: "Volver al menú" });
+  return withOptions(
+    `¿De qué es tu negocio? Eso cambia cómo se ven las fichas de producto en la vitrina.\nAhora: ${currentLabel}.`,
+    options,
+    caps,
+  );
+}
+
+function kindConfirmMessage(
+  kind: Pick<BusinessKindOption, "label" | "id">,
+  store: Store,
+  caps: ChannelCapabilities,
+): OutboundMessage {
+  const link = store.slug ? `\nVista: ${storeUrl(store.slug)}` : "";
+  return withOptions(
+    `¿Dejamos el rubro «${kind.label}»?\nLas fichas de producto van a usar la plantilla ${kind.label.toLowerCase()}.${link}`,
+    [
+      { id: CHOICE.YES, label: "Sí, guardar" },
+      { id: CHOICE.NO, label: "Otro rubro" },
+      { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+    ],
+    caps,
+  );
+}
+
 function waMenuMessage(
   caps: ChannelCapabilities,
   from?: string,
@@ -564,6 +643,7 @@ function helpMessage(): OutboundMessage {
       "Foto de un PRODUCTO: menú → Productos → Cambiar foto, o pedime cambiar la foto y te listo los productos; después mandás la foto nueva y confirmamos.\n" +
       "Icono de la TIENDA (no es la foto de un producto): menú → Tienda → Icono de la tienda. Pedime por texto o audio «armar icono» / «icono de la tienda», o «subir icono» y mandá tu imagen.\n" +
       "Color de la vitrina: menú → Tienda → Personalizar → Color, o pedime «quiero verde» / «color azul».\n" +
+      "Rubro (plantilla de fichas): menú → Tienda → Personalizar → Rubro, o pedime «vendo cerámica» / «tienda de comida» / «ropa».\n" +
       "WhatsApp de pedidos: menú → WhatsApp → WhatsApp pedidos (el número donde te escriben los clientes).\n" +
       "Si armaste la tienda en la web y querés gestionarla por WhatsApp: menú → WhatsApp → Vincular WhatsApp, después desde el celular escribí «ya tengo cuenta» y el código.\n" +
       "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
@@ -882,6 +962,8 @@ async function handleMessageBody(
       state === "PERSONALIZE_HUB" ||
       state === "ACCENT_PICK" ||
       state === "ACCENT_CONFIRM" ||
+      state === "KIND_PICK" ||
+      state === "KIND_CONFIRM" ||
       state.startsWith("STOCK_") ||
       state.startsWith("PRODUCT_"))
   ) {
@@ -1536,7 +1618,8 @@ async function handleMessageBody(
     const hasPlan =
       Boolean(draft.pendingSetupPlan?.iconMode) ||
       Boolean(draft.pendingSetupPlan?.productTitles?.length) ||
-      Boolean(draft.pendingSetupPlan?.accentColor);
+      Boolean(draft.pendingSetupPlan?.accentColor) ||
+      Boolean(draft.pendingSetupPlan?.businessKind);
     replies.push({
       kind: "text",
       text: hasPlan
@@ -1646,6 +1729,16 @@ async function handleMessageBody(
       return openAccentPick(store, draft, setState, caps);
     }
     if (
+      choice === CHOICE.PERSONALIZE_KIND ||
+      msg.choiceId === CHOICE.PERSONALIZE_KIND
+    ) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      return openKindPick(store, draft, setState, caps);
+    }
+    if (
       (choice?.startsWith(CHOICE.ACCENT_PREFIX) ||
         msg.choiceId?.startsWith(CHOICE.ACCENT_PREFIX)) &&
       store
@@ -1654,6 +1747,17 @@ async function handleMessageBody(
       const swatch = swatchById(id);
       if (swatch) {
         return startAccentConfirm(store, draft, setState, caps, swatch);
+      }
+    }
+    if (
+      (choice?.startsWith(CHOICE.KIND_PREFIX) ||
+        msg.choiceId?.startsWith(CHOICE.KIND_PREFIX)) &&
+      store
+    ) {
+      const id = (choice ?? msg.choiceId ?? "").slice(CHOICE.KIND_PREFIX.length);
+      const kind = kindById(id);
+      if (kind) {
+        return startKindConfirm(store, draft, setState, caps, kind);
       }
     }
     if (
@@ -1730,13 +1834,14 @@ async function handleMessageBody(
       return startContactEditFlow(store, draft, setState, caps, msg);
     }
 
-    // Multi-intent en IDLE: logo + color + lista de productos en un solo mensaje.
+    // Multi-intent en IDLE: logo + color + rubro + lista de productos en un solo mensaje.
     if (msg.text && store) {
       const idlePlan = parseSetupPlan(msg.text);
       if (
         idlePlan &&
         (idlePlan.iconMode ||
           idlePlan.accentColor ||
+          idlePlan.businessKind ||
           (idlePlan.productTitles?.length ?? 0) > 0)
       ) {
         draft = {
@@ -1853,6 +1958,16 @@ async function handleMessageBody(
         return startAccentConfirm(store, draft, setState, caps, swatch);
       }
       return openAccentPick(store, draft, setState, caps);
+    }
+    if (action.intent === "set_business_kind" && store) {
+      const fromHint = action.businessKindHint
+        ? kindById(action.businessKindHint)
+        : null;
+      const kind = fromHint ?? matchBusinessKindFromText(msg.text ?? "");
+      if (kind) {
+        return startKindConfirm(store, draft, setState, caps, kind);
+      }
+      return openKindPick(store, draft, setState, caps);
     }
     if (action.intent === "mark_out_of_stock" && store) {
       const spoken = await trySpokenStockConfirm(
@@ -2324,6 +2439,23 @@ async function handleMessageBody(
       }
       return openAccentPick(store, draft, setState, caps);
     }
+    if (
+      choice === CHOICE.PERSONALIZE_KIND ||
+      /rubro|ceramica|cerámica|comida|ropa|artesanal|vendo/.test(
+        normalizeLoose(msg.text ?? ""),
+      )
+    ) {
+      if (
+        wantsBusinessKindText(msg.text ?? "") ||
+        matchBusinessKindFromText(msg.text ?? "")
+      ) {
+        const kind = matchBusinessKindFromText(msg.text ?? "");
+        if (kind) {
+          return startKindConfirm(store, draft, setState, caps, kind);
+        }
+      }
+      return openKindPick(store, draft, setState, caps);
+    }
     return openPersonalizeHub(draft, setState, caps);
   }
 
@@ -2391,6 +2523,75 @@ async function handleMessageBody(
     }
     return [
       accentConfirmMessage(pending, store, caps),
+    ];
+  }
+
+  if (state === "KIND_PICK" && store) {
+    if (choice === CHOICE.MENU_BACK) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [menuMessage(caps, msg.from)];
+    }
+    if (choice?.startsWith(CHOICE.KIND_PREFIX)) {
+      const kind = kindById(choice.slice(CHOICE.KIND_PREFIX.length));
+      if (kind) {
+        return startKindConfirm(store, draft, setState, caps, kind);
+      }
+    }
+    const fromText = matchBusinessKindFromText(msg.text ?? "");
+    if (fromText) {
+      return startKindConfirm(store, draft, setState, caps, fromText);
+    }
+    return [
+      {
+        kind: "text",
+        text: "No reconocí ese rubro. Elegí Artesanal, Comida o Ropa (o escribí «cerámica», «comida», «ropa»).",
+      },
+      kindPickMessage(store, caps),
+    ];
+  }
+
+  if (state === "KIND_CONFIRM" && store) {
+    const text = msg.text?.trim() ?? "";
+    if (choice === CHOICE.MENU_BACK) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [menuMessage(caps, msg.from)];
+    }
+    if (choice === CHOICE.NO || isNegative(text) || /otro/.test(normalizeLoose(text))) {
+      return openKindPick(store, clearStockDraft(draft), setState, caps);
+    }
+    if (choice === CHOICE.YES || isAffirmative(text)) {
+      const kind = normalizeBusinessKind(draft.businessKindPending);
+      if (!kind) {
+        return openKindPick(store, clearStockDraft(draft), setState, caps);
+      }
+      const updated = await updateStoreBusinessKind(store.id, kind);
+      revalidateStore(store.slug);
+      const label =
+        draft.businessKindLabelPending || kindById(kind)?.label || kind;
+      await setState("IDLE", clearStockDraft(draft));
+      return [
+        {
+          kind: "text",
+          text: updated?.slug
+            ? `Guardé el rubro «${label}». Mirá las fichas: ${storeUrl(updated.slug)}`
+            : `Guardé el rubro «${label}».`,
+        },
+        menuMessage(caps, msg.from),
+      ];
+    }
+    const pendingId = normalizeBusinessKind(draft.businessKindPending);
+    if (!pendingId) {
+      return openKindPick(store, clearStockDraft(draft), setState, caps);
+    }
+    return [
+      kindConfirmMessage(
+        {
+          id: pendingId,
+          label: draft.businessKindLabelPending || kindById(pendingId)?.label || pendingId,
+        },
+        store,
+        caps,
+      ),
     ];
   }
 
@@ -2751,6 +2952,33 @@ async function startAccentConfirm(
   };
   await setState("ACCENT_CONFIRM", nextDraft);
   return [accentConfirmMessage({ label: swatch.label, hex }, store, caps)];
+}
+
+async function openKindPick(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+): Promise<OutboundMessage[]> {
+  await setState("KIND_PICK", clearStockDraft(draft));
+  return [kindPickMessage(store, caps)];
+}
+
+async function startKindConfirm(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  kind: Pick<BusinessKindOption, "label" | "id">,
+): Promise<OutboundMessage[]> {
+  const id = normalizeBusinessKind(kind.id) ?? kind.id;
+  const nextDraft: ConversationDraft = {
+    ...clearStockDraft(draft),
+    businessKindPending: id,
+    businessKindLabelPending: kind.label,
+  };
+  await setState("KIND_CONFIRM", nextDraft);
+  return [kindConfirmMessage({ id: id as BusinessKindOption["id"], label: kind.label }, store, caps)];
 }
 
 async function ensureStoreIconReady(

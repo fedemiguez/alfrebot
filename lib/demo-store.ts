@@ -19,6 +19,7 @@ export const DEMO_STORE: Store = {
   iconAppleUrl: null,
   iconSvgUrl: null,
   accentColor: null,
+  businessKind: "artesanal",
   isDemo: false,
   status: "active",
   createdAt: new Date("2026-11-01T12:00:00.000Z"),
