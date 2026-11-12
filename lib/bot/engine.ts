@@ -1346,10 +1346,11 @@ async function handleMessageBody(
       withOptions(
         "¿Cómo querés que te pidan? Por defecto cada producto tiene un botón Lo quiero que te escribe por WhatsApp. También podés armar un carrito y mandar el pedido junto (igual por WhatsApp, sin cobro online).",
         [
-          { id: CHOICE.CHECKOUT_WA, label: "Lo quiero" },
+          { id: CHOICE.CHECKOUT_WA, label: "Sin carrito" },
           { id: CHOICE.CHECKOUT_CART, label: "Con carrito" },
         ],
         caps,
+        { includeCancel: false },
       ),
     );
   }
@@ -1360,12 +1361,14 @@ async function handleMessageBody(
     if (
       choice === CHOICE.CHECKOUT_WA ||
       choice === CHOICE.YES ||
+      /\bsin carrito\b/.test(text) ||
       /\blo quiero\b/.test(text) ||
       /whatsapp|directo|uno/.test(text)
     ) {
       checkoutMode = "whatsapp";
     } else if (
       choice === CHOICE.CHECKOUT_CART ||
+      /\bcon carrito\b/.test(text) ||
       /carrito|pedido|junt/.test(text)
     ) {
       checkoutMode = "cart";
@@ -1379,10 +1382,11 @@ async function handleMessageBody(
         withOptions(
           "Elegí cómo te piden en el catálogo:",
           [
-            { id: CHOICE.CHECKOUT_WA, label: "Lo quiero" },
+            { id: CHOICE.CHECKOUT_WA, label: "Sin carrito" },
             { id: CHOICE.CHECKOUT_CART, label: "Con carrito" },
           ],
           caps,
+          { includeCancel: false },
         ),
       );
     }

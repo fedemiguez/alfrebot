@@ -76,7 +76,7 @@ async function onboardClerkWeb() {
   // contact_phone: NO debe vincular una tienda WA ajena
   await say(clerkFrom, "11 5555-7777", undefined, ownerEmail);
   await say(clerkFrom, "Sin números", "stock_pause_mode", ownerEmail);
-  await say(clerkFrom, "Lo quiero", "checkout_whatsapp", ownerEmail);
+  await say(clerkFrom, "Sin carrito", "checkout_whatsapp", ownerEmail);
 }
 
 async function main() {
