@@ -10,6 +10,7 @@ import {
   getStoreForChannelIdentity,
   createProduct,
 } from "../lib/db/repos";
+import sharp from "sharp";
 import {
   buildAndUploadStoreIcons,
   buildAndUploadStoreIconsFromImage,
@@ -171,14 +172,39 @@ async function main() {
   await svgToPng(composedProducts, 64);
   console.log("OK: productos lámpara+sushi → composed");
 
-  // Unit: monograma still works for on-the-fly route
+  // Unit: monograma still works for on-the-fly route (paths, not <text>)
   const initials = storeInitials("Cerámicas de Norma");
   assert(initials === "CN", `initials expected CN got ${initials}`);
   const svg = monogramSvg("Cerámicas de Norma");
   assert(/<svg[\s>]/i.test(svg), "monogram svg");
+  assert(!/<text[\s>]/i.test(svg), "monogram uses paths not text");
+  assert(/<path[\s>]/i.test(svg), "monogram has letter paths");
   const png = await svgToPng(svg, 192);
   assert(png.length > 100, "png bytes");
   assert(png[0] === 0x89 && png[1] === 0x50, "png magic");
+  {
+    const { data, info } = await sharp(png)
+      .raw()
+      .ensureAlpha()
+      .toBuffer({ resolveWithObject: true });
+    let letterWhites = 0;
+    const x0 = Math.floor(info.width * 0.3);
+    const x1 = Math.floor(info.width * 0.7);
+    const y0 = Math.floor(info.height * 0.3);
+    const y1 = Math.floor(info.height * 0.7);
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        const i = (y * info.width + x) * 4;
+        if (data[i]! > 220 && data[i + 1]! > 220 && data[i + 2]! > 220) {
+          letterWhites++;
+        }
+      }
+    }
+    assert(letterWhites > 200, `monogram letter visible (whites=${letterWhites})`);
+  }
+  const fedeSvg = monogramSvg("Fede tienda súper buena");
+  assert(storeInitials("Fede tienda súper buena") === "FT", "Fede → FT");
+  assert(!/<text[\s>]/i.test(fedeSvg), "Fede monogram paths");
   console.log("OK: monogram → png 192 (on-the-fly only)");
 
   const fromUpload = await buildAndUploadStoreIconsFromImage({

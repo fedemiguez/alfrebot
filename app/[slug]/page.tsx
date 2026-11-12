@@ -14,6 +14,7 @@ import { StoreVoiceAssistant } from "@/components/store-voice-assistant";
 import { hasTranscriptionConfigured } from "@/lib/bot/transcribe";
 import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
+import { monogramIconPath } from "@/lib/store-icon";
 import { getCachedStore } from "@/lib/store-data";
 
 export async function generateStaticParams() {
@@ -27,9 +28,9 @@ export async function generateMetadata({
   const { store, products } = await getCachedStore(slug);
   if (!store) return { title: "Tienda" };
   const firstImage = products.find((p) => p.imageUrl)?.imageUrl;
-  const icon192 = store.icon192Url || `/${slug}/icon/192`;
-  const icon512 = store.icon512Url || `/${slug}/icon/512`;
-  const apple = store.iconAppleUrl || `/${slug}/icon/180`;
+  const icon192 = store.icon192Url || monogramIconPath(slug, 192);
+  const icon512 = store.icon512Url || monogramIconPath(slug, 512);
+  const apple = store.iconAppleUrl || monogramIconPath(slug, 180);
   return {
     title: store.name || "Tienda",
     description: store.ownerName
@@ -64,7 +65,7 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
   const purchase = storePurchaseProps(store);
   if (!purchase) notFound();
 
-  const iconSrc = store.icon192Url || `/${slug}/icon/192`;
+  const iconSrc = store.icon192Url || monogramIconPath(slug, 192);
 
   return (
     <StorePurchaseProvider store={purchase}>
