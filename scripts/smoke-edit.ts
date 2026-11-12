@@ -65,7 +65,12 @@ function hasMainMenu(replies: OutboundMessage[]): boolean {
   return replies.some(
     (r) =>
       r.kind === "text" &&
-      r.options?.some((o) => o.id === "menu_add" || o.id === "menu_store"),
+      r.options?.some(
+        (o) =>
+          o.id === "menu_group_products" ||
+          o.id === "menu_add" ||
+          o.id === "menu_store",
+      ),
   );
 }
 
@@ -119,18 +124,25 @@ async function main() {
   });
 
   const menu = await say("menú");
-  assert(menuHas(menu, "menu_price", "Cambiar precio"), "menú tiene Cambiar precio");
-  assert(menuHas(menu, "menu_photo", "Cambiar foto"), "menú tiene Cambiar foto");
+  assert(menuHas(menu, "menu_group_products", "Productos"), "menú tiene grupo Productos");
+  assert(menuHas(menu, "menu_group_store", "Tienda"), "menú tiene grupo Tienda");
+  assert(menuHas(menu, "menu_group_wa", "WhatsApp"), "menú tiene grupo WhatsApp");
+  assert(menuHas(menu, "menu_help", "Ayuda"), "menú tiene Ayuda");
+  const productsMenu = await say(undefined, "menu_group_products");
+  assert(menuHas(productsMenu, "menu_price", "Cambiar precio"), "Productos tiene Cambiar precio");
+  assert(menuHas(productsMenu, "menu_photo", "Cambiar foto"), "Productos tiene Cambiar foto");
+  assert(menuHas(productsMenu, "menu_stock", "Stock / pausa"), "Productos tiene Stock / pausa");
   assert(
-    !menu.some(
+    !productsMenu.some(
       (r) =>
         r.kind === "text" &&
         r.options?.some((o) => /pieza/i.test(o.label)),
     ),
     "menú no dice pieza",
   );
-  console.log("OK menú dueña con Cambiar precio / Cambiar foto");
+  console.log("OK menú agrupado con Cambiar precio / Cambiar foto");
 
+  await say("menú");
   // Menú → Cambiar precio con ≥2 productos: listado, no menú general
   const priceMenu = await say(undefined, "menu_price");
   assert(!hasMainMenu(priceMenu), "Cambiar precio no abre menú general");

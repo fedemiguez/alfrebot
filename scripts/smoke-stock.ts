@@ -81,8 +81,12 @@ async function main() {
   // Bugfix: Volver al menú no debe abrir Ayuda; "Whatsapp" sale del hub.
   const back = await say(undefined, "menu_back");
   assert(
-    back.some((r) => r.kind === "text" && r.options?.some((o) => o.id === "menu_store")),
-    "menu_back shows main menu with Ver mi tienda",
+    back.some(
+      (r) =>
+        r.kind === "text" &&
+        r.options?.some((o) => o.id === "menu_group_store" || o.id === "menu_store"),
+    ),
+    "menu_back shows main menu with Tienda",
   );
   await say(undefined, "menu_stock");
   const wa = await say("Whatsapp");

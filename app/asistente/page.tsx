@@ -64,9 +64,10 @@ export default function AsistentePage() {
             Icono de la tienda
           </span>
           {" — "}
-          pedí por texto o audio «armar icono», o tocá{" "}
-          <span className="font-semibold">Subir icono</span> en el chat para
-          mandar tu imagen. No es lo mismo que la foto de un producto.
+          pedí por texto o audio «armar icono», o en el menú tocá{" "}
+          <span className="font-semibold">Tienda → Icono de la tienda</span>{" "}
+          para armarlo o subir tu imagen. No es lo mismo que la foto de un
+          producto.
         </p>
         <div className="mt-8">
           <Suspense

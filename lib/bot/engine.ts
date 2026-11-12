@@ -213,31 +213,95 @@ function extractChannelLinkCode(text?: string): string | null {
 
 function wantsStoreLinkText(text: string): boolean {
   const t = normalizeLoose(text);
-  return (
-    /\b(ver (mi )?tienda|mi tienda|link( de)?( la)? tienda|catalogo|mi link)\b/.test(
-      t,
-    ) || t === "tienda"
+  // "tienda" solo abre el grupo del menú; el link pide “ver mi tienda” / “mi tienda”.
+  return /\b(ver (mi )?tienda|mi tienda|link( de)?( la)? tienda|catalogo|mi link)\b/.test(
+    t,
   );
+}
+
+/** Títulos de grupo del menú (NLU / botón). */
+function matchMenuGroup(
+  text?: string,
+  choiceId?: string,
+): "products" | "store" | "wa" | null {
+  if (
+    choiceId === CHOICE.MENU_GROUP_PRODUCTS ||
+    choiceId === CHOICE.MENU_GROUP_STORE ||
+    choiceId === CHOICE.MENU_GROUP_WA
+  ) {
+    if (choiceId === CHOICE.MENU_GROUP_PRODUCTS) return "products";
+    if (choiceId === CHOICE.MENU_GROUP_STORE) return "store";
+    return "wa";
+  }
+  if (!text) return null;
+  const t = normalizeLoose(text);
+  if (t === "productos" || t === "producto") return "products";
+  if (t === "tienda") return "store";
+  if (t === "whatsapp" || t === "whats app" || t === "whats") return "wa";
+  return null;
 }
 
 function menuMessage(
   caps: ChannelCapabilities,
+  _from?: string,
+): OutboundMessage {
+  const options: { id: string; label: string }[] = [
+    { id: CHOICE.MENU_GROUP_PRODUCTS, label: "Productos" },
+    { id: CHOICE.MENU_GROUP_STORE, label: "Tienda" },
+    { id: CHOICE.MENU_GROUP_WA, label: "WhatsApp" },
+    { id: CHOICE.MENU_HELP, label: "Ayuda" },
+  ];
+  return withOptions("¿Qué querés hacer?", options, caps);
+}
+
+function productsMenuMessage(caps: ChannelCapabilities): OutboundMessage {
+  return withOptions(
+    "Productos — ¿qué necesitás?",
+    [
+      { id: CHOICE.MENU_ADD, label: "Cargar producto" },
+      { id: CHOICE.MENU_PRICE, label: "Cambiar precio" },
+      { id: CHOICE.MENU_PHOTO, label: "Cambiar foto" },
+      { id: CHOICE.MENU_STOCK, label: "Stock / pausa" },
+      { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+    ],
+    caps,
+  );
+}
+
+function storeMenuMessage(caps: ChannelCapabilities): OutboundMessage {
+  return withOptions(
+    "Tienda — ¿qué necesitás?",
+    [
+      { id: CHOICE.MENU_ICON, label: "Icono de la tienda" },
+      { id: CHOICE.MENU_STORE, label: "Ver mi tienda" },
+      { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+    ],
+    caps,
+  );
+}
+
+function waMenuMessage(
+  caps: ChannelCapabilities,
   from?: string,
 ): OutboundMessage {
   const options: { id: string; label: string }[] = [
-    { id: CHOICE.MENU_ADD, label: "Cargar producto" },
-    { id: CHOICE.MENU_PRICE, label: "Cambiar precio" },
-    { id: CHOICE.MENU_PHOTO, label: "Cambiar foto" },
-    { id: CHOICE.MENU_ICON, label: "Icono de la tienda" },
-    { id: CHOICE.MENU_STORE, label: "Ver mi tienda" },
-    { id: CHOICE.MENU_STOCK, label: "Stock / pausa" },
     { id: CHOICE.MENU_CONTACT, label: "WhatsApp pedidos" },
   ];
   if (from && isClerkIdentity(from)) {
     options.push({ id: CHOICE.MENU_LINK_WA, label: "Vincular WhatsApp" });
   }
-  options.push({ id: CHOICE.MENU_HELP, label: "Ayuda" });
-  return withOptions("¿Qué querés hacer?", options, caps);
+  options.push({ id: CHOICE.MENU_BACK, label: "Volver al menú" });
+  return withOptions("WhatsApp — ¿qué necesitás?", options, caps);
+}
+
+function groupMenuMessage(
+  group: "products" | "store" | "wa",
+  caps: ChannelCapabilities,
+  from?: string,
+): OutboundMessage {
+  if (group === "products") return productsMenuMessage(caps);
+  if (group === "store") return storeMenuMessage(caps);
+  return waMenuMessage(caps, from);
 }
 
 function helpMessage(): OutboundMessage {
@@ -245,12 +309,13 @@ function helpMessage(): OutboundMessage {
     kind: "text",
     text:
       "Soy tu ayudante para armar la tienda. Podés mandarme fotos de tus productos y te voy guiando. También podés mandarme audios (nombre, precio, stock).\n\n" +
-      "Stock: menú → Stock / pausa, o pedime el listado, pausar, reactivar o cambiar cantidad (por texto o audio).\n" +
-      "Precio: menú → Cambiar precio, o pedime cambiar el precio y te listo los productos (ej. «cambiar el precio de la lámpara»).\n" +
-      "Foto de un PRODUCTO: menú → Cambiar foto, o pedime cambiar la foto y te listo los productos; después mandás la foto nueva y confirmamos.\n" +
-      "Icono de la TIENDA (no es la foto de un producto): menú → Icono de la tienda. Pedime por texto o audio «armar icono» / «icono de la tienda», o «subir icono» y mandá tu imagen. También desde /asistente con Subir icono.\n" +
-      "WhatsApp de pedidos: el número donde te escriben los clientes (puede ser distinto al que usás para gestionar la tienda).\n" +
-      "Si armaste la tienda en la web y querés gestionarla por WhatsApp: en el chat web tocá Vincular WhatsApp, después desde el celular escribí «ya tengo cuenta» y el código.\n" +
+      "El menú tiene grupos: Productos, Tienda, WhatsApp y Ayuda.\n" +
+      "Stock: menú → Productos → Stock / pausa, o pedime el listado, pausar, reactivar o cambiar cantidad (por texto o audio).\n" +
+      "Precio: menú → Productos → Cambiar precio, o pedime cambiar el precio y te listo los productos (ej. «cambiar el precio de la lámpara»).\n" +
+      "Foto de un PRODUCTO: menú → Productos → Cambiar foto, o pedime cambiar la foto y te listo los productos; después mandás la foto nueva y confirmamos.\n" +
+      "Icono de la TIENDA (no es la foto de un producto): menú → Tienda → Icono de la tienda. Pedime por texto o audio «armar icono» / «icono de la tienda», o «subir icono» y mandá tu imagen.\n" +
+      "WhatsApp de pedidos: menú → WhatsApp → WhatsApp pedidos (el número donde te escriben los clientes).\n" +
+      "Si armaste la tienda en la web y querés gestionarla por WhatsApp: menú → WhatsApp → Vincular WhatsApp, después desde el celular escribí «ya tengo cuenta» y el código.\n" +
       "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
   };
 }
@@ -1135,8 +1200,8 @@ async function handleMessageBody(
         ? "En tu catálogo van a poder armar un pedido y mandártelo por WhatsApp."
         : "En tu catálogo cada producto tiene Lo quiero para escribirte por WhatsApp.";
     const stockHint = tracksQuantity
-      ? "Podés anotar cantidades desde el menú → Stock / pausa."
-      : "Podés marcar productos como Agotado desde el menú → Stock / pausa.";
+      ? "Podés anotar cantidades desde el menú → Productos → Stock / pausa."
+      : "Podés marcar productos como Agotado desde el menú → Productos → Stock / pausa.";
     const continuityHint = isClerkIdentity(msg.from)
       ? " Los pedidos de clientes van por el WhatsApp de pedidos que cargaste."
       : msg.channel === "simulator" && isWhatsAppContactPhone(msg.from)
@@ -1153,6 +1218,15 @@ async function handleMessageBody(
   let store = await getStoreForChannelIdentity(msg.from);
 
   if (state === "IDLE") {
+    const menuGroup = matchMenuGroup(msg.text, choice ?? msg.choiceId);
+    if (menuGroup) {
+      replies.push(groupMenuMessage(menuGroup, caps, msg.from));
+      return replies;
+    }
+    if (choice === CHOICE.MENU_BACK || msg.choiceId === CHOICE.MENU_BACK) {
+      replies.push(menuMessage(caps, msg.from));
+      return replies;
+    }
     if (choice === CHOICE.MENU_ADD || msg.choiceId === CHOICE.MENU_ADD) {
       await setState("PRODUCT_PHOTO", { ...draft, product: {} });
       replies.push({ kind: "text", text: "Mandame la foto del producto." });
@@ -2250,7 +2324,7 @@ async function askStoreIconUpload(
       kind: "text",
       text:
         "Mandame la imagen del icono de tu tienda (JPG o PNG; cuadrada queda mejor).\n" +
-        "En /asistente también podés tocar «Subir icono». Esto no cambia la foto de un producto.",
+        "Esto no cambia la foto de un producto.",
     },
     withOptions(
       "Si preferís…",

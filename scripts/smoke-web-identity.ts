@@ -82,8 +82,23 @@ async function main() {
 
   const menu = await say("menú");
   assert(
-    menu.some((r) => r.kind === "text" && r.options?.some((o) => o.id === "menu_store")),
+    menu.some(
+      (r) =>
+        r.kind === "text" &&
+        r.options?.some(
+          (o) => o.id === "menu_group_store" || o.id === "menu_store",
+        ),
+    ),
     "same clerk identity resumes menu",
+  );
+  const waGroup = await say(undefined, "menu_group_wa");
+  assert(
+    waGroup.some(
+      (r) =>
+        r.kind === "text" &&
+        r.options?.some((o) => o.id === "menu_link_wa"),
+    ),
+    "WhatsApp group includes Vincular WhatsApp for clerk",
   );
 
   console.log("\nOK web identity: clerk, isDemo=false, ownerEmail, menu resume");
