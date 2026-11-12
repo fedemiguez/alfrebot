@@ -64,10 +64,13 @@ export function withOptions(
   text: string,
   options: Option[] | undefined,
   caps: ChannelCapabilities,
+  /** Onboarding checkout mode: only Sin/Con carrito — no Cancelar escape. */
+  flags?: { includeCancel?: boolean },
 ): OutboundMessage {
   if (!options?.length) return { kind: "text", text };
 
-  const opts = withCancelOption(options);
+  const opts =
+    flags?.includeCancel === false ? options : withCancelOption(options);
 
   if (caps.buttons && opts.length <= caps.maxButtons) {
     return { kind: "text", text, options: opts };

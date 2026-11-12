@@ -30,3 +30,14 @@ export function metaBotNumber(): string {
 export function waProvider(): "meta" | "simulator" {
   return process.env.WA_PROVIDER === "meta" ? "meta" : "simulator";
 }
+
+/**
+ * Alfrebot chat v2 (WhatsApp-like, proactivo).
+ * Default ON. Set ALFREBOT_CHAT_V2=0 (or false/off) to serve v1 on `/asistente`.
+ * `/asistente-v1` always keeps the classic shell for rollback.
+ */
+export function isAlfrebotChatV2(): boolean {
+  const v = process.env.ALFREBOT_CHAT_V2?.trim().toLowerCase();
+  if (v === "0" || v === "false" || v === "off" || v === "no") return false;
+  return true;
+}

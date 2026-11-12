@@ -1,4 +1,5 @@
 import { appBaseUrl } from "@/lib/env";
+import { MONOGRAM_ICON_VERSION } from "@/lib/store-icon";
 import { getCachedStore } from "@/lib/store-data";
 
 function shortName(name: string): string {
@@ -33,7 +34,8 @@ export async function GET(
   }
 
   const base = appBaseUrl();
-  const pathIcon = (size: number) => `${base}/${store.slug}/icon/${size}`;
+  const pathIcon = (size: number) =>
+    `${base}/${store.slug}/icon/${size}?v=${MONOGRAM_ICON_VERSION}`;
   const icon192 = store.icon192Url || pathIcon(192);
   const icon512 = store.icon512Url || pathIcon(512);
 

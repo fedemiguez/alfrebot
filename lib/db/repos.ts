@@ -29,6 +29,16 @@ export type ProductDraft = {
   skipDesc?: boolean;
 };
 
+/** Plan multi-intent: varias cosas en un mensaje (nombre tienda + logo + productos…). */
+export type PendingSetupPlan = {
+  ownerName?: string;
+  storeName?: string;
+  iconHint?: string;
+  iconMode?: "generate" | "upload";
+  productTitles?: string[];
+  deferPhotos?: boolean;
+};
+
 export type ConversationDraft = {
   ownerName?: string;
   storeName?: string;
@@ -66,6 +76,8 @@ export type ConversationDraft = {
   stockPhotoBlobKeyPending?: string;
   /** Modo de stock pendiente (true = cantidades). */
   stockModePending?: boolean;
+  /** Intents en cola (multi-mensaje / onboarding proactivo). */
+  pendingSetupPlan?: PendingSetupPlan;
   [key: string]: unknown;
 };
 

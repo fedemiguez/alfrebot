@@ -8,6 +8,14 @@ export const ICON_SIZES = {
   apple: 180,
 } as const;
 
+/** Bump when monogram raster changes so header/PWA fallbacks skip stale blank PNGs. */
+export const MONOGRAM_ICON_VERSION = "mono2";
+
+/** On-the-fly monogram URL (no uploaded icon yet). */
+export function monogramIconPath(slug: string, size: number): string {
+  return `/${slug}/icon/${size}?v=${MONOGRAM_ICON_VERSION}`;
+}
+
 /** Presupuesto total del pipeline (Gemini + raster + Blob). */
 export const STORE_ICON_BUDGET_MS = 18_000;
 const GEMINI_TIMEOUT_MS = 8_000;
@@ -120,15 +128,83 @@ export function storeInitials(name: string | null | undefined): string {
   return (parts[0]![0]! + parts[1]![0]!).toUpperCase();
 }
 
+/**
+ * Glyphs as paths (no <text>): sharp/librsvg often drops fonts in serverless,
+ * which left a blank tierra circle on store headers / PWA monograms.
+ * Coords in a 100×120 box; caller scales/positions.
+ */
+const MONOGRAM_GLYPHS: Record<string, string> = {
+  A: "M50 6 L92 114 H70 L62 90 H38 L30 114 H8 Z M42 68 H58 L50 42 Z",
+  B: "M18 8 H58 C78 8 90 22 90 38 C90 50 82 60 70 64 C86 68 96 80 96 96 C96 114 80 114 58 114 H18 Z M40 28 V50 H56 C64 50 68 46 68 40 C68 34 64 28 56 28 Z M40 72 V94 H58 C68 94 74 88 74 82 C74 76 68 72 58 72 Z",
+  C: "M90 28 C78 12 62 6 48 6 C22 6 8 30 8 60 C8 90 22 114 48 114 C62 114 78 108 90 92 L72 78 C66 86 58 92 48 92 C34 92 28 78 28 60 C28 42 34 28 48 28 C58 28 66 34 72 42 Z",
+  D: "M18 8 H52 C78 8 94 28 94 60 C94 92 78 114 52 114 H18 Z M40 28 V94 H52 C66 94 72 80 72 60 C72 40 66 28 52 28 Z",
+  E: "M20 8 H88 V30 H44 V48 H80 V70 H44 V92 H88 V114 H20 Z",
+  F: "M20 8 H88 V30 H44 V54 H78 V76 H44 V114 H20 Z",
+  G: "M90 28 C78 12 62 6 48 6 C22 6 8 30 8 60 C8 90 22 114 48 114 C66 114 82 104 90 88 V64 H58 V86 H70 C66 96 58 102 48 102 C34 102 28 84 28 60 C28 36 36 20 50 20 C60 20 68 26 74 36 Z",
+  H: "M16 8 H40 V48 H60 V8 H84 V114 H60 V72 H40 V114 H16 Z",
+  I: "M28 8 H72 V30 H56 V92 H72 V114 H28 V92 H44 V30 H28 Z",
+  J: "M30 8 H86 V30 H66 V78 C66 96 56 114 36 114 C24 114 14 108 10 98 L28 86 C30 90 34 94 38 94 C46 94 48 86 48 78 V8 Z",
+  K: "M16 8 H40 V52 L70 8 H96 L58 60 L98 114 H72 L40 70 V114 H16 Z",
+  L: "M20 8 H44 V92 H88 V114 H20 Z",
+  M: "M10 114 V8 H34 L50 52 L66 8 H90 V114 H68 V48 L50 90 L32 48 V114 Z",
+  N: "M14 114 V8 H38 L66 70 V8 H86 V114 H62 L34 52 V114 Z",
+  O: "M50 6 C78 6 94 30 94 60 C94 90 78 114 50 114 C22 114 6 90 6 60 C6 30 22 6 50 6 Z M50 28 C36 28 28 42 28 60 C28 78 36 92 50 92 C64 92 72 78 72 60 C72 42 64 28 50 28 Z",
+  P: "M18 8 H60 C82 8 94 24 94 44 C94 64 82 80 60 80 H40 V114 H18 Z M40 28 V60 H58 C66 60 72 54 72 44 C72 34 66 28 58 28 Z",
+  Q: "M50 6 C78 6 94 30 94 60 C94 78 86 94 72 104 L90 114 H66 L56 104 C54 104 52 104 50 104 C22 104 6 84 6 60 C6 30 22 6 50 6 Z M50 28 C36 28 28 42 28 60 C28 78 36 92 50 92 C64 92 72 78 72 60 C72 42 64 28 50 28 Z",
+  R: "M18 8 H60 C82 8 94 24 94 44 C94 60 84 72 70 76 L96 114 H70 L48 78 H40 V114 H18 Z M40 28 V56 H58 C66 56 72 50 72 44 C72 36 66 28 58 28 Z",
+  S: "M88 30 C78 14 64 6 48 6 C28 6 12 18 12 36 C12 54 26 62 48 68 C62 72 70 76 70 84 C70 94 62 100 48 100 C36 100 26 94 20 86 L8 102 C18 114 32 114 48 114 C74 114 92 100 92 80 C92 60 76 52 54 46 C40 42 32 40 32 34 C32 26 38 22 48 22 C58 22 68 26 74 34 Z",
+  T: "M12 8 H88 V30 H62 V114 H38 V30 H12 Z",
+  U: "M16 8 H40 V72 C40 88 46 96 50 96 C54 96 60 88 60 72 V8 H84 V76 C84 102 70 114 50 114 C30 114 16 102 16 76 Z",
+  V: "M10 8 H34 L50 78 L66 8 H90 L58 114 H42 Z",
+  W: "M8 8 H30 L40 78 L50 28 H66 L76 78 L86 8 H108 L88 114 H68 L58 68 L48 114 H28 Z",
+  X: "M12 8 H36 L50 40 L64 8 H88 L62 60 L90 114 H66 L50 80 L34 114 H10 L38 60 Z",
+  Y: "M10 8 H34 L50 48 L66 8 H90 L62 64 V114 H38 V64 Z",
+  Z: "M14 8 H86 V30 L42 92 H88 V114 H12 V92 L56 30 H14 Z",
+  "0": "M50 8 C74 8 90 30 90 60 C90 90 74 112 50 112 C26 112 10 90 10 60 C10 30 26 8 50 8 Z M50 28 C38 28 32 42 32 60 C32 78 38 92 50 92 C62 92 68 78 68 60 C68 42 62 28 50 28 Z",
+  "1": "M30 28 L50 8 H62 V114 H38 V40 L30 48 Z",
+  "2": "M16 28 C24 14 36 8 52 8 C72 8 88 22 88 42 C88 58 78 68 60 80 L40 92 H88 V114 H12 V92 L52 60 C62 52 66 48 66 40 C66 32 60 28 52 28 C42 28 36 34 32 40 Z",
+  "3": "M20 24 C28 12 40 8 52 8 C72 8 88 22 88 40 C88 52 80 60 68 64 C82 68 92 80 92 94 C92 112 74 114 52 114 C36 114 22 108 14 96 L30 82 C34 90 42 94 52 94 C62 94 70 88 70 80 C70 72 62 68 52 68 H40 V48 H52 C62 48 68 42 68 36 C68 30 62 26 52 26 C44 26 36 30 32 36 Z",
+  "4": "M58 8 H82 V70 H94 V92 H82 V114 H58 V92 H12 V70 L58 8 Z M58 32 L30 70 H58 Z",
+  "5": "M24 8 H84 V30 H46 V48 H62 C82 48 94 62 94 82 C94 104 78 114 54 114 C36 114 22 106 14 94 L30 80 C34 88 44 94 54 94 C64 94 72 88 72 80 C72 72 64 66 52 66 H24 Z",
+  "6": "M78 24 C68 12 56 8 44 8 C24 8 10 28 10 58 C10 90 26 114 52 114 C76 114 92 96 92 76 C92 54 76 40 56 40 C46 40 38 44 32 50 V44 C32 32 36 24 46 24 C54 24 62 28 68 36 Z M52 58 C64 58 70 66 70 76 C70 86 64 96 52 96 C40 96 34 86 34 76 C34 66 40 58 52 58 Z",
+  "7": "M14 8 H86 V32 L46 114 H20 L58 32 H14 Z",
+  "8": "M50 6 C70 6 86 20 86 38 C86 50 78 60 66 64 C80 68 92 80 92 96 C92 114 74 114 50 114 C26 114 8 114 8 96 C8 80 20 68 34 64 C22 60 14 50 14 38 C14 20 30 6 50 6 Z M50 26 C42 26 36 32 36 38 C36 44 42 50 50 50 C58 50 64 44 64 38 C64 32 58 26 50 26 Z M50 74 C40 74 32 82 32 92 C32 100 40 106 50 106 C60 106 68 100 68 92 C68 82 60 74 50 74 Z",
+  "9": "M22 96 C30 108 40 114 52 114 C74 114 90 92 90 60 C90 28 74 6 50 6 C26 6 10 24 10 44 C10 66 26 80 48 80 C58 80 66 76 72 70 V78 C72 92 64 102 52 102 C44 102 36 98 30 90 Z M50 26 C62 26 70 38 70 52 C70 66 62 68 50 68 C38 68 30 60 30 48 C30 36 38 26 50 26 Z",
+};
+
+function monogramGlyphPath(ch: string): string | null {
+  return MONOGRAM_GLYPHS[ch.toUpperCase()] ?? null;
+}
+
+/** Path markup for 1–2 initials, centered in the 512 icon. */
+export function monogramInitialsMarkup(initials: string): string {
+  const chars = initials
+    .toUpperCase()
+    .split("")
+    .map((c) => monogramGlyphPath(c))
+    .filter((p): p is string => Boolean(p));
+  if (chars.length === 0) {
+    const fallback = monogramGlyphPath("T")!;
+    return `<g fill="#FFFFFF" transform="translate(256 256) scale(2.05) translate(-50 -60)"><path d="${fallback}"/></g>`;
+  }
+  if (chars.length === 1) {
+    return `<g fill="#FFFFFF" transform="translate(256 256) scale(2.05) translate(-50 -60)"><path d="${chars[0]}"/></g>`;
+  }
+  // Two letters side-by-side inside the tierra circle.
+  return `<g fill="#FFFFFF" transform="translate(256 256) scale(1.55)">
+  <g transform="translate(-108 -60)"><path d="${chars[0]}"/></g>
+  <g transform="translate(8 -60)"><path d="${chars[1]}"/></g>
+</g>`;
+}
+
 export function monogramSvg(storeName: string | null | undefined): string {
-  const initials = escapeXml(storeInitials(storeName));
+  const initials = storeInitials(storeName);
+  const letterMarkup = monogramInitialsMarkup(initials);
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="96" fill="${BRAND_BG}"/>
   <circle cx="256" cy="256" r="168" fill="${BRAND_PRIMARY}"/>
-  <text x="256" y="256" dy="0.35em" text-anchor="middle"
-    font-family="Georgia, 'Times New Roman', serif" font-size="160" font-weight="700"
-    fill="#FFFFFF">${initials}</text>
+  ${letterMarkup}
 </svg>`;
 }
 
