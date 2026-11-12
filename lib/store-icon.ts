@@ -360,17 +360,18 @@ export function composeStoreIconSvg(input: {
         });
 
   const hasLamp = motifs.includes("lamp");
-  const others = motifs.filter((m) => m !== "lamp");
-  const primary = others[0] ?? motifs[0]!;
+  const others = motifs.filter((m): m is Exclude<IconMotif, "lamp"> => m !== "lamp");
+  const subject = others[0];
+  const primary = subject ?? motifs[0]!;
   const secondary = others[1] ?? (motifs[1] && motifs[1] !== primary ? motifs[1] : undefined);
 
   let body = "";
-  if (hasLamp && primary !== "lamp") {
+  if (hasLamp && subject) {
     // Composición tipo ejemplo: lámpara + sujeto bajo spotlight.
     body =
       spotlightCone() +
       motifMarkup("lamp", 40, 70, 1.15) +
-      motifMarkup(primary, 200, 230, 0.95);
+      motifMarkup(subject, 200, 230, 0.95);
   } else if (motifs.length === 1) {
     body = motifMarkup(primary, 156, 156, 1.35);
   } else if (motifs[0] === "ball" && motifs.includes("fire")) {
