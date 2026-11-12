@@ -1,4 +1,4 @@
-/** Icono robot simple de alfrebot (sin marcas Meta). */
+/** Marca robot alfrebot (burbuja/chat, sin marcas Meta). */
 export function AlfrebotRobotAvatar({
   size = 40,
   className = "",
