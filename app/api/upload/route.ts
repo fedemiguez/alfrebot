@@ -1,6 +1,15 @@
+import { authorizeUploadRequest } from "@/lib/upload-auth";
 import { uploadDataUrl, uploadProductImage } from "@/lib/blob";
 
 export async function POST(req: Request) {
+  const authz = await authorizeUploadRequest(req);
+  if (!authz.ok) {
+    return Response.json(
+      { ok: false, error: authz.error },
+      { status: authz.status },
+    );
+  }
+
   try {
     const contentType = req.headers.get("content-type") ?? "";
 
