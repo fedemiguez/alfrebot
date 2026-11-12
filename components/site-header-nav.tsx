@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { useAuth, UserButton } from "@clerk/nextjs";
 
 function GuestLinks() {
   return (
@@ -19,21 +19,16 @@ function GuestLinks() {
   );
 }
 
-export function SiteHeaderNav({ clerkEnabled }: { clerkEnabled: boolean }) {
-  if (!clerkEnabled) {
-    return (
-      <nav className="flex items-center gap-4 text-[17px]">
-        <GuestLinks />
-      </nav>
-    );
+function ClerkNav() {
+  const { isLoaded, isSignedIn } = useAuth();
+
+  if (!isLoaded) {
+    return <span className="inline-block h-9 w-28" aria-hidden />;
   }
 
-  return (
-    <nav className="flex items-center gap-4 text-[17px]">
-      <SignedOut>
-        <GuestLinks />
-      </SignedOut>
-      <SignedIn>
+  if (isSignedIn) {
+    return (
+      <>
         <Link
           href="/asistente"
           className="text-[var(--ink)] hover:text-[var(--primary)]"
@@ -47,7 +42,17 @@ export function SiteHeaderNav({ clerkEnabled }: { clerkEnabled: boolean }) {
             },
           }}
         />
-      </SignedIn>
+      </>
+    );
+  }
+
+  return <GuestLinks />;
+}
+
+export function SiteHeaderNav({ clerkEnabled }: { clerkEnabled: boolean }) {
+  return (
+    <nav className="flex items-center gap-4 text-[17px]">
+      {clerkEnabled ? <ClerkNav /> : <GuestLinks />}
     </nav>
   );
 }
