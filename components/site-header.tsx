@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { isClerkConfigured } from "@/lib/clerk";
+import { SiteHeaderNav } from "@/components/site-header-nav";
 
 export function SiteHeader() {
   return (
@@ -10,17 +12,7 @@ export function SiteHeader() {
         >
           alfrebot
         </Link>
-        <nav className="flex items-center gap-4 text-[17px]">
-          <Link href="/registro" className="text-[var(--ink)] hover:text-[var(--primary)]">
-            Por WhatsApp
-          </Link>
-          <Link href="/sign-up" className="text-[var(--ink)] hover:text-[var(--primary)]">
-            En la web
-          </Link>
-          <Link href="/sign-in" className="text-[var(--muted)] hover:text-[var(--primary)]">
-            Entrar
-          </Link>
-        </nav>
+        <SiteHeaderNav clerkEnabled={isClerkConfigured()} />
       </div>
     </header>
   );
