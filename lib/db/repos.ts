@@ -6,16 +6,19 @@ import {
 import { getDb, hasDatabaseUrl } from "@/lib/db/index";
 import { getMemoryDb, newId, now } from "@/lib/db/memory";
 import {
+  channelLinkIntents,
   conversations,
   processedMessages,
   products,
   signupIntents,
   stores,
+  type ChannelLinkIntent,
   type Conversation,
   type Product,
   type SignupIntent,
   type Store,
 } from "@/lib/db/schema";
+import { isWhatsAppContactPhone } from "@/lib/phone";
 
 export type ProductDraft = {
   title?: string;
@@ -332,10 +335,212 @@ async function deleteEmptyStore(storeId: string): Promise<boolean> {
   return rows.length > 0;
 }
 
+const CHANNEL_LINK_TTL_MS = 30 * 60 * 1000;
+
+function randomLinkCode(): string {
+  return String(Math.floor(100_000 + Math.random() * 900_000));
+}
+
+/** Borra códigos previos del mismo Clerk (un vínculo activo a la vez). */
+async function deleteChannelLinkIntentsForClerk(clerkUserId: string): Promise<void> {
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    for (const [code, intent] of mem.channelLinkIntents) {
+      if (intent.clerkUserId === clerkUserId) mem.channelLinkIntents.delete(code);
+    }
+    return;
+  }
+  const db = getDb();
+  await db
+    .delete(channelLinkIntents)
+    .where(eq(channelLinkIntents.clerkUserId, clerkUserId));
+}
+
+export async function createChannelLinkIntent(input: {
+  clerkChannelIdentity: string;
+  ownerEmail?: string | null;
+}): Promise<{ code: string } | { error: string }> {
+  const clerkUserId = clerkUserIdFromIdentity(input.clerkChannelIdentity);
+  if (!clerkUserId || !isClerkIdentity(input.clerkChannelIdentity)) {
+    return { error: "not_clerk" };
+  }
+  await deleteChannelLinkIntentsForClerk(clerkUserId);
+  const code = randomLinkCode();
+  const row: ChannelLinkIntent = {
+    code,
+    clerkUserId,
+    clerkChannelIdentity: input.clerkChannelIdentity,
+    ownerEmail: input.ownerEmail ?? null,
+    createdAt: now(),
+  };
+  if (!hasDatabaseUrl()) {
+    getMemoryDb().channelLinkIntents.set(code, row);
+    return { code };
+  }
+  const db = getDb();
+  await db.insert(channelLinkIntents).values(row);
+  return { code };
+}
+
+export async function getChannelLinkIntent(
+  code: string,
+): Promise<ChannelLinkIntent | null> {
+  const normalized = code.replace(/\D/g, "").slice(0, 6);
+  if (normalized.length !== 6) return null;
+  if (!hasDatabaseUrl()) {
+    return getMemoryDb().channelLinkIntents.get(normalized) ?? null;
+  }
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(channelLinkIntents)
+    .where(eq(channelLinkIntents.code, normalized))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+async function deleteChannelLinkIntent(code: string): Promise<void> {
+  if (!hasDatabaseUrl()) {
+    getMemoryDb().channelLinkIntents.delete(code);
+    return;
+  }
+  const db = getDb();
+  await db.delete(channelLinkIntents).where(eq(channelLinkIntents.code, code));
+}
+
+async function updateStoreIdentities(
+  storeId: string,
+  patch: {
+    channelIdentity: string;
+    clerkUserId: string;
+    ownerEmail?: string | null;
+    contactPhone?: string | null;
+  },
+): Promise<Store | null> {
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    const current = mem.stores.get(storeId);
+    if (!current) return null;
+    const updated = touchStore({
+      ...current,
+      channelIdentity: patch.channelIdentity,
+      clerkUserId: patch.clerkUserId,
+      ownerEmail:
+        patch.ownerEmail !== undefined ? patch.ownerEmail : current.ownerEmail,
+      contactPhone:
+        patch.contactPhone !== undefined
+          ? patch.contactPhone
+          : current.contactPhone,
+    });
+    mem.stores.set(storeId, updated);
+    return updated;
+  }
+  const db = getDb();
+  const rows = await db
+    .update(stores)
+    .set({
+      channelIdentity: patch.channelIdentity,
+      clerkUserId: patch.clerkUserId,
+      ownerEmail: patch.ownerEmail,
+      contactPhone: patch.contactPhone,
+      updatedAt: now(),
+    })
+    .where(eq(stores.id, storeId))
+    .returning();
+  return rows[0] ?? null;
+}
+
 /**
- * Vincula una sesión Clerk a una tienda que nació por WhatsApp (misma fila).
- * Si el número de pedidos coincide con `channel_identity` WA y no hay otro Clerk,
- * escribe `clerk_user_id` / email y limpia el stub `clerk:…` vacío.
+ * Vincula un WhatsApp verificado (`waE164` = `msg.from` de Meta) a la cuenta Clerk
+ * del código generado en `/asistente`. No usar el WhatsApp de pedidos como prueba.
+ */
+export async function linkVerifiedWaToClerkAccount(input: {
+  waE164: string;
+  code: string;
+}): Promise<{ store: Store | null; linked: boolean; detail: string }> {
+  if (!isWhatsAppContactPhone(input.waE164)) {
+    return { store: null, linked: false, detail: "wa_not_valid" };
+  }
+
+  const intent = await getChannelLinkIntent(input.code);
+  if (!intent) {
+    return { store: null, linked: false, detail: "invalid_code" };
+  }
+  if (Date.now() - intent.createdAt.getTime() > CHANNEL_LINK_TTL_MS) {
+    await deleteChannelLinkIntent(intent.code);
+    return { store: null, linked: false, detail: "expired" };
+  }
+
+  const clerkUserId = intent.clerkUserId;
+  const clerkStore =
+    (await getStoreByChannelIdentity(intent.clerkChannelIdentity)) ??
+    (await getStoreByClerkUserId(clerkUserId));
+  const waStore = await getStoreByChannelIdentity(input.waE164);
+
+  if (
+    clerkStore &&
+    isWhatsAppContactPhone(clerkStore.channelIdentity) &&
+    clerkStore.channelIdentity === input.waE164 &&
+    clerkStore.clerkUserId === clerkUserId
+  ) {
+    await deleteChannelLinkIntent(intent.code);
+    return { store: clerkStore, linked: true, detail: "already_linked" };
+  }
+  if (waStore?.clerkUserId === clerkUserId) {
+    await deleteChannelLinkIntent(intent.code);
+    return { store: waStore, linked: true, detail: "already_linked" };
+  }
+
+  if (!clerkStore) {
+    return { store: null, linked: false, detail: "no_clerk_store" };
+  }
+
+  if (waStore && waStore.id !== clerkStore.id) {
+    const waCount = await countProductsForStore(waStore.id);
+    const clerkCount = await countProductsForStore(clerkStore.id);
+    if (waCount > 0 && clerkCount > 0) {
+      return { store: null, linked: false, detail: "conflict_both_have_products" };
+    }
+    if (waStore.clerkUserId && waStore.clerkUserId !== clerkUserId) {
+      return { store: waStore, linked: false, detail: "wa_store_has_other_clerk" };
+    }
+    if (waCount > 0 && clerkCount === 0) {
+      const linked = await upsertStore({
+        channelIdentity: waStore.channelIdentity,
+        clerkUserId,
+        ownerEmail: intent.ownerEmail ?? waStore.ownerEmail,
+        contactPhone: waStore.contactPhone ?? input.waE164,
+        showPhone: true,
+      });
+      await deleteEmptyStore(clerkStore.id);
+      await deleteChannelLinkIntent(intent.code);
+      return { store: linked, linked: true, detail: "linked_into_wa" };
+    }
+    await deleteEmptyStore(waStore.id);
+  }
+
+  const taken = await getStoreByChannelIdentity(input.waE164);
+  if (taken && taken.id !== clerkStore.id) {
+    return { store: null, linked: false, detail: "wa_identity_taken" };
+  }
+
+  const updated = await updateStoreIdentities(clerkStore.id, {
+    channelIdentity: input.waE164,
+    clerkUserId,
+    ownerEmail: intent.ownerEmail ?? clerkStore.ownerEmail,
+    contactPhone: clerkStore.contactPhone ?? input.waE164,
+  });
+  await deleteChannelLinkIntent(intent.code);
+  return {
+    store: updated,
+    linked: Boolean(updated),
+    detail: updated ? "migrated_clerk_to_wa" : "update_failed",
+  };
+}
+
+/**
+ * @deprecated El vínculo Clerk↔WA ya no se dispara por contact_phone.
+ * Preferir `createChannelLinkIntent` + `linkVerifiedWaToClerkAccount`.
  */
 export async function linkClerkToWaStore(input: {
   clerkChannelIdentity: string;

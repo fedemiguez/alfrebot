@@ -91,6 +91,20 @@ export const signupIntents = pgTable("signup_intents", {
     .notNull(),
 });
 
+/**
+ * Códigos de un solo uso para vincular WhatsApp ↔ cuenta web (Clerk).
+ * Se generan en `/asistente` y se consumen desde el celular (prueba de posesión).
+ */
+export const channelLinkIntents = pgTable("channel_link_intents", {
+  code: text("code").primaryKey(),
+  clerkUserId: text("clerk_user_id").notNull(),
+  clerkChannelIdentity: text("clerk_channel_identity").notNull(),
+  ownerEmail: text("owner_email"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export const processedMessages = pgTable("processed_messages", {
   providerMessageId: text("provider_message_id").primaryKey(),
   at: timestamp("at", { withTimezone: true }).defaultNow().notNull(),
@@ -105,3 +119,4 @@ export type Store = typeof stores.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type Conversation = typeof conversations.$inferSelect;
 export type SignupIntent = typeof signupIntents.$inferSelect;
+export type ChannelLinkIntent = typeof channelLinkIntents.$inferSelect;

@@ -25,7 +25,9 @@ Dos caminos para la dueña (misma tabla `stores`):
 
 > **Migración:** la ruta canónica del chat web es `/asistente`. `/probar` responde **308** hacia `/asistente` (compatibilidad de links viejos).
 
-La key de dueña es `stores.channel_identity` (`+549…` o `clerk:{userId}`). Si la dueña web carga un WhatsApp que ya tiene tienda, se vincula la misma fila (`clerk_user_id`) — no se crea otra cuenta. Clerk autentica el camino web; no reemplaza el camino Meta.
+La key de dueña es `stores.channel_identity` (`+549…` o `clerk:{userId}`). El WhatsApp de pedidos (`contact_phone`) **no** vincula cuentas: solo lo ven los compradores.
+
+**Vincular web ↔ WhatsApp (gestión):** en `/asistente` → menú → **Vincular WhatsApp** (código de 6 dígitos, 30 min). Desde el celular: «ya tengo cuenta» + el código. El `from` de Meta prueba la posesión del número; queda la misma fila `stores` con `clerk_user_id`. Clerk autentica el camino web; no reemplaza Meta.
 
 Clerk se provisiona desde Vercel Marketplace (`CLERK_*` en preview/production). En el **Dashboard de Clerk (Production)**: activá **Google** + **Email** como métodos de sign-up/sign-in, y usá keys `pk_live_` / `sk_live_` (sin banner de development).
 
@@ -46,6 +48,7 @@ Clerk se provisiona desde Vercel Marketplace (`CLERK_*` en preview/production). 
 - `stores.clerk_user_id` / `stores.owner_email` — alias / metadata del camino web
 - `stores.checkout_mode` (`whatsapp` | `cart`, default `whatsapp`)
 - `stores.contact_phone` — WhatsApp público para catálogo / Lo quiero
+- `channel_link_intents` — códigos de un solo uso para vincular Clerk ↔ WhatsApp
 
 Con `DATABASE_URL`:
 
