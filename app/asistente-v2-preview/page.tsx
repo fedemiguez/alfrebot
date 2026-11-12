@@ -41,7 +41,7 @@ async function PreviewBody() {
 
 /**
  * Preview sin Clerk para screenshots / Try Live de diseño.
- * No reemplaza /asistente (que sí exige cuenta).
+ * Preview de UI; /asistente es público y pide Clerk solo al seguir en web.
  */
 export default function AsistenteV2PreviewPage() {
   return (

@@ -17,6 +17,8 @@ export async function POST(req: Request) {
 
     const messages = adapter.parse(rawBody);
 
+    // Guest puede ver /asistente y elegir canal en el cliente; persistir
+    // conversación / crear tienda exige sesión Clerk.
     let clerkFrom: string | null = null;
     let ownerEmail: string | undefined;
     if (isClerkConfigured()) {

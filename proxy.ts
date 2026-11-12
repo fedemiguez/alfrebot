@@ -4,8 +4,8 @@ import type { NextRequest } from "next/server";
 import { isClerkConfigured } from "@/lib/clerk";
 
 const isProtectedRoute = createRouteMatcher([
+  // /asistente es público: login Clerk ocurre in-chat al elegir web.
   // /asistente-v2-preview queda afuera a propósito (UI sin login).
-  "/asistente",
   "/asistente-v1(.*)",
   "/probar(.*)",
 ]);

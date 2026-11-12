@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { AlfrebotRobotAvatar } from "@/components/alfrebot-robot-avatar";
+import { ChatAuthOverlay } from "@/components/chat-auth-overlay";
 import { OwnerChatAvatar } from "@/components/owner-chat-avatar";
 import type { OutboundMessage } from "@/lib/channels/types";
 import { segmentUrls } from "@/lib/bot/render";
@@ -17,6 +18,8 @@ const JPEG_QUALITY = 0.85;
 const V2_INTRO_ID = "v2_intro";
 const V2_CHANNEL_WEB = "v2_channel_web";
 const V2_CHANNEL_WA = "v2_channel_wa";
+/** Tras login Clerk, reanudar onboarding web sin repetir la elección de canal. */
+const PENDING_WEB_ONBOARDING_KEY = "alfrebot_pending_web_onboarding";
 
 const V2_INTRO_ITEM: ChatItem = {
   id: V2_INTRO_ID,
@@ -50,6 +53,7 @@ export function SimulatorChat({
   ownerEmail,
   ownerImageUrl,
   identityMode = "phone",
+  isAuthenticated = false,
   variant = "classic",
 }: {
   initialPhone?: string;
@@ -59,10 +63,13 @@ export function SimulatorChat({
   /** Foto Clerk del dueño; sin valor → silueta genérica en v2. */
   ownerImageUrl?: string | null;
   identityMode?: "phone" | "clerk";
+  /** Sesión Clerk activa (server). Guest ve channel choice; API exige auth. */
+  isAuthenticated?: boolean;
   /** classic = shell v1 con aside; v2 = chat WhatsApp-like a pantalla completa. */
   variant?: "classic" | "v2";
 }) {
   const isV2 = variant === "v2";
+  const needsClerkGate = identityMode === "clerk";
   const [phone, setPhone] = useState(initialPhone || "");
   const [input, setInput] = useState("");
   const [items, setItems] = useState<ChatItem[]>(() =>
@@ -79,6 +86,7 @@ export function SimulatorChat({
   const [pickSourceOpen, setPickSourceOpen] = useState(false);
   const [iconPickOpen, setIconPickOpen] = useState(false);
   const [channelPicked, setChannelPicked] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -86,17 +94,19 @@ export function SimulatorChat({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  const resumedWebRef = useRef(false);
   const busy = sending || pending || uploading || recording || sendingAudio;
   const signupCode = initialCode?.replace(/\D/g, "").slice(0, 4) || "";
   const displayIdentity =
     identityMode === "clerk"
-      ? ownerEmail || "cuenta web"
+      ? ownerEmail || (isAuthenticated ? "cuenta web" : "invitado")
       : phone || "…";
+  const canUseBot = !needsClerkGate || isAuthenticated;
 
   useEffect(() => {
     setPhone((prev) => {
-      if (prev) return prev;
       if (initialPhone) return initialPhone;
+      if (prev) return prev;
       if (identityMode === "clerk") return "";
       return defaultSimPhone();
     });
@@ -113,9 +123,42 @@ export function SimulatorChat({
 
   function resolvePhone(): string {
     if (phone) return phone;
+    if (identityMode === "clerk") {
+      if (initialPhone) {
+        setPhone(initialPhone);
+        return initialPhone;
+      }
+      return "";
+    }
     const next = initialPhone || defaultSimPhone();
     setPhone(next);
     return next;
+  }
+
+  function markPendingWebOnboarding() {
+    if (typeof window === "undefined") return;
+    window.sessionStorage.setItem(
+      PENDING_WEB_ONBOARDING_KEY,
+      signupCode || "1",
+    );
+  }
+
+  function clearPendingWebOnboarding() {
+    if (typeof window === "undefined") return;
+    window.sessionStorage.removeItem(PENDING_WEB_ONBOARDING_KEY);
+  }
+
+  function beginWebOnboarding(userLabel = "Seguir en este chat") {
+    const codePart = signupCode ? ` Código ${signupCode}` : "";
+    sendPayload(
+      { text: `Hola! Quiero armar mi tienda.${codePart}` },
+      { id: `u_${Date.now()}`, role: "user", text: userLabel },
+    );
+  }
+
+  function openAuthForWeb() {
+    markPendingWebOnboarding();
+    setAuthOpen(true);
   }
 
   function extractSlug(replies: OutboundMessage[]) {
@@ -141,6 +184,10 @@ export function SimulatorChat({
   }
 
   function sendPayload(payload: Record<string, unknown>, userBubble: ChatItem) {
+    if (needsClerkGate && !isAuthenticated) {
+      openAuthForWeb();
+      return;
+    }
     const from = resolvePhone();
     setError(null);
     setSending(true);
@@ -153,6 +200,7 @@ export function SimulatorChat({
         const res = await fetch("/api/simulator", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
           body: JSON.stringify({
             from,
             messageId: `sim_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -231,6 +279,8 @@ export function SimulatorChat({
     if (busy) return;
     if (choiceId === V2_CHANNEL_WA) {
       setChannelPicked(true);
+      setAuthOpen(false);
+      clearPendingWebOnboarding();
       setItems((prev) => [
         ...prev,
         { id: `u_${Date.now()}`, role: "user", text: label },
@@ -254,17 +304,66 @@ export function SimulatorChat({
     }
     if (choiceId === V2_CHANNEL_WEB) {
       setChannelPicked(true);
-      const codePart = signupCode ? ` Código ${signupCode}` : "";
-      sendPayload(
-        { text: `Hola! Quiero armar mi tienda.${codePart}` },
-        { id: `u_${Date.now()}`, role: "user", text: label },
-      );
+      if (needsClerkGate && !isAuthenticated) {
+        setItems((prev) => [
+          ...prev,
+          { id: `u_${Date.now()}`, role: "user", text: label },
+          {
+            id: `bot_auth_${Date.now()}`,
+            role: "bot",
+            messages: [
+              {
+                kind: "text",
+                text: "Perfecto. Para seguir en este chat, creá tu cuenta o entrá — no te saco del chat.",
+              },
+            ],
+          },
+        ]);
+        openAuthForWeb();
+        return;
+      }
+      beginWebOnboarding(label);
       return;
     }
     sendPayload(
       { choiceId, text: label },
       { id: `u_${Date.now()}`, role: "user", text: label },
     );
+  }
+
+  // Tras redirect de Clerk: reanudar onboarding web (el reload pierde el historial del chat).
+  useEffect(() => {
+    if (!isV2 || !isAuthenticated || resumedWebRef.current) return;
+    if (typeof window === "undefined") return;
+    const pending = window.sessionStorage.getItem(PENDING_WEB_ONBOARDING_KEY);
+    if (!pending) return;
+    resumedWebRef.current = true;
+    clearPendingWebOnboarding();
+    setChannelPicked(true);
+    setAuthOpen(false);
+    const storedCode =
+      pending !== "1" && /^\d{4}$/.test(pending) ? pending : signupCode;
+    const codePart = storedCode ? ` Código ${storedCode}` : "";
+    sendPayload(
+      { text: `Hola! Quiero armar mi tienda.${codePart}` },
+      {
+        id: `u_onboard_${Date.now()}`,
+        role: "user",
+        text: "Seguir en este chat",
+      },
+    );
+    // Intencional: solo al montar con sesión + pending flag.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isV2, signupCode]);
+
+  function dismissAuthOverlay() {
+    setAuthOpen(false);
+    if (isAuthenticated) return;
+    clearPendingWebOnboarding();
+    if (isV2) {
+      setChannelPicked(false);
+      setItems([V2_INTRO_ITEM]);
+    }
   }
 
   function stopMicTracks() {
@@ -530,6 +629,10 @@ export function SimulatorChat({
 
   function startConversation() {
     if (busy) return;
+    if (needsClerkGate && !isAuthenticated) {
+      openAuthForWeb();
+      return;
+    }
     const codePart = signupCode ? ` Código ${signupCode}` : "";
     sendPayload(
       { text: `Hola! Quiero armar mi tienda.${codePart}` },
@@ -541,8 +644,8 @@ export function SimulatorChat({
       <section
         className={
           isV2
-            ? "flex h-dvh min-h-0 w-full flex-col overflow-hidden bg-[#ECE5DD]"
-            : "flex h-[min(70vh,calc(100dvh-10rem))] min-h-[28rem] flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[#ECE5DD] shadow-sm"
+            ? "relative flex h-dvh min-h-0 w-full flex-col overflow-hidden bg-[#ECE5DD]"
+            : "relative flex h-[min(70vh,calc(100dvh-10rem))] min-h-[28rem] flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[#ECE5DD] shadow-sm"
         }
       >
         <div className="flex shrink-0 items-center gap-3 bg-[#075E54] px-4 py-3 text-white">
@@ -619,9 +722,14 @@ export function SimulatorChat({
                 type="button"
                 className="btn btn-primary mt-4"
                 onClick={startConversation}
-                disabled={busy || !phone}
+                disabled={
+                  busy ||
+                  (identityMode !== "clerk" && !phone)
+                }
               >
-                Empezar
+                {needsClerkGate && !isAuthenticated
+                  ? "Entrar y empezar"
+                  : "Empezar"}
               </button>
             </div>
           )}
@@ -845,10 +953,16 @@ export function SimulatorChat({
           <button
             type="button"
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-white text-[1.2rem]"
-            onClick={() => setPickSourceOpen(true)}
+            onClick={() => {
+              if (!canUseBot) {
+                openAuthForWeb();
+                return;
+              }
+              setPickSourceOpen(true);
+            }}
             aria-label="Adjuntar foto de producto"
             aria-haspopup="dialog"
-            disabled={busy || !phone}
+            disabled={busy || (canUseBot && identityMode !== "clerk" && !phone)}
             title="Foto de un producto"
           >
             📎
@@ -860,10 +974,21 @@ export function SimulatorChat({
                 ? "bg-[#DC2626] text-white"
                 : "bg-white text-[var(--ink)]"
             }`}
-            onClick={() => void onToggleRecord()}
+            onClick={() => {
+              if (!canUseBot) {
+                openAuthForWeb();
+                return;
+              }
+              void onToggleRecord();
+            }}
             aria-label={recording ? "Detener y enviar audio" : "Grabar audio"}
             aria-pressed={recording}
-            disabled={!phone || uploading || pending || sendingAudio}
+            disabled={
+              uploading ||
+              pending ||
+              sendingAudio ||
+              (canUseBot && identityMode !== "clerk" && !phone)
+            }
             title={
               recording
                 ? "Tocá para enviar el audio"
@@ -875,7 +1000,11 @@ export function SimulatorChat({
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Escribí o grabá un audio"
+            placeholder={
+              canUseBot
+                ? "Escribí o grabá un audio"
+                : "Elegí cómo seguir para empezar"
+            }
             className="min-h-12 min-w-0 flex-1 rounded-full border border-[var(--border)] bg-white px-3 text-[17px] outline-none sm:px-4"
             disabled={busy}
           />
@@ -887,6 +1016,10 @@ export function SimulatorChat({
             Enviar
           </button>
         </form>
+
+        {needsClerkGate && (
+          <ChatAuthOverlay open={authOpen} onClose={dismissAuthOverlay} />
+        )}
 
         {pickSourceOpen && (
           <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">

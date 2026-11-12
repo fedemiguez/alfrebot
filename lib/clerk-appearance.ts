@@ -51,3 +51,31 @@ export const alfrebotClerkAppearance = {
     developmentModeNotice: "hidden",
   },
 } as const;
+
+/** Apariencia Clerk para el overlay in-chat (verdes WhatsApp / alfrebot). */
+export const alfrebotClerkChatAppearance = {
+  ...alfrebotClerkAppearance,
+  variables: {
+    ...alfrebotClerkAppearance.variables,
+    colorPrimary: "#075E54",
+    colorDanger: "#9A3412",
+    colorSuccess: "#25D366",
+    borderRadius: "8px",
+  },
+  elements: {
+    ...alfrebotClerkAppearance.elements,
+    rootBox: "w-full max-w-[min(100%,24rem)]",
+    card: "shadow-none border border-[#075E54]/15 bg-white p-5 sm:p-6",
+    headerTitle:
+      "font-[family-name:var(--font-display)] text-xl font-semibold text-[#075E54]",
+    headerSubtitle: "text-[#334155] text-[1rem]",
+    socialButtonsBlockButton:
+      "min-h-12 border-2 border-[#075E54]/20 bg-white text-[#0f172a] font-[family-name:var(--font-display)] font-semibold hover:border-[#25D366]",
+    formFieldInput:
+      "min-h-12 rounded-lg border border-[#075E54]/20 bg-white px-4 text-[1.1rem] text-[#0f172a] outline-none focus:border-[#075E54] focus:ring-2 focus:ring-[#25D366]/25",
+    formButtonPrimary:
+      "min-h-12 w-full rounded-full bg-[#25D366] text-white shadow-none font-[family-name:var(--font-display)] font-semibold hover:opacity-95",
+    footerActionLink: "text-[#075E54] font-semibold hover:underline",
+    identityPreviewEditButton: "text-[#075E54]",
+  },
+} as const;
