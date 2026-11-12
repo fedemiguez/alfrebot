@@ -54,10 +54,19 @@ export default function AsistentePage() {
         <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)] sm:text-4xl">
           Armá tu tienda en la web
         </h1>
-        <p className="mt-3 max-w-2xl text-[1.15rem] leading-relaxed text-[var(--muted)]">
+        <p className="mt-3 max-w-2xl text-[1.2rem] leading-relaxed text-[var(--muted)]">
           Mismo ayudante que por WhatsApp. Ya tenés cuenta con email; cuando el
           bot te pida el WhatsApp de pedidos, ese número es el que ven tus
           clientes.
+        </p>
+        <p className="mt-4 max-w-2xl rounded-lg border border-[var(--border)] bg-white/80 px-4 py-3 text-[1.15rem] leading-relaxed text-[var(--ink)]">
+          <span className="font-semibold text-[var(--primary)]">
+            Icono de la tienda
+          </span>
+          {" — "}
+          pedí por texto o audio «armar icono», o tocá{" "}
+          <span className="font-semibold">Subir icono</span> en el chat para
+          mandar tu imagen. No es lo mismo que la foto de un producto.
         </p>
         <div className="mt-8">
           <Suspense

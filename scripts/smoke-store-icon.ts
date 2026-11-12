@@ -1,12 +1,13 @@
 /**
- * Smoke: icono PWA — menú / NLU → monograma SVG→PNG → preview imagen → Listo.
- * Sin secretos ni llamadas a LLM (forceMonogram vía ausencia de keys + pipeline local).
+ * Smoke: icono PWA — menú / NLU → hub → monograma SVG→PNG → preview;
+ * subida manual de imagen → preview PNG. Sin LLM.
  */
 import { handleMessage } from "../lib/bot/engine";
 import type { OutboundMessage } from "../lib/channels/types";
 import { getMemoryDb } from "../lib/db/memory";
 import { getStoreForChannelIdentity } from "../lib/db/repos";
 import {
+  buildAndUploadStoreIconsFromImage,
   monogramSvg,
   storeInitials,
   svgToPng,
@@ -27,7 +28,15 @@ function reset() {
 }
 
 let n = 0;
-async function say(text?: string, choiceId?: string) {
+async function say(
+  text?: string,
+  choiceId?: string,
+  media?: {
+    kind: "image";
+    mime: string;
+    fetch: () => Promise<Blob>;
+  },
+) {
   n += 1;
   const replies = await handleMessage(
     {
@@ -36,6 +45,7 @@ async function say(text?: string, choiceId?: string) {
       messageId: `smoke_icon_${n}_${Date.now()}`,
       text,
       choiceId,
+      media,
     },
     caps,
   );
@@ -46,7 +56,7 @@ async function say(text?: string, choiceId?: string) {
         : `[image] ${(r.caption || "").slice(0, 80)} url=${r.url.slice(0, 48)}…`,
     )
     .join(" | ");
-  console.log(`> ${choiceId || text || ""}`);
+  console.log(`> ${choiceId || text || (media ? "[image]" : "")}`);
   console.log(`< ${flat.slice(0, 360)}`);
   return replies;
 }
@@ -63,7 +73,15 @@ function menuHasIcon(replies: OutboundMessage[]): boolean {
   return replies.some(
     (r) =>
       r.kind === "text" &&
-      r.options?.some((o) => o.id === "menu_icon" && o.label === "Icono de la app"),
+      r.options?.some(
+        (o) => o.id === "menu_icon" && o.label === "Icono de la tienda",
+      ),
+  );
+}
+
+function hasOption(replies: OutboundMessage[], id: string): boolean {
+  return replies.some(
+    (r) => r.kind === "text" && r.options?.some((o) => o.id === id),
   );
 }
 
@@ -90,6 +108,19 @@ async function main() {
   assert(png[0] === 0x89 && png[1] === 0x50, "png magic");
   console.log("OK: monogram → png 192");
 
+  const fromUpload = await buildAndUploadStoreIconsFromImage({
+    storeId: "smoke-store",
+    imageBytes: png,
+  });
+  assert(fromUpload.source === "upload", "upload source");
+  assert(fromUpload.icon512Url.length > 10, "upload icon512");
+  assert(
+    fromUpload.icon512Url.startsWith("data:image/png") ||
+      fromUpload.icon512Url.startsWith("http"),
+    "upload url",
+  );
+  console.log("OK: upload image → png icons");
+
   let timedOut = false;
   try {
     await withTimeout(
@@ -107,10 +138,22 @@ async function main() {
   await onboard();
 
   const menu = await say("menú");
-  assert(menuHasIcon(menu), "menu includes Icono de la app");
+  assert(menuHasIcon(menu), "menu includes Icono de la tienda");
 
-  const gen = await say(undefined, "menu_icon");
-  assert(hasImage(gen), "preview image after menu_icon");
+  const hub = await say(undefined, "menu_icon");
+  assert(hasOption(hub, "icon_generate"), "hub has Que lo arme el bot");
+  assert(hasOption(hub, "icon_upload"), "hub has Subir mi icono");
+  assert(
+    hub.some(
+      (r) =>
+        r.kind === "text" &&
+        /icono de la tienda|no es la foto de un producto/i.test(r.text),
+    ),
+    "hub copy distinguishes product vs store icon",
+  );
+
+  const gen = await say(undefined, "icon_generate");
+  assert(hasImage(gen), "preview image after icon_generate");
   assert(
     gen.some(
       (r) =>
@@ -119,29 +162,48 @@ async function main() {
     ),
     "regen/done options",
   );
+  assert(hasOption(gen, "icon_upload"), "preview offers upload");
 
   let store = await getStoreForChannelIdentity(from);
   assert(store?.icon192Url, "icon192Url saved");
   assert(store?.icon512Url, "icon512Url saved");
   assert(store?.iconAppleUrl, "iconAppleUrl saved");
-  assert(store?.iconSvgUrl, "iconSvgUrl saved");
-  console.log("OK: icons persisted after menu flow");
+  console.log("OK: icons persisted after generate flow");
 
-  const nlu = await say("cambiar icono");
-  // Puede regenerar (nueva imagen) estando en ICON_PREVIEW o desde IDLE
+  const nlu = await say("armar icono");
   assert(
     hasImage(nlu) ||
-      nlu.some((r) => r.kind === "text" && /icono|Listo|Generar/i.test(r.text)),
-    "NLU generate_icon responds",
+      nlu.some((r) => r.kind === "text" && /icono|Listo|Generar|Arme/i.test(r.text)),
+    "NLU armar icono responds",
   );
 
-  // Cerrar preview si quedó abierto
   await say(undefined, "icon_done");
 
   const again = await say("generar icono");
   assert(hasImage(again), "NLU generar icono shows png");
   store = await getStoreForChannelIdentity(from);
   assert(store?.icon512Url, "icon still present");
+  await say(undefined, "icon_done");
+
+  const uploadAsk = await say("subir icono");
+  assert(
+    uploadAsk.some(
+      (r) => r.kind === "text" && /mandame la imagen|subir icono/i.test(r.text),
+    ),
+    "NLU subir icono asks for image",
+  );
+
+  const tinyPng = await svgToPng(monogramSvg("X"), 64);
+  const uploaded = await say(undefined, "icon_upload", {
+    kind: "image",
+    mime: "image/png",
+    fetch: async () => new Blob([new Uint8Array(tinyPng)], { type: "image/png" }),
+  });
+  assert(hasImage(uploaded), "upload shows preview png");
+  assert(hasOption(uploaded, "icon_done"), "upload preview has Listo");
+  store = await getStoreForChannelIdentity(from);
+  assert(store?.icon512Url, "icon after manual upload");
+  assert(!store?.iconSvgUrl, "manual upload clears svg source");
 
   await say(undefined, "icon_done");
   console.log("OK: smoke-store-icon");

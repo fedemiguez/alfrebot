@@ -48,9 +48,11 @@ export function SimulatorChat({
   const [sendingAudio, setSendingAudio] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pickSourceOpen, setPickSourceOpen] = useState(false);
+  const [iconPickOpen, setIconPickOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const iconInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
@@ -338,6 +340,69 @@ export function SimulatorChat({
     }
   }
 
+  async function onPickStoreIcon(file: File) {
+    if (!file || busy) return;
+    setUploading(true);
+    setError(null);
+    setIconPickOpen(false);
+    const localPreview = URL.createObjectURL(file);
+    try {
+      const prepared = await prepareImageFile(file);
+      const form = new FormData();
+      form.append("file", prepared);
+      const up = await fetch("/api/upload", {
+        method: "POST",
+        body: form,
+        credentials: "same-origin",
+      });
+      const json = (await up.json()) as {
+        ok?: boolean;
+        url?: string;
+        error?: string;
+      };
+      if (!up.ok || !json.url) {
+        throw new Error(json.error || "No se pudo subir el icono");
+      }
+      sendPayload(
+        {
+          choiceId: "icon_upload",
+          text: "Subir mi icono",
+          media: {
+            kind: "image",
+            mime: prepared.type || "image/jpeg",
+            url: json.url,
+          },
+        },
+        {
+          id: `u_${Date.now()}`,
+          role: "user",
+          text: "Subir icono de la tienda",
+          imageUrl: json.url,
+        },
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "No se pudo subir el icono";
+      setError(message);
+      setItems((prev) => [
+        ...prev,
+        {
+          id: `bot_err_${Date.now()}`,
+          role: "bot",
+          messages: [
+            {
+              kind: "text",
+              text: `No pude recibir el icono: ${message}. Probá con otra imagen más chica.`,
+            },
+          ],
+        },
+      ]);
+    } finally {
+      URL.revokeObjectURL(localPreview);
+      setUploading(false);
+    }
+  }
+
   async function onPickImage(file: File) {
     if (busy) return;
     setError(null);
@@ -526,7 +591,7 @@ export function SimulatorChat({
           {uploading && (
             <div className="flex justify-end">
               <div className="rounded-lg bg-[#DCF8C6]/80 px-3 py-2 text-[15px] text-[var(--muted)]">
-                Subiendo foto…
+                Subiendo imagen…
               </div>
             </div>
           )}
@@ -597,13 +662,28 @@ export function SimulatorChat({
               if (f) void onPickImage(f);
             }}
           />
+          <input
+            ref={iconInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/*"
+            className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0"
+            tabIndex={-1}
+            aria-hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              setIconPickOpen(false);
+              if (f) void onPickStoreIcon(f);
+            }}
+          />
           <button
             type="button"
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-white text-[1.2rem]"
             onClick={() => setPickSourceOpen(true)}
-            aria-label="Adjuntar foto"
+            aria-label="Adjuntar foto de producto"
             aria-haspopup="dialog"
             disabled={busy || !phone}
+            title="Foto de un producto"
           >
             📎
           </button>
@@ -641,6 +721,16 @@ export function SimulatorChat({
             Enviar
           </button>
         </form>
+        <div className="flex flex-wrap items-center gap-2 border-t border-black/5 bg-[#F0F0F0] px-3 pb-3 lg:hidden">
+          <button
+            type="button"
+            className="min-h-11 rounded border border-[var(--border)] bg-white px-3 text-[15px] font-semibold text-[var(--ink)]"
+            disabled={busy || !phone}
+            onClick={() => setIconPickOpen(true)}
+          >
+            Subir icono de la tienda
+          </button>
+        </div>
 
         {pickSourceOpen && (
           <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
@@ -660,10 +750,11 @@ export function SimulatorChat({
                 id="photo-source-title"
                 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--ink)]"
               >
-                Sumá una foto
+                Foto de un producto
               </h2>
               <p className="mt-1 text-[16px] text-[var(--muted)]">
-                Sacá una con la cámara o elegí una de la galería.
+                Para cargar o cambiar la foto de un producto. El icono de la
+                tienda va aparte (botón Subir icono).
               </p>
               <div className="mt-5 flex flex-col gap-3">
                 <button
@@ -691,6 +782,50 @@ export function SimulatorChat({
             </div>
           </div>
         )}
+
+        {iconPickOpen && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+            <button
+              type="button"
+              className="absolute inset-0 bg-[var(--ink)]/40"
+              aria-label="Cerrar"
+              onClick={() => setIconPickOpen(false)}
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="icon-source-title"
+              className="relative z-10 w-full max-w-md border border-[var(--border)] bg-[var(--bg)] px-5 pb-6 pt-5 shadow-lg sm:mx-4"
+            >
+              <h2
+                id="icon-source-title"
+                className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--ink)]"
+              >
+                Icono de la tienda
+              </h2>
+              <p className="mt-1 text-[16px] text-[var(--muted)]">
+                Elegí una imagen cuadrada si podés. No reemplaza la foto de un
+                producto.
+              </p>
+              <div className="mt-5 flex flex-col gap-3">
+                <button
+                  type="button"
+                  className="btn btn-primary w-full min-h-12"
+                  onClick={() => iconInputRef.current?.click()}
+                >
+                  Elegir imagen
+                </button>
+                <button
+                  type="button"
+                  className="min-h-11 w-full text-[17px] text-[var(--muted)] hover:text-[var(--primary)]"
+                  onClick={() => setIconPickOpen(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <aside className="hidden min-h-[70vh] flex-col rounded-lg border border-[var(--border)] bg-white/80 p-5 lg:flex">
@@ -700,6 +835,22 @@ export function SimulatorChat({
         <p className="mt-2 text-[1.05rem] leading-relaxed text-[var(--muted)]">
           Cuando publiques un producto, el link aparece acá.
         </p>
+        <div className="mt-4 rounded border border-[var(--border)] bg-[var(--paper)] p-4">
+          <p className="text-[1.05rem] font-semibold text-[var(--ink)]">
+            Icono de la tienda
+          </p>
+          <p className="mt-1 text-[16px] leading-relaxed text-[var(--muted)]">
+            Pedí «armar icono» en el chat, o subí tu imagen acá.
+          </p>
+          <button
+            type="button"
+            className="btn btn-secondary mt-3 min-h-12 w-full"
+            disabled={busy || !phone}
+            onClick={() => setIconPickOpen(true)}
+          >
+            Subir icono
+          </button>
+        </div>
         {storePreviewUrl ? (
           <div className="mt-6 flex flex-1 flex-col">
             <Link
