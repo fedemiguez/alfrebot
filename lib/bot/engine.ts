@@ -1,6 +1,11 @@
 import { revalidateTag } from "next/cache";
 import type { ChannelCapabilities, InboundMessage, OutboundMessage } from "@/lib/channels/types";
-import { CHOICE, imageWithOptions, withOptions } from "@/lib/bot/render";
+import {
+  CHOICE,
+  imageWithOptions,
+  withCancelEscape,
+  withOptions,
+} from "@/lib/bot/render";
 import {
   extractPersonName,
   extractSignupCode,
@@ -140,6 +145,7 @@ function clearStockDraft(d: ConversationDraft): ConversationDraft {
 }
 
 function globalCommands(text?: string, choiceId?: string): "menu" | "help" | "cancel" | null {
+  if (choiceId === CHOICE.MENU_CANCEL) return "cancel";
   if (choiceId === CHOICE.MENU_BACK) return "menu";
   if (choiceId === CHOICE.MENU_HELP || choiceId === "help") return "help";
   if (choiceId === CHOICE.MENU_ADD) return null;
@@ -149,7 +155,7 @@ function globalCommands(text?: string, choiceId?: string): "menu" | "help" | "ca
     return "menu";
   }
   if (t === "ayuda" || t === "help") return "help";
-  if (t === "cancelar") return "cancel";
+  if (t === "cancelar" || t === "salir") return "cancel";
   return null;
 }
 
@@ -320,22 +326,24 @@ function helpMessage(): OutboundMessage {
   };
 }
 
-function askLinkCodePrompt(): OutboundMessage {
-  return {
-    kind: "text",
-    text:
-      "Dale. En la web (alfrebot → Armá en la web /asistente) abrí el menú y tocá Vincular WhatsApp: te doy un código de 6 dígitos.\n\n" +
+function askLinkCodePrompt(caps: ChannelCapabilities): OutboundMessage {
+  return withCancelEscape(
+    "Dale. En la web (alfrebot → Armá en la web /asistente) abrí el menú y tocá Vincular WhatsApp: te doy un código de 6 dígitos.\n\n" +
       "Después mandame ese código acá (por ejemplo 482915). Vale 30 minutos.",
-  };
+    caps,
+  );
 }
 
-function askContactPhonePrompt(editing: boolean): OutboundMessage {
-  return {
-    kind: "text",
-    text: editing
+function askContactPhonePrompt(
+  editing: boolean,
+  caps: ChannelCapabilities,
+): OutboundMessage {
+  return withCancelEscape(
+    editing
       ? "Mandame el WhatsApp donde querés que te escriban los clientes (con código de área), por ejemplo 11 1234-5678. Tu número de gestión no cambia."
       : "¿A qué WhatsApp te escriben los clientes? Mandame tu celular con código de área, por ejemplo 11 1234-5678.",
-  };
+    caps,
+  );
 }
 
 function linkFailureMessage(detail: string): string {
@@ -513,7 +521,7 @@ async function startContactEditFlow(
     );
   }
   await setState("ASK_CONTACT_PHONE", nextDraft);
-  const replies: OutboundMessage[] = [askContactPhonePrompt(true)];
+  const replies: OutboundMessage[] = [askContactPhonePrompt(true, caps)];
   if (current) {
     replies.unshift({
       kind: "text",
@@ -724,7 +732,7 @@ async function handleMessageBody(
         return replies;
       }
       await setState("ASK_LINK_CODE", draft);
-      replies.push(askLinkCodePrompt());
+      replies.push(askLinkCodePrompt(caps));
       return replies;
     }
 
@@ -750,10 +758,12 @@ async function handleMessageBody(
       msg.text?.replace(/\D/g, "").slice(0, 6) ??
       "";
     if (code.length !== 6) {
-      replies.push({
-        kind: "text",
-        text: "Necesito el código de 6 dígitos que te mostró el chat web. O escribí cancelar.",
-      });
+      replies.push(
+        withCancelEscape(
+          "Necesito el código de 6 dígitos que te mostró el chat web. O escribí cancelar.",
+          caps,
+        ),
+      );
       return replies;
     }
     return completeChannelLinkFromWa(msg, code, draft, setState, caps);
@@ -778,7 +788,7 @@ async function handleMessageBody(
         return replies;
       }
       await setState("ASK_LINK_CODE", clearStockDraft(draft));
-      replies.push(askLinkCodePrompt());
+      replies.push(askLinkCodePrompt(caps));
       return replies;
     }
     const earlyCode = extractChannelLinkCode(msg.text);
@@ -968,7 +978,7 @@ async function handleMessageBody(
     if (needsExplicitContact) {
       draft = { ...draft, contactPhoneFlow: "onboarding" };
       await setState("ASK_CONTACT_PHONE", draft);
-      replies.push(askContactPhonePrompt(false));
+      replies.push(askContactPhonePrompt(false, caps));
       return replies;
     }
 
@@ -1035,7 +1045,7 @@ async function handleMessageBody(
     ) {
       draft = { ...draft, contactPhoneFlow: flow };
       await setState("ASK_CONTACT_PHONE", draft);
-      replies.push(askContactPhonePrompt(flow === "edit"));
+      replies.push(askContactPhonePrompt(flow === "edit", caps));
       return replies;
     }
 
@@ -1229,7 +1239,9 @@ async function handleMessageBody(
     }
     if (choice === CHOICE.MENU_ADD || msg.choiceId === CHOICE.MENU_ADD) {
       await setState("PRODUCT_PHOTO", { ...draft, product: {} });
-      replies.push({ kind: "text", text: "Mandame la foto del producto." });
+      replies.push(
+        withCancelEscape("Mandame la foto del producto.", caps),
+      );
       return replies;
     }
     if (choice === CHOICE.MENU_STORE || msg.choiceId === CHOICE.MENU_STORE) {
@@ -1352,7 +1364,7 @@ async function handleMessageBody(
       isWhatsAppContactPhone(msg.from)
     ) {
       await setState("ASK_LINK_CODE", clearStockDraft(draft));
-      replies.push(askLinkCodePrompt());
+      replies.push(askLinkCodePrompt(caps));
       return replies;
     }
     if (msg.text && store && wantsContactPhoneText(msg.text)) {
@@ -1367,7 +1379,9 @@ async function handleMessageBody(
     }
     if (action.intent === "create_product") {
       await setState("PRODUCT_PHOTO", { ...draft, product: {} });
-      replies.push({ kind: "text", text: "Mandame la foto del producto." });
+      replies.push(
+        withCancelEscape("Mandame la foto del producto.", caps),
+      );
       return replies;
     }
     if ((action.intent === "list_stock" || action.intent === "manage_stock") && store) {
@@ -1579,7 +1593,7 @@ async function handleMessageBody(
       );
     }
     if (draft.stockAction === "change_photo") {
-      return continuePhotoEdit(store, draft, setState, product);
+      return continuePhotoEdit(store, draft, setState, product, caps);
     }
     draft = { ...draft, stockProductId: product.id };
     return replyWithChoices(
@@ -1627,10 +1641,10 @@ async function handleMessageBody(
         draft = { ...draft, stockAction: "resume" };
         await setState("STOCK_QTY", draft);
         return [
-          {
-            kind: "text",
-            text: `¿Cuántas unidades de "${product.title}" quedan? Decime un número (puede ser 0), por texto o audio.`,
-          },
+          withCancelEscape(
+            `¿Cuántas unidades de "${product.title}" quedan? Decime un número (puede ser 0), por texto o audio.`,
+            caps,
+          ),
         ];
       }
       draft = { ...draft, stockAction: "resume" };
@@ -1645,17 +1659,17 @@ async function handleMessageBody(
       draft = { ...draft, stockAction: "set_qty" };
       await setState("STOCK_QTY", draft);
       return [
-        {
-          kind: "text",
-          text: `¿Cuántas unidades de "${product.title}" quedan? Decime un número, por texto o audio.`,
-        },
+        withCancelEscape(
+          `¿Cuántas unidades de "${product.title}" quedan? Decime un número, por texto o audio.`,
+          caps,
+        ),
       ];
     }
     if (choice === CHOICE.STOCK_SET_PRICE) {
       return continuePriceEdit(store, draft, setState, caps, product, null);
     }
     if (choice === CHOICE.STOCK_CHANGE_PHOTO) {
-      return continuePhotoEdit(store, draft, setState, product);
+      return continuePhotoEdit(store, draft, setState, product, caps);
     }
     if (choice === CHOICE.STOCK_HIDE) {
       draft = { ...draft, stockAction: "hide" };
@@ -1696,10 +1710,12 @@ async function handleMessageBody(
     }
     const qty = msg.text ? parseQuantityInput(msg.text) : null;
     if (qty == null) {
-      replies.push({
-        kind: "text",
-        text: "Necesito un número entero (por ejemplo 0, 1 o 3).",
-      });
+      replies.push(
+        withCancelEscape(
+          "Necesito un número entero (por ejemplo 0, 1 o 3).",
+          caps,
+        ),
+      );
       return replies;
     }
     draft = {
@@ -1912,10 +1928,12 @@ async function handleMessageBody(
       ];
     }
     if (msg.media?.kind !== "image") {
-      replies.push({
-        kind: "text",
-        text: `Necesito la foto nueva de "${product.title}". Mandamela cuando puedas (o escribí cancelar).`,
-      });
+      replies.push(
+        withCancelEscape(
+          `Necesito la foto nueva de "${product.title}". Mandamela cuando puedas (o escribí cancelar).`,
+          caps,
+        ),
+      );
       return replies;
     }
     const resolved = await resolveInboundImage(msg);
@@ -1953,10 +1971,12 @@ async function handleMessageBody(
     }
     const price = msg.text ? parsePriceToCents(msg.text) : null;
     if (price == null) {
-      replies.push({
-        kind: "text",
-        text: `No entendí el precio. Hoy "${product.title}" sale ${formatPriceArs(product.priceCents)}. Probá con 15 mil o 15000 (texto o audio).`,
-      });
+      replies.push(
+        withCancelEscape(
+          `No entendí el precio. Hoy "${product.title}" sale ${formatPriceArs(product.priceCents)}. Probá con 15 mil o 15000 (texto o audio).`,
+          caps,
+        ),
+      );
       return replies;
     }
     return continuePriceEdit(store, draft, setState, caps, product, price);
@@ -1966,17 +1986,24 @@ async function handleMessageBody(
     if (msg.media?.kind === "image") {
       return startProductFromImage(msg, draft, caps, setState);
     }
-    replies.push({ kind: "text", text: "Necesito la foto del producto. Mandamela cuando puedas." });
+    replies.push(
+      withCancelEscape(
+        "Necesito la foto del producto. Mandamela cuando puedas.",
+        caps,
+      ),
+    );
     return replies;
   }
 
   if (state === "PRODUCT_TITLE") {
     const title = msg.text?.trim();
     if (!title) {
-      replies.push({
-        kind: "text",
-        text: "¿Cómo se llama el producto? Podés escribirlo o mandarme un audio.",
-      });
+      replies.push(
+        withCancelEscape(
+          "¿Cómo se llama el producto? Podés escribirlo o mandarme un audio.",
+          caps,
+        ),
+      );
 
       return replies;
     }
@@ -1984,10 +2011,12 @@ async function handleMessageBody(
     draft = { ...draft, product };
     if (product.priceCents == null) {
       await setState("PRODUCT_PRICE", draft);
-      replies.push({
-        kind: "text",
-        text: "¿A cómo la vendés? Podés decir 15 mil o 15000 (texto o audio).",
-      });
+      replies.push(
+        withCancelEscape(
+          "¿A cómo la vendés? Podés decir 15 mil o 15000 (texto o audio).",
+          caps,
+        ),
+      );
       return replies;
     }
     return replyWithChoices(
@@ -2005,10 +2034,12 @@ async function handleMessageBody(
   if (state === "PRODUCT_PRICE") {
     const price = msg.text ? parsePriceToCents(msg.text) : null;
     if (price == null) {
-      replies.push({
-        kind: "text",
-        text: "No entendí el precio. Probá con 15 mil o 15000 (texto o audio).",
-      });
+      replies.push(
+        withCancelEscape(
+          "No entendí el precio. Probá con 15 mil o 15000 (texto o audio).",
+          caps,
+        ),
+      );
       return replies;
     }
     const product = { ...productDraft(draft), priceCents: price };
@@ -2201,10 +2232,10 @@ async function continuePriceEdit(
   };
   await setState("PRICE_INPUT", nextDraft);
   return [
-    {
-      kind: "text",
-      text: `¿A cómo querés dejar "${product.title}"? Hoy sale ${formatPriceArs(product.priceCents)}. Decime el precio nuevo (texto o audio).`,
-    },
+    withCancelEscape(
+      `¿A cómo querés dejar "${product.title}"? Hoy sale ${formatPriceArs(product.priceCents)}. Decime el precio nuevo (texto o audio).`,
+      caps,
+    ),
   ];
 }
 
@@ -2508,7 +2539,7 @@ async function startPhotoEditFlow(
   const matches = rawText ? findProductsByHint(products, rawText) : [];
 
   if (matches.length === 1) {
-    return continuePhotoEdit(store, draft, setState, matches[0]!);
+    return continuePhotoEdit(store, draft, setState, matches[0]!, caps);
   }
 
   const pickFrom = matches.length > 1 ? matches : products;
@@ -2533,6 +2564,7 @@ async function continuePhotoEdit(
   draft: ConversationDraft,
   setState: SetState,
   product: Product,
+  caps: ChannelCapabilities = DEFAULT_CAPS,
 ): Promise<OutboundMessage[]> {
   const nextDraft: ConversationDraft = {
     ...clearStockDraft(draft),
@@ -2541,10 +2573,10 @@ async function continuePhotoEdit(
   };
   await setState("PHOTO_INPUT", nextDraft);
   return [
-    {
-      kind: "text",
-      text: `Mandá la foto nueva de "${product.title}". Cuando la reciba te pido confirmación antes de guardar.`,
-    },
+    withCancelEscape(
+      `Mandá la foto nueva de "${product.title}". Cuando la reciba te pido confirmación antes de guardar.`,
+      caps,
+    ),
   ];
 }
 
@@ -2748,19 +2780,19 @@ async function startProductFromImage(
   if (!product.title) {
     await setState("PRODUCT_TITLE", nextDraft);
     return [
-      {
-        kind: "text",
-        text: "¿Cómo se llama el producto? Podés escribirlo o mandarme un audio.",
-      },
+      withCancelEscape(
+        "¿Cómo se llama el producto? Podés escribirlo o mandarme un audio.",
+        caps,
+      ),
     ];
   }
   if (product.priceCents == null) {
     await setState("PRODUCT_PRICE", nextDraft);
     return [
-      {
-        kind: "text",
-        text: "¿A cómo la vendés? Podés decir 15 mil o 15000 (texto o audio).",
-      },
+      withCancelEscape(
+        "¿A cómo la vendés? Podés decir 15 mil o 15000 (texto o audio).",
+        caps,
+      ),
     ];
   }
   const { draft: withChoices, message } = withPendingChoices(

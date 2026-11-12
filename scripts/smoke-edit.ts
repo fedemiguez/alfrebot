@@ -128,10 +128,12 @@ async function main() {
   assert(menuHas(menu, "menu_group_store", "Tienda"), "menú tiene grupo Tienda");
   assert(menuHas(menu, "menu_group_wa", "WhatsApp"), "menú tiene grupo WhatsApp");
   assert(menuHas(menu, "menu_help", "Ayuda"), "menú tiene Ayuda");
+  assert(menuHas(menu, "menu_cancel", "Cancelar"), "hub tiene Cancelar");
   const productsMenu = await say(undefined, "menu_group_products");
   assert(menuHas(productsMenu, "menu_price", "Cambiar precio"), "Productos tiene Cambiar precio");
   assert(menuHas(productsMenu, "menu_photo", "Cambiar foto"), "Productos tiene Cambiar foto");
   assert(menuHas(productsMenu, "menu_stock", "Stock / pausa"), "Productos tiene Stock / pausa");
+  assert(menuHas(productsMenu, "menu_cancel", "Cancelar"), "Productos tiene Cancelar");
   assert(
     !productsMenu.some(
       (r) =>
@@ -142,6 +144,14 @@ async function main() {
   );
   console.log("OK menú agrupado con Cambiar precio / Cambiar foto");
 
+  const canceled = await say(undefined, "menu_cancel");
+  assert(
+    canceled.some((r) => r.kind === "text" && /cancelamos/i.test(r.text)),
+    "Cancelar confirma salida",
+  );
+  assert(hasMainMenu(canceled), "Cancelar vuelve al hub");
+  console.log("OK Cancelar desde submenú → hub");
+
   await say("menú");
   // Menú → Cambiar precio con ≥2 productos: listado, no menú general
   const priceMenu = await say(undefined, "menu_price");
@@ -150,6 +160,7 @@ async function main() {
     hasProductPicker(priceMenu, /cuál producto querés cambiar el precio/i),
     "Cambiar precio lista productos",
   );
+  assert(menuHas(priceMenu, "menu_cancel", "Cancelar"), "picker precio tiene Cancelar");
   assert(
     (await getConversation(from))?.state === "STOCK_PICK",
     "estado STOCK_PICK tras menú precio",

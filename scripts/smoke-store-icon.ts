@@ -218,6 +218,7 @@ async function main() {
   const hub = await say(undefined, "menu_icon");
   assert(hasOption(hub, "icon_generate"), "hub has Que lo arme el bot");
   assert(hasOption(hub, "icon_upload"), "hub has Subir mi icono");
+  assert(hasOption(hub, "menu_cancel"), "icon hub has Cancelar");
   assert(
     hub.some(
       (r) =>
@@ -237,6 +238,7 @@ async function main() {
     ),
     "regen/done options",
   );
+  assert(hasOption(gen, "menu_cancel"), "icon preview has Cancelar");
   assert(hasOption(gen, "icon_upload"), "preview offers upload");
   const autoCap = captionOf(gen);
   assert(

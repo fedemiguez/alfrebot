@@ -76,7 +76,15 @@ async function main() {
   });
 
   await say("menú");
-  await say(undefined, "menu_stock");
+  const stockHub = await say(undefined, "menu_stock");
+  assert(
+    stockHub.some(
+      (r) =>
+        r.kind === "text" &&
+        r.options?.some((o) => o.id === "menu_cancel" && o.label === "Cancelar"),
+    ),
+    "stock hub tiene Cancelar",
+  );
 
   // Bugfix: Volver al menú no debe abrir Ayuda; "Whatsapp" sale del hub.
   const back = await say(undefined, "menu_back");
@@ -95,6 +103,20 @@ async function main() {
     "typing Whatsapp from stock hub opens contact flow",
   );
   await say("cancelar");
+  await say(undefined, "menu_stock");
+  const cancelBtn = await say(undefined, "menu_cancel");
+  assert(
+    cancelBtn.some((r) => r.kind === "text" && /cancelamos/i.test(r.text)),
+    "menu_cancel sale del stock hub",
+  );
+  assert(
+    cancelBtn.some(
+      (r) =>
+        r.kind === "text" &&
+        r.options?.some((o) => o.id === "menu_group_products" || o.id === "menu_store"),
+    ),
+    "menu_cancel vuelve al hub",
+  );
   await say(undefined, "menu_stock");
   await say(undefined, "stock_list");
   await say(undefined, "stock_pick");
