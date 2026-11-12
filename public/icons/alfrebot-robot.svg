@@ -1,11 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Alfrebot">
-  <rect width="64" height="64" rx="16" fill="#075E54"/>
-  <rect x="14" y="20" width="36" height="28" rx="8" fill="#E8F5E9"/>
-  <circle cx="24" cy="34" r="4" fill="#075E54"/>
-  <circle cx="40" cy="34" r="4" fill="#075E54"/>
-  <rect x="26" y="42" width="12" height="3" rx="1.5" fill="#075E54"/>
-  <rect x="29" y="10" width="6" height="10" rx="3" fill="#A7F3D0"/>
-  <circle cx="32" cy="9" r="3" fill="#34D399"/>
-  <rect x="8" y="28" width="5" height="12" rx="2.5" fill="#A7F3D0"/>
-  <rect x="51" y="28" width="5" height="12" rx="2.5" fill="#A7F3D0"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Alfrebot">
+  <rect width="256" height="256" rx="56" fill="#128C7E"/>
+  <ellipse cx="128" cy="218" rx="63" ry="9.5" fill="#0D7569"/>
+  <rect x="34" y="110" width="14" height="40" rx="7" fill="#075E54"/>
+  <rect x="208" y="110" width="14" height="40" rx="7" fill="#075E54"/>
+  <rect x="123" y="46" width="10" height="28" rx="5" fill="#FFFFFF"/>
+  <circle cx="128" cy="36" r="14" fill="#FFFFFF"/>
+  <circle cx="128" cy="36" r="10" fill="#25D366"/>
+  <rect x="48" y="68" width="167" height="120" rx="40" fill="#FFFFFF"/>
+  <path fill="#FFFFFF" d="M72 172c-6 16-10 28-11 38 11-12 25-22 43-24v-8c-14-2-24-4-32-6z"/>
+  <rect x="68" y="92" width="120" height="75" rx="30" fill="#075E54"/>
+  <path d="M86 127q14-15 28 0" fill="none" stroke="#25D366" stroke-width="10" stroke-linecap="round"/>
+  <path d="M142 127q14-15 28 0" fill="none" stroke="#25D366" stroke-width="10" stroke-linecap="round"/>
+  <path d="M114 146q14 12 28 0" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
 </svg>
