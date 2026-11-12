@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { ProductCard } from "@/components/product-card";
 import {
   HowToOrderNote,
@@ -46,27 +45,16 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
   return (
     <StorePurchaseProvider store={purchase}>
       <div className="fade-in mx-auto w-full max-w-5xl px-5 py-10">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[15px] font-semibold uppercase tracking-[0.14em] text-[var(--primary)]">
-              alfrebot
+        <header>
+          <h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight text-[var(--ink)] sm:text-5xl">
+            {store.name}
+          </h1>
+          {store.ownerName && (
+            <p className="mt-3 text-[1.1rem] text-[var(--muted)]">
+              Productos de {store.ownerName}
             </p>
-            <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight text-[var(--ink)] sm:text-5xl">
-              {store.name}
-            </h1>
-            {store.ownerName && (
-              <p className="mt-3 text-[1.1rem] text-[var(--muted)]">
-                Piezas de {store.ownerName}
-              </p>
-            )}
-          </div>
-          <Link
-            href="/"
-            className="hidden min-h-11 items-center text-[17px] text-[var(--muted)] hover:text-[var(--primary)] sm:inline-flex"
-          >
-            alfrebot
-          </Link>
-        </div>
+          )}
+        </header>
 
         {store.isDemo && (
           <p className="mt-4 rounded border border-[var(--border)] bg-[var(--paper)] px-4 py-3 text-[1.05rem] text-[var(--muted)]">
@@ -115,7 +103,11 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
                 </p>
               );
             }
-            return <p>Catálogo armado con alfrebot.</p>;
+            return (
+              <p className="text-[15px] text-[var(--muted)]">
+                Catálogo armado con alfrebot.
+              </p>
+            );
           })()}
         </footer>
       </div>
