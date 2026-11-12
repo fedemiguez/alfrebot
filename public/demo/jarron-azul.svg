@@ -1,7 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img" aria-label="Jarron azul">
   <rect width="800" height="800" fill="#E8EEF5"/>
-  <ellipse cx="400" cy="620" rx="120" ry="28" fill="#0F172A" opacity="0.12"/>
+  <ellipse cx="400" cy="640" rx="130" ry="30" fill="#0F172A" opacity="0.12"/>
   <path d="M300 220c0-40 40-70 100-70s100 30 100 70c0 20-10 40-20 55l30 280c5 40-30 75-110 75s-115-35-110-75l30-280c-10-15-20-35-20-55z" fill="#1E3A5F"/>
-  <path d="M340 240c20-30 100-30 120 0" fill="none" stroke="#93C5FD" stroke-width="8" opacity="0.5"/>
-  <text x="400" y="740" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#1E3A5F">Jarrón azul</text>
+  <path d="M340 240c20-30 100-30 120 0" fill="none" stroke="#93C5FD" stroke-width="8" opacity="0.55"/>
+  <ellipse cx="400" cy="160" rx="70" ry="18" fill="#16324F"/>
 </svg>

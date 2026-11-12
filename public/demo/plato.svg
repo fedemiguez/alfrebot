@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img" aria-label="Plato grande">
   <rect width="800" height="800" fill="#F3EDE4"/>
   <ellipse cx="400" cy="400" rx="220" ry="220" fill="#E7D5CE" stroke="#9A3412" stroke-width="8"/>
   <ellipse cx="400" cy="400" rx="150" ry="150" fill="#FFFBEB" stroke="#B45309" stroke-width="4"/>
   <circle cx="400" cy="400" r="24" fill="#059669" opacity="0.35"/>
-  <text x="400" y="700" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#9A3412">Plato grande</text>
 </svg>
