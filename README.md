@@ -67,7 +67,7 @@ npm run db:push
 
 Sin Neon, el fallback en memoria ya incluye los campos.
 
-**Icono de la app (PWA):** en el menú del bot → **Icono de la app** (o «generar icono» / «cambiar icono»). Gemini Flash arma un SVG; se rasteriza a PNG 192/512/180 y se guarda en Blob. Si no hay AI, usa monograma con iniciales. El manifest `/{slug}/manifest.webmanifest` y el catálogo usan esas URLs.
+**Icono de la app (PWA):** en el menú del bot → **Icono de la tienda** (o «armar icono» / «generar icono»). Gemini Flash arma un SVG; se rasteriza a PNG 192/512/180 y se guarda en Blob. Si no hay AI o falla, compone un SVG a partir del pedido del usuario, de los productos o del nombre de la tienda (no monograma). También se puede subir una imagen propia. El manifest `/{slug}/manifest.webmanifest` y el catálogo usan esas URLs.
 
 ## Meta WhatsApp
 

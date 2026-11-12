@@ -66,6 +66,7 @@ import type { Store } from "@/lib/db/schema";
 import {
   buildAndUploadStoreIcons,
   buildAndUploadStoreIconsFromImage,
+  extractIconDesignHint,
 } from "@/lib/store-icon";
 
 export type BotState =
@@ -2337,8 +2338,8 @@ async function applyUploadedStoreIcon(
 }
 
 /**
- * Generar / cambiar icono PWA: Gemini SVG → PNG (o monograma) → Blob → preview.
- * Misma pipeline para WhatsApp y /asistente.
+ * Generar / cambiar icono PWA: Gemini SVG → PNG, o composición por
+ * pedido/productos/nombre (nunca monograma de iniciales como happy path).
  */
 async function startStoreIconGenerate(
   store: Store,
@@ -2351,13 +2352,14 @@ async function startStoreIconGenerate(
   const blocked = await ensureStoreIconReady(store, draft, setState, caps, from);
   if (blocked) return blocked;
 
+  const designHint = extractIconDesignHint(chatHint);
   const products = await listProductsByStore(store.id, { includeHidden: true });
   let icons;
   try {
     icons = await buildAndUploadStoreIcons({
       store,
       products,
-      chatHint,
+      chatHint: designHint ?? chatHint,
     });
   } catch (err) {
     const timedOut =
@@ -2382,18 +2384,16 @@ async function startStoreIconGenerate(
   revalidateStore(store.slug);
   await setState("ICON_PREVIEW", clearStockDraft(draft));
 
-  const how =
-    icons.source === "ai"
-      ? "Lo dibujé a partir del nombre de tu tienda."
-      : icons.fellBack
-        ? "La IA tardó o falló; usé tus iniciales. Tocá Generar otro para reintentar."
-        : "Usé tus iniciales (si querés, pedí Generar otro para probar con AI).";
+  const usedHint = icons.designHint || designHint;
+  const caption = usedHint
+    ? `Armé este icono con lo que pediste (“${usedHint.slice(0, 80)}”). ¿Querés otro diferente?`
+    : "En base a tus productos o al nombre de la tienda te armé este icono. ¿Querés otro diferente?";
 
   return [
     {
       kind: "image",
       url: icons.icon512Url,
-      caption: `Así se ve el icono de tu tienda.\n${how}`,
+      caption,
     },
     withOptions(
       "¿Lo dejamos así?",
