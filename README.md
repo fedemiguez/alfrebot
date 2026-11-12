@@ -21,11 +21,11 @@ npm run dev
 Dos caminos para la dueña (misma tabla `stores`):
 
 1. **WhatsApp:** [http://localhost:3000/registro](http://localhost:3000/registro) → celular → Abrir WhatsApp.
-2. **Web (email / Clerk):** [http://localhost:3000/sign-up](http://localhost:3000/sign-up) → `/probar` con el mismo motor. Pedidos del catálogo siguen por WhatsApp (`contact_phone`).
+2. **Web (Google / email):** [http://localhost:3000/sign-up](http://localhost:3000/sign-up) → `/probar` con el mismo motor. Pedidos del catálogo siguen por WhatsApp (`contact_phone`).
 
 La key de dueña es `stores.channel_identity` (`+549…` o `clerk:{userId}`). Si la dueña web carga un WhatsApp que ya tiene tienda, se vincula la misma fila (`clerk_user_id`) — no se crea otra cuenta. Clerk autentica el camino web; no reemplaza el camino Meta.
 
-Clerk se provisiona desde Vercel Marketplace (`CLERK_*` en preview/production).
+Clerk se provisiona desde Vercel Marketplace (`CLERK_*` en preview/production). En el **Dashboard de Clerk (Production)**: activá **Google** + **Email** como métodos de sign-up/sign-in, y usá keys `pk_live_` / `sk_live_` (sin banner de development).
 
 ## Scripts
 

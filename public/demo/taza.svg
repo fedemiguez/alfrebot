@@ -1,8 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img" aria-label="Taza de cafe">
   <rect width="800" height="800" fill="#F7F0E8"/>
-  <ellipse cx="380" cy="600" rx="130" ry="30" fill="#0F172A" opacity="0.1"/>
+  <ellipse cx="380" cy="620" rx="140" ry="32" fill="#0F172A" opacity="0.1"/>
   <path d="M260 280h240c10 0 20 10 20 20v200c0 60-50 110-140 110s-140-50-140-110V300c0-10 10-20 20-20z" fill="#C2410C"/>
   <path d="M520 320h40c40 0 70 30 70 70s-30 70-70 70h-40" fill="none" stroke="#C2410C" stroke-width="28" stroke-linecap="round"/>
   <ellipse cx="380" cy="290" rx="120" ry="28" fill="#9A3412"/>
-  <text x="400" y="740" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#9A3412">Taza de café</text>
+  <ellipse cx="380" cy="300" rx="90" ry="16" fill="#FFF7ED" opacity="0.35"/>
 </svg>

@@ -13,7 +13,7 @@ export default function Home() {
           Armá tu tienda charlando: por WhatsApp o en la web.
         </h1>
         <p className="mt-4 max-w-xl text-[1.15rem] text-[var(--muted)]">
-          Dos caminos: WhatsApp con tu celular, o la web con tu email. El
+          Dos caminos: WhatsApp con tu celular, o la web con Google / email. El
           catálogo queda online y los pedidos siguen por WhatsApp.
         </p>
 
@@ -22,7 +22,7 @@ export default function Home() {
             Armá por WhatsApp
           </Link>
           <Link href="/sign-up" className="btn btn-secondary">
-            Armá en la web (email)
+            Armá en la web
           </Link>
         </div>
 
