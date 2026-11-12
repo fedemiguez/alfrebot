@@ -93,6 +93,10 @@ export const CHOICE = {
   MENU_STORE: "menu_store",
   MENU_STOCK: "menu_stock",
   MENU_CONTACT: "menu_contact",
+  /** Generar código para gestionar la misma tienda desde WhatsApp. */
+  MENU_LINK_WA: "menu_link_wa",
+  /** En WhatsApp: ya armé la tienda en la web. */
+  LINK_EXISTING: "link_existing",
   MENU_HELP: "menu_help",
   /** Volver al menú principal (no confundir con Ayuda). */
   MENU_BACK: "menu_back",

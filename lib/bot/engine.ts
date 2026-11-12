@@ -28,7 +28,7 @@ import {
 import type { Product } from "@/lib/db/schema";
 import { transcribeAudio } from "@/lib/bot/transcribe";
 import { uploadDataUrl, uploadProductImage } from "@/lib/blob";
-import { appBaseUrl } from "@/lib/env";
+import { appBaseUrl, metaBotNumber } from "@/lib/env";
 import {
   clerkUserIdFromIdentity,
   isClerkIdentity,
@@ -45,12 +45,13 @@ function storeIsDemo(from: string): boolean {
 }
 
 import {
+  createChannelLinkIntent,
   createProduct,
   getConversation,
   getProduct,
   getSignupIntent,
   getStoreForChannelIdentity,
-  linkClerkToWaStore,
+  linkVerifiedWaToClerkAccount,
   listProductsByStore,
   markProcessed,
   saveConversation,
@@ -71,6 +72,7 @@ export type BotState =
   | "ASK_SHOW_PHONE"
   | "ASK_CONTACT_CHOICE"
   | "ASK_CONTACT_PHONE"
+  | "ASK_LINK_CODE"
   | "ASK_STOCK_MODE"
   | "ASK_CHECKOUT_MODE"
   | "IDLE"
@@ -150,11 +152,51 @@ function normalizeLoose(text: string): string {
 /** Pedidos / WhatsApp de contacto (no confundir con “whatsapp” del modo de checkout). */
 function wantsContactPhoneText(text: string): boolean {
   const t = normalizeLoose(text);
+  // Vincular cuenta web ↔ WhatsApp de gestión no es “WhatsApp de pedidos”.
+  if (wantsLinkExistingAccountText(t) || wantsGenerateLinkCodeText(t)) {
+    return false;
+  }
   return (
     /\b(whats?app|contacto|pedidos?)\b/.test(t) ||
     /numero (de )?(pedidos?|whats?app|contacto)/.test(t) ||
     /cambiar (el )?numero/.test(t)
   );
+}
+
+/** Desde WhatsApp: ya armé la tienda en la web y quiero el mismo catálogo acá. */
+function wantsLinkExistingAccountText(text: string): boolean {
+  const t = normalizeLoose(text);
+  return (
+    /ya tengo (una )?cuenta/.test(t) ||
+    /ya (la )?arme (en )?la web/.test(t) ||
+    /ya (me )?registre (en )?la web/.test(t) ||
+    /vincular (mi )?cuenta/.test(t) ||
+    /unir (mi )?cuenta/.test(t) ||
+    t === "vincular" ||
+    t === "ya tengo"
+  );
+}
+
+/** Desde /asistente (Clerk): generar código para escribir desde el celular. */
+function wantsGenerateLinkCodeText(text: string): boolean {
+  const t = normalizeLoose(text);
+  return (
+    /vincular (whats?app|el (celular|telefono|whats?app))/.test(t) ||
+    /unir (whats?app|el (celular|telefono))/.test(t) ||
+    /codigo (de )?vincul/.test(t) ||
+    /gestionar (por|desde) whats?app/.test(t)
+  );
+}
+
+/** Código de 6 dígitos para vínculo Clerk↔WA (no confundir con signup de 4). */
+function extractChannelLinkCode(text?: string): string | null {
+  if (!text) return null;
+  const labeled = text.match(
+    /\b(?:c[oó]digo|vincular|link)\s*[:=]?\s*(\d{6})\b/i,
+  );
+  if (labeled?.[1]) return labeled[1];
+  const bare = text.trim().match(/^(\d{6})$/);
+  return bare?.[1] ?? null;
 }
 
 function wantsStoreLinkText(text: string): boolean {
@@ -166,18 +208,21 @@ function wantsStoreLinkText(text: string): boolean {
   );
 }
 
-function menuMessage(caps: ChannelCapabilities): OutboundMessage {
-  return withOptions(
-    "¿Qué querés hacer?",
-    [
-      { id: CHOICE.MENU_ADD, label: "Cargar producto" },
-      { id: CHOICE.MENU_STORE, label: "Ver mi tienda" },
-      { id: CHOICE.MENU_STOCK, label: "Stock / pausa" },
-      { id: CHOICE.MENU_CONTACT, label: "WhatsApp pedidos" },
-      { id: CHOICE.MENU_HELP, label: "Ayuda" },
-    ],
-    caps,
-  );
+function menuMessage(
+  caps: ChannelCapabilities,
+  from?: string,
+): OutboundMessage {
+  const options: { id: string; label: string }[] = [
+    { id: CHOICE.MENU_ADD, label: "Cargar producto" },
+    { id: CHOICE.MENU_STORE, label: "Ver mi tienda" },
+    { id: CHOICE.MENU_STOCK, label: "Stock / pausa" },
+    { id: CHOICE.MENU_CONTACT, label: "WhatsApp pedidos" },
+  ];
+  if (from && isClerkIdentity(from)) {
+    options.push({ id: CHOICE.MENU_LINK_WA, label: "Vincular WhatsApp" });
+  }
+  options.push({ id: CHOICE.MENU_HELP, label: "Ayuda" });
+  return withOptions("¿Qué querés hacer?", options, caps);
 }
 
 function helpMessage(): OutboundMessage {
@@ -188,7 +233,17 @@ function helpMessage(): OutboundMessage {
       "Stock: menú → Stock / pausa, o pedime el listado, pausar, reactivar o cambiar cantidad (por texto o audio).\n" +
       "Precio: pedime cambiar el precio y te listo los productos, o nombrá uno (ej. «cambiar el precio de la lámpara»).\n" +
       "WhatsApp de pedidos: el número donde te escriben los clientes (puede ser distinto al que usás para gestionar la tienda).\n" +
+      "Si armaste la tienda en la web y querés gestionarla por WhatsApp: en el chat web tocá Vincular WhatsApp, después desde el celular escribí «ya tengo cuenta» y el código.\n" +
       "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
+  };
+}
+
+function askLinkCodePrompt(): OutboundMessage {
+  return {
+    kind: "text",
+    text:
+      "Dale. En la web (alfrebot → Armá en la web /asistente) abrí el menú y tocá Vincular WhatsApp: te doy un código de 6 dígitos.\n\n" +
+      "Después mandame ese código acá (por ejemplo 482915). Vale 30 minutos.",
   };
 }
 
@@ -201,22 +256,133 @@ function askContactPhonePrompt(editing: boolean): OutboundMessage {
   };
 }
 
-/**
- * Si la dueña web carga un WA que ya tiene tienda, vincula la misma fila
- * (clerk_user_id en la tienda WA). No crea una segunda “cuenta”.
- */
-async function maybeLinkClerkAfterContactPhone(
+function linkFailureMessage(detail: string): string {
+  switch (detail) {
+    case "invalid_code":
+      return "Ese código no existe o ya se usó. Generá uno nuevo en el chat web (Vincular WhatsApp).";
+    case "expired":
+      return "Ese código venció (valen 30 minutos). Generá uno nuevo en el chat web.";
+    case "no_clerk_store":
+      return "No encontré una tienda armada con esa cuenta web. Terminá el alta en /asistente y después vinculá.";
+    case "conflict_both_have_products":
+      return "Ese WhatsApp y esa cuenta web tienen tiendas distintas con productos. Escribime a soporte o usá un solo camino por ahora.";
+    case "wa_store_has_other_clerk":
+      return "Ese WhatsApp ya está vinculado a otra cuenta de email.";
+    case "wa_not_valid":
+      return "Para vincular tenés que escribirme desde un celular argentino (WhatsApp).";
+    case "wa_identity_taken":
+      return "Ese número ya tiene otra tienda. Si es tuya, escribinos.";
+    default:
+      return "No pude vincular ahora. Probá de nuevo o cancelá y pedime el menú.";
+  }
+}
+
+async function completeChannelLinkFromWa(
   msg: InboundMessage,
-  contactPhone: string | null,
-): Promise<string | null> {
-  if (!contactPhone || !isClerkIdentity(msg.from)) return null;
-  const result = await linkClerkToWaStore({
+  code: string,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+): Promise<OutboundMessage[]> {
+  const waE164 = normalizeArMobileE164(msg.from);
+  if (!waE164) {
+    return [{ kind: "text", text: linkFailureMessage("wa_not_valid") }];
+  }
+  const result = await linkVerifiedWaToClerkAccount({ waE164, code });
+  if (!result.linked || !result.store) {
+    return [{ kind: "text", text: linkFailureMessage(result.detail) }];
+  }
+  const store = result.store;
+  const nextDraft: ConversationDraft = {
+    ...clearStockDraft(draft),
+    product: undefined,
+    ownerName: store.ownerName ?? draft.ownerName,
+    storeName: store.name ?? draft.storeName,
+    slug: store.slug ?? draft.slug,
+    contactPhone: store.contactPhone ?? draft.contactPhone,
+    showPhone: store.showPhone,
+    checkoutMode: store.checkoutMode,
+    tracksQuantity: store.tracksQuantity,
+  };
+  await setState("IDLE", nextDraft);
+  const name = store.ownerName ? `, ${store.ownerName}` : "";
+  const replies: OutboundMessage[] = [
+    {
+      kind: "text",
+      text:
+        result.detail === "already_linked"
+          ? `Ya estaba vinculada tu cuenta web con este WhatsApp${name}. Seguís con la misma tienda.`
+          : `Listo${name}: vinculé este WhatsApp con tu cuenta web. Es la misma tienda.`,
+    },
+  ];
+  if (store.slug) replies.push(storeLinkReply(store));
+  replies.push(menuMessage(caps, msg.from));
+  return replies;
+}
+
+async function startGenerateLinkCode(
+  msg: InboundMessage,
+  store: Store | null,
+  caps: ChannelCapabilities,
+): Promise<OutboundMessage[]> {
+  if (!isClerkIdentity(msg.from)) {
+    return [
+      {
+        kind: "text",
+        text: "Eso se hace desde el chat web. Si ya tenés cuenta, escribime «ya tengo cuenta» desde WhatsApp.",
+      },
+      menuMessage(caps, msg.from),
+    ];
+  }
+  if (!store?.slug || store.status !== "active") {
+    return [
+      {
+        kind: "text",
+        text: "Primero terminá de armar la tienda acá en la web; después te doy el código para WhatsApp.",
+      },
+      menuMessage(caps, msg.from),
+    ];
+  }
+  if (
+    isWhatsAppContactPhone(store.channelIdentity) &&
+    store.clerkUserId === clerkUserIdFromIdentity(msg.from)
+  ) {
+    return [
+      {
+        kind: "text",
+        text: `Ya vinculaste esta cuenta con el WhatsApp ${formatPhoneDisplay(store.channelIdentity)}. Desde ese número podés gestionar la tienda.`,
+      },
+      menuMessage(caps, msg.from),
+    ];
+  }
+
+  const created = await createChannelLinkIntent({
     clerkChannelIdentity: msg.from,
-    ownerEmail: msg.ownerEmail ?? null,
-    waE164: contactPhone,
+    ownerEmail: msg.ownerEmail ?? store.ownerEmail,
   });
-  if (!result.linked) return null;
-  return "Encontré tu tienda de WhatsApp y la vinculé a esta cuenta de email. Seguís con la misma tienda.";
+  if ("error" in created) {
+    return [
+      { kind: "text", text: "No pude generar el código. Probá de nuevo en un rato." },
+      menuMessage(caps, msg.from),
+    ];
+  }
+
+  const bot = metaBotNumber();
+  const waText = encodeURIComponent(
+    `Hola! Ya tengo cuenta. Código ${created.code}`,
+  );
+  const waLink = `https://wa.me/${bot}?text=${waText}`;
+  return [
+    {
+      kind: "text",
+      text:
+        `Tu código es *${created.code}* (vale 30 minutos).\n\n` +
+        `1. Abrí WhatsApp con el celular que vas a usar para gestionar la tienda.\n` +
+        `2. Escribile al bot y mandá ese código (o tocá: ${waLink}).\n\n` +
+        `El WhatsApp de pedidos de los clientes no cambia: solo unimos la gestión.`,
+    },
+    menuMessage(caps, msg.from),
+  ];
 }
 
 function storeLinkReply(store: Store): OutboundMessage {
@@ -367,12 +533,13 @@ async function handleMessageBody(
     });
     return [
       { kind: "text", text: "Listo, cancelamos eso." },
-      menuMessage(caps),
+      menuMessage(caps, msg.from),
     ];
   }
   if (
     cmd === "menu" &&
     (state === "IDLE" ||
+      state === "ASK_LINK_CODE" ||
       state === "PRICE_INPUT" ||
       state.startsWith("STOCK_") ||
       state.startsWith("PRODUCT_"))
@@ -384,7 +551,7 @@ async function handleMessageBody(
       state: "IDLE",
       draft,
     });
-    return [menuMessage(caps)];
+    return [menuMessage(caps, msg.from)];
   }
 
   // Signup code from wa.me deep link
@@ -413,6 +580,18 @@ async function handleMessageBody(
 
   // ——— State machine ———
   if (state === "NEW") {
+    // Código de vínculo primero (aunque ya haya tienda WA: puede estar uniendo Clerk).
+    const earlyCode = extractChannelLinkCode(msg.text);
+    if (earlyCode && isWhatsAppContactPhone(msg.from)) {
+      return completeChannelLinkFromWa(
+        msg,
+        earlyCode,
+        draft,
+        setState,
+        caps,
+      );
+    }
+
     // Misma dueña por el otro canal (Clerk ↔ WA vinculado) → menú, no onboarding.
     const existingStore = await getStoreForChannelIdentity(msg.from);
     if (existingStore?.status === "active" && existingStore.slug) {
@@ -431,19 +610,101 @@ async function handleMessageBody(
         ? `¡Hola de nuevo, ${existingStore.ownerName}! Encontré tu tienda.`
         : "¡Hola de nuevo! Encontré tu tienda.";
       replies.push({ kind: "text", text: hello });
-      replies.push(menuMessage(caps));
+      replies.push(menuMessage(caps, msg.from));
+      return replies;
+    }
+
+    if (
+      choice === CHOICE.LINK_EXISTING ||
+      (msg.text && wantsLinkExistingAccountText(msg.text))
+    ) {
+      if (!isWhatsAppContactPhone(msg.from)) {
+        if (isClerkIdentity(msg.from)) {
+          replies.push({
+            kind: "text",
+            text: "Estás en la web: cuando termines el alta, tocá Vincular WhatsApp en el menú para generar el código. Después lo mandás desde el celular.",
+          });
+        } else {
+          replies.push({
+            kind: "text",
+            text: "Para vincular una cuenta web, escribime desde WhatsApp con tu celular.",
+          });
+        }
+        await setState("ASK_NAME", draft);
+        replies.push({
+          kind: "text",
+          text: "Si estás armando una tienda nueva: ¿cómo te llamás?",
+        });
+        return replies;
+      }
+      await setState("ASK_LINK_CODE", draft);
+      replies.push(askLinkCodePrompt());
       return replies;
     }
 
     await setState("ASK_NAME", draft);
     replies.push({
       kind: "text",
-      text: "¡Hola! Soy tu ayudante para armar la tienda. ¿Cómo te llamás?",
+      text: "¡Hola! Soy tu ayudante para armar la tienda. ¿Cómo te llamás?\n\nSi ya la armaste en la web, escribí «ya tengo cuenta».",
     });
     return replies;
   }
 
+  if (state === "ASK_LINK_CODE") {
+    if (!isWhatsAppContactPhone(msg.from)) {
+      await setState("NEW", draft);
+      replies.push({
+        kind: "text",
+        text: "El código hay que mandarlo desde WhatsApp (tu celular).",
+      });
+      return replies;
+    }
+    const code =
+      extractChannelLinkCode(msg.text) ??
+      msg.text?.replace(/\D/g, "").slice(0, 6) ??
+      "";
+    if (code.length !== 6) {
+      replies.push({
+        kind: "text",
+        text: "Necesito el código de 6 dígitos que te mostró el chat web. O escribí cancelar.",
+      });
+      return replies;
+    }
+    return completeChannelLinkFromWa(msg, code, draft, setState, caps);
+  }
+
   if (state === "ASK_NAME") {
+    if (
+      choice === CHOICE.LINK_EXISTING ||
+      (msg.text && wantsLinkExistingAccountText(msg.text))
+    ) {
+      if (!isWhatsAppContactPhone(msg.from)) {
+        replies.push({
+          kind: "text",
+          text: isClerkIdentity(msg.from)
+            ? "Para vincular WhatsApp, tocá Vincular WhatsApp en el menú cuando tengas la tienda lista."
+            : "Para vincular, escribime desde WhatsApp.",
+        });
+        replies.push({
+          kind: "text",
+          text: "Si seguís el alta: ¿cómo te llamás?",
+        });
+        return replies;
+      }
+      await setState("ASK_LINK_CODE", clearStockDraft(draft));
+      replies.push(askLinkCodePrompt());
+      return replies;
+    }
+    const earlyCode = extractChannelLinkCode(msg.text);
+    if (earlyCode && isWhatsAppContactPhone(msg.from)) {
+      return completeChannelLinkFromWa(
+        msg,
+        earlyCode,
+        draft,
+        setState,
+        caps,
+      );
+    }
     const raw = msg.text?.trim();
     if (!raw) {
       replies.push({ kind: "text", text: "Decime tu nombre, así te hablo de vos." });
@@ -664,8 +925,7 @@ async function handleMessageBody(
           text: `Dale, en la tienda va a figurar ${formatPhoneDisplay(contactPhone)}.`,
         });
       }
-      const linkedMsg = await maybeLinkClerkAfterContactPhone(msg, contactPhone);
-      if (linkedMsg) replies.push({ kind: "text", text: linkedMsg });
+      // contactPhone es solo público de pedidos: no vincula Clerk↔WA.
 
       if (flow === "edit") {
         const updated = await upsertStore({
@@ -676,7 +936,7 @@ async function handleMessageBody(
         });
         revalidateStore(updated.slug);
         await setState("IDLE", draft);
-        replies.push(menuMessage(caps));
+        replies.push(menuMessage(caps, msg.from));
         return replies;
       }
 
@@ -729,8 +989,7 @@ async function handleMessageBody(
       kind: "text",
       text: `Perfecto, en la tienda va a figurar ${formatPhoneDisplay(contactPhone)}. Tu número de gestión no cambia.`,
     });
-    const linkedMsg = await maybeLinkClerkAfterContactPhone(msg, contactPhone);
-    if (linkedMsg) replies.push({ kind: "text", text: linkedMsg });
+    // contactPhone no transfiere la tienda: el vínculo Clerk↔WA es por código (Vincular WhatsApp).
 
     if (flow === "edit") {
       const updated = await upsertStore({
@@ -741,27 +1000,7 @@ async function handleMessageBody(
       });
       revalidateStore(updated.slug);
       await setState("IDLE", draft);
-      replies.push(menuMessage(caps));
-      return replies;
-    }
-
-    // Si vinculamos a una tienda WA ya activa, salteamos el resto del alta.
-    const linkedStore = await getStoreForChannelIdentity(msg.from);
-    if (
-      linkedStore?.status === "active" &&
-      linkedStore.slug &&
-      linkedStore.clerkUserId === clerkUserIdFromIdentity(msg.from)
-    ) {
-      draft = {
-        ...draft,
-        ownerName: linkedStore.ownerName ?? draft.ownerName,
-        storeName: linkedStore.name ?? draft.storeName,
-        slug: linkedStore.slug,
-        checkoutMode: linkedStore.checkoutMode,
-        tracksQuantity: linkedStore.tracksQuantity,
-      };
-      await setState("IDLE", draft);
-      replies.push(menuMessage(caps));
+      replies.push(menuMessage(caps, msg.from));
       return replies;
     }
 
@@ -916,6 +1155,9 @@ async function handleMessageBody(
       }
       return startContactEditFlow(store, draft, setState, caps, msg);
     }
+    if (choice === CHOICE.MENU_LINK_WA || msg.choiceId === CHOICE.MENU_LINK_WA) {
+      return startGenerateLinkCode(msg, store, caps);
+    }
     if (choice === CHOICE.MENU_STOCK || msg.choiceId === CHOICE.MENU_STOCK) {
       if (!store) {
         replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
@@ -929,7 +1171,19 @@ async function handleMessageBody(
 
     if (msg.text && store?.slug && wantsStoreLinkText(msg.text)) {
       replies.push(storeLinkReply(store));
-      replies.push(menuMessage(caps));
+      replies.push(menuMessage(caps, msg.from));
+      return replies;
+    }
+    if (msg.text && wantsGenerateLinkCodeText(msg.text)) {
+      return startGenerateLinkCode(msg, store, caps);
+    }
+    if (
+      msg.text &&
+      wantsLinkExistingAccountText(msg.text) &&
+      isWhatsAppContactPhone(msg.from)
+    ) {
+      await setState("ASK_LINK_CODE", clearStockDraft(draft));
+      replies.push(askLinkCodePrompt());
       return replies;
     }
     if (msg.text && store && wantsContactPhoneText(msg.text)) {
@@ -938,7 +1192,9 @@ async function handleMessageBody(
 
     const action = msg.text ? await interpretFreeText(msg.text) : { intent: "unknown" as const };
     if (action.intent === "menu" || action.intent === "help") {
-      return action.intent === "help" ? [helpMessage()] : [menuMessage(caps)];
+      return action.intent === "help"
+        ? [helpMessage()]
+        : [menuMessage(caps, msg.from)];
     }
     if (action.intent === "create_product") {
       await setState("PRODUCT_PHOTO", { ...draft, product: {} });
@@ -949,7 +1205,7 @@ async function handleMessageBody(
       if (action.intent === "list_stock") {
         const products = await listProductsByStore(store.id, { includeHidden: true });
         replies.push({ kind: "text", text: formatProductList(products, store) });
-        replies.push(menuMessage(caps));
+        replies.push(menuMessage(caps, msg.from));
         return replies;
       }
       // "pausar/reactivar X" llega a veces como manage_stock
@@ -969,6 +1225,7 @@ async function handleMessageBody(
         draft,
         setState,
         caps,
+        msg.from,
         msg.text ?? action.productHint,
       );
     }
@@ -994,7 +1251,7 @@ async function handleMessageBody(
       kind: "text",
       text: "Mandame una foto para cargar un producto, o pedime el menú.",
     });
-    replies.push(menuMessage(caps));
+    replies.push(menuMessage(caps, msg.from));
     return replies;
   }
 
@@ -1002,7 +1259,7 @@ async function handleMessageBody(
     if (choice === CHOICE.MENU_BACK || choice === CHOICE.MENU_HELP) {
       draft = clearStockDraft(draft);
       await setState("IDLE", draft);
-      return [menuMessage(caps)];
+      return [menuMessage(caps, msg.from)];
     }
     if (choice === CHOICE.STOCK_LIST) {
       const products = await listProductsByStore(store.id, { includeHidden: true });
@@ -1057,7 +1314,7 @@ async function handleMessageBody(
       if (store.slug && wantsStoreLinkText(msg.text)) {
         draft = clearStockDraft(draft);
         await setState("IDLE", draft);
-        return [storeLinkReply(store), menuMessage(caps)];
+        return [storeLinkReply(store), menuMessage(caps, msg.from)];
       }
       return replyWithChoices(
         draft,
@@ -1253,7 +1510,7 @@ async function handleMessageBody(
         await setState("IDLE", clearStockDraft(draft));
         return [
           { kind: "text", text: "No guardé nada." },
-          menuMessage(caps),
+          menuMessage(caps, msg.from),
         ];
       }
       return openStockHub(store, clearStockDraft(draft), setState, caps, [
@@ -1277,7 +1534,7 @@ async function handleMessageBody(
     store = (await getStoreForChannelIdentity(msg.from)) ?? store;
     if (priceFlow) {
       await setState("IDLE", clearStockDraft(draft));
-      return [{ kind: "text", text: applied }, menuMessage(caps)];
+      return [{ kind: "text", text: applied }, menuMessage(caps, msg.from)];
     }
     return openStockHub(store, clearStockDraft(draft), setState, caps, [
       { kind: "text", text: applied },
@@ -1292,7 +1549,7 @@ async function handleMessageBody(
       await setState("IDLE", clearStockDraft(draft));
       return [
         { kind: "text", text: "No encontré ese producto." },
-        menuMessage(caps),
+        menuMessage(caps, msg.from),
       ];
     }
     const price = msg.text ? parsePriceToCents(msg.text) : null;
@@ -1445,7 +1702,7 @@ async function handleMessageBody(
   }
 
   await setState("IDLE", draft);
-  return [menuMessage(caps)];
+  return [menuMessage(caps, msg.from)];
 }
 
 async function openStockHub(
@@ -1468,6 +1725,7 @@ async function startPriceEditFlow(
   draft: ConversationDraft,
   setState: SetState,
   caps: ChannelCapabilities,
+  from: string,
   rawText: string | undefined,
 ): Promise<OutboundMessage[]> {
   const products = await listProductsByStore(store.id, { includeHidden: true });
@@ -1478,7 +1736,7 @@ async function startPriceEditFlow(
         kind: "text",
         text: "Todavía no hay productos. Mandame una foto para cargar uno.",
       },
-      menuMessage(caps),
+      menuMessage(caps, from),
     ];
   }
 
