@@ -8,6 +8,8 @@ import {
   StorePurchaseProvider,
 } from "@/components/store-purchase";
 import { StoreContactLine } from "@/components/store-contact";
+import { StoreVoiceAssistant } from "@/components/store-voice-assistant";
+import { hasTranscriptionConfigured } from "@/lib/bot/transcribe";
 import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
 import { getCachedStore } from "@/lib/store-data";
@@ -68,6 +70,19 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
           showPhone={store.showPhone}
           checkoutMode={purchase.checkoutMode}
           ownerName={store.ownerName}
+        />
+
+        <StoreVoiceAssistant
+          store={purchase}
+          products={products.map((p) => ({
+            id: p.id,
+            title: p.title,
+            description: p.description,
+            priceCents: p.priceCents,
+            imageUrl: p.imageUrl,
+            inStock: p.inStock,
+          }))}
+          cloudSttAvailable={hasTranscriptionConfigured()}
         />
 
         <div className="mt-10 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">

@@ -19,6 +19,12 @@ export default function PrivacidadPage() {
           público. No vendemos esos datos. Las fotos se guardan para la tienda.
         </p>
         <p className="mt-4 text-[1.15rem] leading-relaxed text-[var(--muted)]">
+          En la tienda pública podés buscar con la voz. Lo normal es que el
+          reconocimiento ocurra en tu celular. Solo si el navegador no puede
+          entenderlo se manda un audio corto al servidor para transcribirlo; no
+          guardamos tu voz.
+        </p>
+        <p className="mt-4 text-[1.15rem] leading-relaxed text-[var(--muted)]">
           Contacto: el dueño del proyecto en el repositorio de GitHub de alfrebot.
         </p>
       </main>

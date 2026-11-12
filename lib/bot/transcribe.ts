@@ -1,7 +1,10 @@
 /**
  * Transcribe audio (Meta ogg/opus or simulator webm) to Spanish text.
+ * Bot dueña:
  * 1) Gemini (Gateway o Google AI Studio)
  * 2) Si falla / no hay key → Groq Whisper (GROQ_API_KEY)
+ * Comprador (tienda pública): preferí `transcribeAudioBuyer` (Groq primero)
+ * para no competir con el cupo Gemini de la dueña.
  * Returns null if nothing works (bot stays usable via text).
  */
 
@@ -138,8 +141,20 @@ async function transcribeWithGoogle(
   return null;
 }
 
-/** Fallback free cuando Gemini satura o falla. */
-async function transcribeWithGroq(bytes: Uint8Array): Promise<string | null> {
+type GroqPromptKind = "owner" | "buyer";
+
+const GROQ_PROMPTS: Record<GroqPromptKind, string> = {
+  owner:
+    "Audio en español rioplatense de dueña de tienda: precios, stock, productos.",
+  buyer:
+    "Audio en español rioplatense de comprador buscando productos en un catálogo.",
+};
+
+/** Fallback free cuando Gemini satura o falla (también path comprador). */
+async function transcribeWithGroq(
+  bytes: Uint8Array,
+  kind: GroqPromptKind = "owner",
+): Promise<string | null> {
   if (!hasGroqKey()) return null;
 
   try {
@@ -159,15 +174,13 @@ async function transcribeWithGroq(bytes: Uint8Array): Promise<string | null> {
           providerOptions: {
             groq: {
               language: "es",
-              // Guía corta para nombres/precios de tienda
-              prompt:
-                "Audio en español rioplatense de dueña de tienda: precios, stock, productos.",
+              prompt: GROQ_PROMPTS[kind],
             },
           },
         });
         const cleaned = cleanTranscript(result.text);
         if (cleaned) {
-          console.info(`[transcribe] groq ${modelId} ok`);
+          console.info(`[transcribe] groq ${modelId} ok (${kind})`);
           return cleaned;
         }
       } catch (err) {
@@ -223,4 +236,52 @@ export async function transcribeAudio(
 
 export function hasTranscriptionConfigured(): boolean {
   return hasAiKey();
+}
+
+export function hasBuyerCloudSttConfigured(): boolean {
+  return hasGroqKey();
+}
+
+/**
+ * STT para comprador (tienda pública).
+ * Groq primero (no gasta Gemini de la dueña). Si Groq no está / falla,
+ * opcionalmente Google solo como último recurso.
+ */
+export async function transcribeAudioBuyer(
+  blob: Blob,
+  mime?: string,
+): Promise<string | null> {
+  if (testImpl) return testImpl(blob, mime);
+
+  if (!hasAiKey()) {
+    console.warn("[transcribe-buyer] no AI key (Groq ni Google)");
+    return null;
+  }
+
+  const mediaType =
+    mime?.split(";")[0]?.trim() ||
+    blob.type?.split(";")[0]?.trim() ||
+    "audio/webm";
+
+  try {
+    const bytes = await blobToUint8Array(blob);
+    if (bytes.byteLength < 64) {
+      console.warn("[transcribe-buyer] audio too small", bytes.byteLength);
+      return null;
+    }
+
+    const fromGroq = await transcribeWithGroq(bytes, "buyer");
+    if (fromGroq) return fromGroq;
+
+    if (hasGoogleKey()) {
+      console.warn(
+        "[transcribe-buyer] Groq falló o sin key; Google como último recurso",
+      );
+      return transcribeWithGoogle(bytes, mediaType);
+    }
+    return null;
+  } catch (err) {
+    console.warn("[transcribe-buyer] failed", err);
+    return null;
+  }
 }
