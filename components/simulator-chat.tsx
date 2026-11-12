@@ -41,6 +41,8 @@ export function SimulatorChat({
   const [items, setItems] = useState<ChatItem[]>([]);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  /** Busy real del fetch (useTransition no cubre bien async largos). */
+  const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [sendingAudio, setSendingAudio] = useState(false);
@@ -52,7 +54,7 @@ export function SimulatorChat({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
-  const busy = pending || uploading || recording || sendingAudio;
+  const busy = sending || pending || uploading || recording || sendingAudio;
   const signupCode = initialCode?.replace(/\D/g, "").slice(0, 4) || "";
   const displayIdentity =
     identityMode === "clerk"
@@ -108,10 +110,12 @@ export function SimulatorChat({
   function sendPayload(payload: Record<string, unknown>, userBubble: ChatItem) {
     const from = resolvePhone();
     setError(null);
+    setSending(true);
     startTransition(async () => {
       setItems((prev) => [...prev, userBubble]);
       const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), 55_000);
+      // Icono/Gemini: server corta ~18s; cliente no espera el timeout de función (60s).
+      const timer = window.setTimeout(() => controller.abort(), 35_000);
       try {
         const res = await fetch("/api/simulator", {
           method: "POST",
@@ -123,10 +127,20 @@ export function SimulatorChat({
           }),
           signal: controller.signal,
         });
-        const data = (await res.json()) as {
-          replies?: OutboundMessage[];
-          error?: string;
-        };
+        const raw = await res.text();
+        let data: { replies?: OutboundMessage[]; error?: string } = {};
+        try {
+          data = raw ? (JSON.parse(raw) as typeof data) : {};
+        } catch {
+          if (!res.ok) {
+            throw new Error(
+              res.status === 504 || res.status === 408
+                ? "Tardó demasiado. Probá de nuevo en un rato."
+                : "El asistente no respondió bien. Probá de nuevo.",
+            );
+          }
+          throw new Error("Respuesta inválida del asistente. Probá de nuevo.");
+        }
         if (!res.ok) {
           throw new Error(data.error || "El asistente no respondió");
         }
@@ -144,9 +158,10 @@ export function SimulatorChat({
         ]);
       } catch (err) {
         const aborted =
-          err instanceof DOMException && err.name === "AbortError";
+          (err instanceof DOMException && err.name === "AbortError") ||
+          (err instanceof Error && err.name === "AbortError");
         const message = aborted
-          ? "Tardó demasiado (la IA puede estar saturada). Probá de nuevo o escribilo."
+          ? "Tardó demasiado (icono/IA). Probá de nuevo en un rato."
           : err instanceof Error
             ? err.message
             : "No se pudo enviar el mensaje";
@@ -159,13 +174,14 @@ export function SimulatorChat({
             messages: [
               {
                 kind: "text",
-                text: `Uy, algo falló: ${message}. Probá de nuevo.`,
+                text: `Uy, algo falló: ${message}`,
               },
             ],
           },
         ]);
       } finally {
         window.clearTimeout(timer);
+        setSending(false);
       }
     });
   }
@@ -528,10 +544,10 @@ export function SimulatorChat({
               </div>
             </div>
           )}
-          {pending && !sendingAudio && !uploading && (
+          {(sending || pending) && !sendingAudio && !uploading && (
             <div className="flex justify-start">
               <div className="rounded-lg bg-white/90 px-3 py-2 text-[16px] text-[var(--muted)] shadow-sm">
-                Un momento…
+                Un momento… (si tarda mucho, cancelamos y te avisamos)
               </div>
             </div>
           )}

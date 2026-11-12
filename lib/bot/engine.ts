@@ -1996,12 +1996,16 @@ async function startStoreIconFlow(
       chatHint,
     });
   } catch (err) {
+    const timedOut =
+      err instanceof Error && /timeout/i.test(err.message);
     console.warn("[bot] store icon pipeline failed", err);
     await setState("IDLE", draft);
     return [
       {
         kind: "text",
-        text: "No pude armar el icono ahora. Probá de nuevo en un rato o pedime el menú.",
+        text: timedOut
+          ? "Tardó demasiado armar el icono (la IA o el dibujo se trabaron). Probá de nuevo en un rato, o pedime el menú."
+          : "No pude armar el icono ahora. Probá de nuevo en un rato o pedime el menú.",
       },
       menuMessage(caps, from),
     ];
@@ -2017,7 +2021,9 @@ async function startStoreIconFlow(
   const how =
     icons.source === "ai"
       ? "Lo dibujé a partir del nombre de tu tienda."
-      : "Usé tus iniciales (si querés, pedí Generar otro cuando haya AI disponible).";
+      : icons.fellBack
+        ? "La IA tardó o falló; usé tus iniciales. Tocá Generar otro para reintentar."
+        : "Usé tus iniciales (si querés, pedí Generar otro para probar con AI).";
 
   return [
     {

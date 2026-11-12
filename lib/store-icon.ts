@@ -8,12 +8,20 @@ export const ICON_SIZES = {
   apple: 180,
 } as const;
 
+/** Presupuesto total del pipeline (Gemini + raster + Blob). */
+export const STORE_ICON_BUDGET_MS = 18_000;
+const GEMINI_TIMEOUT_MS = 8_000;
+const SHARP_TIMEOUT_MS = 4_000;
+const BLOB_TIMEOUT_MS = 8_000;
+
 export type StoreIconUrls = {
   icon192Url: string;
   icon512Url: string;
   iconAppleUrl: string;
   iconSvgUrl: string;
   source: "ai" | "monogram";
+  /** true si caímos a monograma por timeout/error de AI o sharp. */
+  fellBack?: boolean;
 };
 
 const BRAND_PRIMARY = "#9A3412";
@@ -26,6 +34,26 @@ function escapeXml(s: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} timeout after ${ms}ms`));
+        }, ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 /** Iniciales legibles para monograma (1–2 letras). */
@@ -68,7 +96,6 @@ function extractSvgMarkup(raw: string): string | null {
   if (end < 0) return null;
   const svg = candidate.slice(start, end + "</svg>".length).trim();
   if (!/^<svg[\s>]/i.test(svg) || svg.length > 80_000) return null;
-  // Bloquear scripts / foreignObject peligrosos en markup de modelo
   if (/<script|foreignObject|xlink:href\s*=\s*["'](?!#)/i.test(svg)) return null;
   return svg;
 }
@@ -88,6 +115,7 @@ async function generateSvgWithGemini(input: {
   ownerName?: string | null;
   rubro?: string;
   chatHint?: string;
+  signal?: AbortSignal;
 }): Promise<string | null> {
   if (!process.env.AI_GATEWAY_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     return null;
@@ -110,16 +138,20 @@ Reglas:
 - Estilo flat / geométrico, máximo 4 colores, sin texto largo (podés usar 1–3 letras si ayuda).
 - Sin fotografías, sin filtros pesados, sin <script>, sin imágenes externas, sin data: URLs.
 - Que se lea bien a 48px (formas grandes, contraste alto).
-- Fondo opaco (no transparente).`;
+- Fondo opaco (no transparente).
+- Preferí formas simples (círculos, rectángulos, paths cortos); nada de filtros ni máscaras.`;
 
   try {
     const { generateText } = await import("ai");
+    const abortSignal =
+      input.signal ?? AbortSignal.timeout(GEMINI_TIMEOUT_MS);
     if (process.env.AI_GATEWAY_API_KEY?.trim()) {
       const { gateway } = await import("@ai-sdk/gateway");
       const result = await generateText({
         model: gateway("google/gemini-3.5-flash"),
         prompt,
         maxRetries: 0,
+        abortSignal,
       });
       return extractSvgMarkup(result.text);
     }
@@ -131,24 +163,43 @@ Reglas:
       model: google("gemini-3.5-flash"),
       prompt,
       maxRetries: 0,
+      abortSignal,
     });
     return extractSvgMarkup(result.text);
   } catch (err) {
-    console.warn("[store-icon] Gemini SVG failed", err);
+    console.warn("[store-icon] Gemini SVG failed/timeout", err);
     return null;
   }
 }
 
 export async function svgToPng(svg: string, size: number): Promise<Buffer> {
   const input = Buffer.from(svg, "utf8");
-  return sharp(input, { density: 288 })
+  // density baja: alcanza para iconos PWA y evita cuelgues en SVG complejos
+  return sharp(input, { density: 144, limitInputPixels: 268402689 })
     .resize(size, size, { fit: "cover" })
-    .png()
+    .png({ compressionLevel: 6 })
     .toBuffer();
+}
+
+async function svgToPngSafe(svg: string, size: number): Promise<Buffer> {
+  return withTimeout(svgToPng(svg, size), SHARP_TIMEOUT_MS, `sharp-${size}`);
+}
+
+async function uploadIconSafe(
+  bytes: Buffer,
+  filename: string,
+  contentType: string,
+) {
+  return withTimeout(
+    uploadStoreIcon(bytes, filename, contentType),
+    BLOB_TIMEOUT_MS,
+    `blob-${filename}`,
+  );
 }
 
 /**
  * Genera (AI o monograma), rasteriza y sube iconos. Misma pipeline para WA y web.
+ * Nunca cuelga: Gemini/sharp/Blob tienen timeout → fallback monograma.
  */
 export async function buildAndUploadStoreIcons(input: {
   store: Store;
@@ -157,54 +208,82 @@ export async function buildAndUploadStoreIcons(input: {
   /** Forzar monograma (smoke / tests). */
   forceMonogram?: boolean;
 }): Promise<StoreIconUrls> {
+  const started = Date.now();
   const storeName = input.store.name || input.store.slug || "Tienda";
   const rubro = rubroFromProducts(input.products ?? []);
   let source: "ai" | "monogram" = "monogram";
+  let fellBack = false;
   let svg = monogramSvg(storeName);
 
   if (!input.forceMonogram) {
-    const aiSvg = await generateSvgWithGemini({
-      storeName,
-      ownerName: input.store.ownerName,
-      rubro,
-      chatHint: input.chatHint,
-    });
-    if (aiSvg) {
-      try {
-        // Validar que sharp pueda rasterizar antes de aceptar el SVG
-        await svgToPng(aiSvg, 64);
+    const remainingForAi = Math.max(
+      1_000,
+      STORE_ICON_BUDGET_MS - (Date.now() - started) - 8_000,
+    );
+    const aiBudget = Math.min(GEMINI_TIMEOUT_MS, remainingForAi);
+    try {
+      const aiSvg = await withTimeout(
+        generateSvgWithGemini({
+          storeName,
+          ownerName: input.store.ownerName,
+          rubro,
+          chatHint: input.chatHint,
+          signal: AbortSignal.timeout(aiBudget),
+        }),
+        aiBudget + 500,
+        "gemini-svg",
+      );
+      if (aiSvg) {
+        await svgToPngSafe(aiSvg, 64);
         svg = aiSvg;
         source = "ai";
-      } catch (err) {
-        console.warn("[store-icon] AI SVG invalid for raster; using monogram", err);
       }
+    } catch (err) {
+      fellBack = true;
+      console.warn("[store-icon] AI path skipped; monogram", err);
+      svg = monogramSvg(storeName);
+      source = "monogram";
     }
   }
 
-  const [png192, png512, pngApple, svgUp] = await Promise.all([
-    svgToPng(svg, ICON_SIZES.png192).then((buf) =>
-      uploadStoreIcon(buf, `${input.store.id}-192.png`, "image/png"),
-    ),
-    svgToPng(svg, ICON_SIZES.png512).then((buf) =>
-      uploadStoreIcon(buf, `${input.store.id}-512.png`, "image/png"),
-    ),
-    svgToPng(svg, ICON_SIZES.apple).then((buf) =>
-      uploadStoreIcon(buf, `${input.store.id}-180.png`, "image/png"),
-    ),
-    uploadStoreIcon(
-      Buffer.from(svg, "utf8"),
-      `${input.store.id}.svg`,
-      "image/svg+xml",
-    ),
-  ]);
+  try {
+    const [png192, png512, pngApple, svgUp] = await Promise.all([
+      svgToPngSafe(svg, ICON_SIZES.png192).then((buf) =>
+        uploadIconSafe(buf, `${input.store.id}-192.png`, "image/png"),
+      ),
+      svgToPngSafe(svg, ICON_SIZES.png512).then((buf) =>
+        uploadIconSafe(buf, `${input.store.id}-512.png`, "image/png"),
+      ),
+      svgToPngSafe(svg, ICON_SIZES.apple).then((buf) =>
+        uploadIconSafe(buf, `${input.store.id}-180.png`, "image/png"),
+      ),
+      uploadIconSafe(
+        Buffer.from(svg, "utf8"),
+        `${input.store.id}.svg`,
+        "image/svg+xml",
+      ),
+    ]);
 
-  return {
-    icon192Url: png192.url,
-    icon512Url: png512.url,
-    iconAppleUrl: pngApple.url,
-    iconSvgUrl: svgUp.url,
-    source,
-  };
+    return {
+      icon192Url: png192.url,
+      icon512Url: png512.url,
+      iconAppleUrl: pngApple.url,
+      iconSvgUrl: svgUp.url,
+      source,
+      fellBack,
+    };
+  } catch (err) {
+    // Último recurso: monograma puro (si el SVG AI rompió sharp/Blob)
+    if (source === "ai" && !input.forceMonogram) {
+      console.warn("[store-icon] raster/upload failed after AI; monogram", err);
+      const fallback = await buildAndUploadStoreIcons({
+        ...input,
+        forceMonogram: true,
+      });
+      return { ...fallback, fellBack: true };
+    }
+    throw err;
+  }
 }
 
 /** Monograma PNG on-the-fly (manifest si la tienda aún no tiene iconos en DB). */
@@ -212,5 +291,5 @@ export async function monogramPngBuffer(
   storeName: string | null | undefined,
   size: number,
 ): Promise<Buffer> {
-  return svgToPng(monogramSvg(storeName), size);
+  return svgToPngSafe(monogramSvg(storeName), size);
 }

@@ -6,7 +6,12 @@ import { handleMessage } from "../lib/bot/engine";
 import type { OutboundMessage } from "../lib/channels/types";
 import { getMemoryDb } from "../lib/db/memory";
 import { getStoreForChannelIdentity } from "../lib/db/repos";
-import { monogramSvg, storeInitials, svgToPng } from "../lib/store-icon";
+import {
+  monogramSvg,
+  storeInitials,
+  svgToPng,
+  withTimeout,
+} from "../lib/store-icon";
 
 const caps = { buttons: true, maxButtons: 3, maxListRows: 10 };
 const from = "+01155558888";
@@ -84,6 +89,19 @@ async function main() {
   assert(png.length > 100, "png bytes");
   assert(png[0] === 0x89 && png[1] === 0x50, "png magic");
   console.log("OK: monogram → png 192");
+
+  let timedOut = false;
+  try {
+    await withTimeout(
+      new Promise((r) => setTimeout(r, 500)),
+      50,
+      "smoke-timeout",
+    );
+  } catch (err) {
+    timedOut = err instanceof Error && /timeout/i.test(err.message);
+  }
+  assert(timedOut, "withTimeout must reject");
+  console.log("OK: withTimeout");
 
   reset();
   await onboard();
