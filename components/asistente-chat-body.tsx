@@ -14,17 +14,14 @@ export async function AsistenteChatBody({
   }
 
   const { userId } = await auth();
-  if (!userId) {
-    redirect("/sign-up");
-  }
-
-  const user = await currentUser();
-  const email =
-    user?.primaryEmailAddress?.emailAddress ??
-    user?.emailAddresses?.[0]?.emailAddress ??
-    undefined;
+  const user = userId ? await currentUser() : null;
+  const email = user
+    ? (user.primaryEmailAddress?.emailAddress ??
+      user.emailAddresses?.[0]?.emailAddress ??
+      undefined)
+    : undefined;
   const ownerImageUrl = user?.imageUrl ?? null;
-  const identity = clerkIdentityKey(userId);
+  const identity = userId ? clerkIdentityKey(userId) : undefined;
   const botDigits = metaBotNumber();
   const continueWaLink = `https://wa.me/${botDigits}?text=${encodeURIComponent(
     "Hola! Quiero seguir armando mi tienda desde la web.",
@@ -37,6 +34,7 @@ export async function AsistenteChatBody({
       ownerImageUrl={ownerImageUrl}
       continueWaLink={continueWaLink}
       identityMode="clerk"
+      isAuthenticated={Boolean(userId)}
       variant={variant}
     />
   );

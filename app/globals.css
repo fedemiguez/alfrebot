@@ -97,3 +97,30 @@ body {
   background: var(--wa);
   color: white;
 }
+
+/* Clerk overlay in-chat: verdes WA (clases estables, no arbitrary TW). */
+.clerk-chat-card {
+  border-color: rgba(7, 94, 84, 0.15);
+}
+.clerk-chat-social {
+  border-color: rgba(7, 94, 84, 0.2);
+  color: #0f172a;
+}
+.clerk-chat-social:hover {
+  border-color: #25d366;
+}
+.clerk-chat-input {
+  border-color: rgba(7, 94, 84, 0.2);
+  color: #0f172a;
+}
+.clerk-chat-input:focus {
+  border-color: #075e54;
+  box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.25);
+}
+.clerk-chat-cta {
+  background: #25d366 !important;
+  color: #fff !important;
+}
+.clerk-chat-cta:hover {
+  opacity: 0.95;
+}

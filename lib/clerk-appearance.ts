@@ -51,3 +51,34 @@ export const alfrebotClerkAppearance = {
     developmentModeNotice: "hidden",
   },
 } as const;
+
+/** Apariencia Clerk para el overlay in-chat (verdes WhatsApp / alfrebot). */
+export const alfrebotClerkChatAppearance = {
+  ...alfrebotClerkAppearance,
+  variables: {
+    ...alfrebotClerkAppearance.variables,
+    // Clerk pinta el CTA primario con colorPrimary (no depender de clases TW arbitrarias).
+    colorPrimary: "#25D366",
+    colorTextOnPrimaryBackground: "#ffffff",
+    colorDanger: "#9A3412",
+    colorSuccess: "#075E54",
+    borderRadius: "8px",
+  },
+  elements: {
+    ...alfrebotClerkAppearance.elements,
+    rootBox: "w-full max-w-[min(100%,24rem)]",
+    card: "clerk-chat-card shadow-none border bg-white p-5 sm:p-6",
+    headerTitle:
+      "font-[family-name:var(--font-display)] text-xl font-semibold",
+    headerSubtitle: "text-[1rem]",
+    socialButtonsBlockButton:
+      "clerk-chat-social min-h-12 border-2 bg-white font-[family-name:var(--font-display)] font-semibold",
+    formFieldInput:
+      "clerk-chat-input min-h-12 rounded-lg border bg-white px-4 text-[1.1rem] outline-none",
+    // Sin btn-primary (terracota del site): Clerk usa colorPrimary (#25D366).
+    formButtonPrimary:
+      "clerk-chat-cta min-h-12 w-full rounded-full shadow-none font-[family-name:var(--font-display)] font-semibold",
+    footerActionLink: "font-semibold hover:underline",
+    identityPreviewEditButton: "font-semibold",
+  },
+} as const;
