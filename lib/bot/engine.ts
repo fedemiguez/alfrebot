@@ -63,7 +63,10 @@ import {
   type ProductDraft,
 } from "@/lib/db/repos";
 import type { Store } from "@/lib/db/schema";
-import { buildAndUploadStoreIcons } from "@/lib/store-icon";
+import {
+  buildAndUploadStoreIcons,
+  buildAndUploadStoreIconsFromImage,
+} from "@/lib/store-icon";
 
 export type BotState =
   | "NEW"
@@ -90,6 +93,8 @@ export type BotState =
   | "STOCK_CONFIRM"
   | "PRICE_INPUT"
   | "PHOTO_INPUT"
+  | "ICON_HUB"
+  | "ICON_WAIT_UPLOAD"
   | "ICON_PREVIEW";
 
 const DEFAULT_CAPS: ChannelCapabilities = {
@@ -222,7 +227,7 @@ function menuMessage(
     { id: CHOICE.MENU_ADD, label: "Cargar producto" },
     { id: CHOICE.MENU_PRICE, label: "Cambiar precio" },
     { id: CHOICE.MENU_PHOTO, label: "Cambiar foto" },
-    { id: CHOICE.MENU_ICON, label: "Icono de la app" },
+    { id: CHOICE.MENU_ICON, label: "Icono de la tienda" },
     { id: CHOICE.MENU_STORE, label: "Ver mi tienda" },
     { id: CHOICE.MENU_STOCK, label: "Stock / pausa" },
     { id: CHOICE.MENU_CONTACT, label: "WhatsApp pedidos" },
@@ -241,8 +246,8 @@ function helpMessage(): OutboundMessage {
       "Soy tu ayudante para armar la tienda. Podés mandarme fotos de tus productos y te voy guiando. También podés mandarme audios (nombre, precio, stock).\n\n" +
       "Stock: menú → Stock / pausa, o pedime el listado, pausar, reactivar o cambiar cantidad (por texto o audio).\n" +
       "Precio: menú → Cambiar precio, o pedime cambiar el precio y te listo los productos (ej. «cambiar el precio de la lámpara»).\n" +
-      "Foto: menú → Cambiar foto, o pedime cambiar la foto y te listo los productos; después mandás la foto nueva y confirmamos.\n" +
-      "Icono: menú → Icono de la app, o pedime «generar icono» / «cambiar icono». Armamos un dibujo (o iniciales) y lo usamos en la app de tu tienda.\n" +
+      "Foto de un PRODUCTO: menú → Cambiar foto, o pedime cambiar la foto y te listo los productos; después mandás la foto nueva y confirmamos.\n" +
+      "Icono de la TIENDA (no es la foto de un producto): menú → Icono de la tienda. Pedime por texto o audio «armar icono» / «icono de la tienda», o «subir icono» y mandá tu imagen. También desde /asistente con Subir icono.\n" +
       "WhatsApp de pedidos: el número donde te escriben los clientes (puede ser distinto al que usás para gestionar la tienda).\n" +
       "Si armaste la tienda en la web y querés gestionarla por WhatsApp: en el chat web tocá Vincular WhatsApp, después desde el celular escribí «ya tengo cuenta» y el código.\n" +
       "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
@@ -553,6 +558,8 @@ async function handleMessageBody(
       state === "ASK_LINK_CODE" ||
       state === "PRICE_INPUT" ||
       state === "PHOTO_INPUT" ||
+      state === "ICON_HUB" ||
+      state === "ICON_WAIT_UPLOAD" ||
       state === "ICON_PREVIEW" ||
       state.startsWith("STOCK_") ||
       state.startsWith("PRODUCT_"))
@@ -1197,9 +1204,62 @@ async function handleMessageBody(
         replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
         return replies;
       }
-      return startStoreIconFlow(store, draft, setState, caps, msg.from, msg.text);
+      return openStoreIconHub(store, draft, setState, caps, msg.from);
+    }
+    if (
+      choice === CHOICE.ICON_UPLOAD ||
+      msg.choiceId === CHOICE.ICON_UPLOAD
+    ) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      if (msg.media?.kind === "image") {
+        return applyUploadedStoreIcon(
+          store,
+          draft,
+          setState,
+          caps,
+          msg.from,
+          msg,
+        );
+      }
+      return askStoreIconUpload(store, draft, setState, caps, msg.from);
+    }
+    if (
+      choice === CHOICE.ICON_GENERATE ||
+      msg.choiceId === CHOICE.ICON_GENERATE
+    ) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      return startStoreIconGenerate(
+        store,
+        draft,
+        setState,
+        caps,
+        msg.from,
+        msg.text,
+      );
     }
     if (msg.media?.kind === "image") {
+      const caption = normalizeLoose(msg.text ?? "");
+      if (
+        store &&
+        (/\b(icono|ícono)\b/.test(caption) ||
+          /logo de (la )?(app|tienda)/.test(caption) ||
+          /sub(ir|í|i).*(icono|ícono|logo)/.test(caption))
+      ) {
+        return applyUploadedStoreIcon(
+          store,
+          draft,
+          setState,
+          caps,
+          msg.from,
+          msg,
+        );
+      }
       return startProductFromImage(msg, draft, caps, setState);
     }
 
@@ -1273,8 +1333,33 @@ async function handleMessageBody(
         msg.text ?? action.productHint,
       );
     }
+    if (action.intent === "upload_icon" && store) {
+      // Imagen + choice icon_upload ya se resolvió arriba; acá pedimos la foto.
+      return askStoreIconUpload(store, draft, setState, caps, msg.from);
+    }
     if (action.intent === "generate_icon" && store) {
-      return startStoreIconFlow(store, draft, setState, caps, msg.from, msg.text);
+      const wantsUpload = /sub(ir|í|i)|mand(ar|á|a)|cargar|propio/.test(
+        normalizeLoose(msg.text ?? ""),
+      );
+      if (wantsUpload) {
+        return askStoreIconUpload(store, draft, setState, caps, msg.from);
+      }
+      // Pedidos claros de armar → generar; “icono” genérico → hub (armar o subir).
+      const wantsGenerate =
+        /(gener(ar|á|a)|arm(ar|á|a)|hac(er|é|e)|cre(ar|á|a)|dibuj(ar|á|a)|cambi(ar|á|a)|nuevo)/.test(
+          normalizeLoose(msg.text ?? ""),
+        );
+      if (wantsGenerate) {
+        return startStoreIconGenerate(
+          store,
+          draft,
+          setState,
+          caps,
+          msg.from,
+          msg.text,
+        );
+      }
+      return openStoreIconHub(store, draft, setState, caps, msg.from);
     }
     if (action.intent === "mark_out_of_stock" && store) {
       const spoken = await trySpokenStockConfirm(
@@ -1607,6 +1692,52 @@ async function handleMessageBody(
     ]);
   }
 
+  if (state === "ICON_HUB" && store) {
+    return handleStoreIconHub(store, draft, setState, caps, msg, choice);
+  }
+
+  if (state === "ICON_WAIT_UPLOAD" && store) {
+    if (msg.media?.kind === "image") {
+      return applyUploadedStoreIcon(
+        store,
+        draft,
+        setState,
+        caps,
+        msg.from,
+        msg,
+      );
+    }
+    if (
+      choice === CHOICE.ICON_GENERATE ||
+      /(gener(ar|á|a)|arm(ar|á|a)|hac(er|é|e))/.test(normalizeLoose(msg.text ?? ""))
+    ) {
+      return startStoreIconGenerate(
+        store,
+        draft,
+        setState,
+        caps,
+        msg.from,
+        msg.text,
+      );
+    }
+    return [
+      {
+        kind: "text",
+        text:
+          "Mandame la imagen del icono de tu tienda (cuadrada queda mejor). " +
+          "Eso no cambia la foto de un producto. O tocá Que lo arme el bot.",
+      },
+      withOptions(
+        "¿Qué preferís?",
+        [
+          { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
+          { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+        ],
+        caps,
+      ),
+    ];
+  }
+
   if (state === "ICON_PREVIEW" && store) {
     const text = msg.text?.trim() ?? "";
     if (
@@ -1619,22 +1750,59 @@ async function handleMessageBody(
         {
           kind: "text",
           text: store.slug
-            ? `Listo. Ese icono queda para tu app: ${storeUrl(store.slug)} (también al agregar la tienda al inicio del celular).`
+            ? `Listo. Ese icono queda para tu tienda: ${storeUrl(store.slug)} (también al agregar la tienda al inicio del celular).`
             : "Listo. Ese icono queda guardado para tu tienda.",
         },
         menuMessage(caps, msg.from),
       ];
     }
     if (
-      choice === CHOICE.ICON_REGEN ||
-      choice === CHOICE.CHANGE ||
-      /regener|otro|cambiar|nueva?/.test(normalizeLoose(text))
+      choice === CHOICE.ICON_UPLOAD ||
+      /sub(ir|í|i)|mand(ar|á|a) (mi )?(icono|imagen|foto|logo)|cargar/.test(
+        normalizeLoose(text),
+      )
     ) {
-      return startStoreIconFlow(store, draft, setState, caps, msg.from, msg.text);
+      if (msg.media?.kind === "image") {
+        return applyUploadedStoreIcon(
+          store,
+          draft,
+          setState,
+          caps,
+          msg.from,
+          msg,
+        );
+      }
+      return askStoreIconUpload(store, draft, setState, caps, msg.from);
+    }
+    if (
+      choice === CHOICE.ICON_REGEN ||
+      choice === CHOICE.ICON_GENERATE ||
+      choice === CHOICE.CHANGE ||
+      /regener|otro|armar|generar|cambiar|nueva?/.test(normalizeLoose(text))
+    ) {
+      return startStoreIconGenerate(
+        store,
+        draft,
+        setState,
+        caps,
+        msg.from,
+        msg.text,
+      );
+    }
+    if (msg.media?.kind === "image") {
+      return applyUploadedStoreIcon(
+        store,
+        draft,
+        setState,
+        caps,
+        msg.from,
+        msg,
+      );
     }
     replies.push({
       kind: "text",
-      text: "Tocá Listo si te gusta, o Generar otro para probar de nuevo (o escribí cancelar).",
+      text:
+        "Tocá Listo si te gusta. Podés pedir Generar otro o Subir mi icono (una imagen tuya). Escribí cancelar para salir.",
     });
     if (store.icon512Url) {
       replies.push({
@@ -1648,6 +1816,7 @@ async function handleMessageBody(
         "¿Qué hacemos?",
         [
           { id: CHOICE.ICON_REGEN, label: "Generar otro" },
+          { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
           { id: CHOICE.ICON_DONE, label: "Listo" },
         ],
         caps,
@@ -1964,11 +2133,214 @@ async function continuePriceEdit(
   ];
 }
 
+async function ensureStoreIconReady(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  from: string,
+): Promise<OutboundMessage[] | null> {
+  if (!store.slug || store.status !== "active") {
+    await setState("IDLE", draft);
+    return [
+      {
+        kind: "text",
+        text: "Primero terminá de armar la tienda; después armamos el icono de la tienda.",
+      },
+      menuMessage(caps, from),
+    ];
+  }
+  return null;
+}
+
+/** Hub: armar con el bot o subir imagen propia (producto ≠ icono de tienda). */
+async function openStoreIconHub(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  from: string,
+): Promise<OutboundMessage[]> {
+  const blocked = await ensureStoreIconReady(store, draft, setState, caps, from);
+  if (blocked) return blocked;
+
+  await setState("ICON_HUB", clearStockDraft(draft));
+  const replies: OutboundMessage[] = [
+    {
+      kind: "text",
+      text:
+        "Icono de la tienda (el cuadrito de la app). No es la foto de un producto.\n\n" +
+        "Podés pedirme que lo arme (texto o audio: «armar icono»), o subir una imagen tuya.",
+    },
+  ];
+  if (store.icon512Url) {
+    replies.push({
+      kind: "image",
+      url: store.icon512Url,
+      caption: "Así se ve ahora",
+    });
+  }
+  replies.push(
+    withOptions(
+      "¿Qué querés hacer?",
+      [
+        { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
+        { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
+        { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+      ],
+      caps,
+    ),
+  );
+  return replies;
+}
+
+async function handleStoreIconHub(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  msg: InboundMessage,
+  choice: string | undefined,
+): Promise<OutboundMessage[]> {
+  const text = normalizeLoose(msg.text ?? "");
+  if (msg.media?.kind === "image") {
+    return applyUploadedStoreIcon(store, draft, setState, caps, msg.from, msg);
+  }
+  if (
+    choice === CHOICE.ICON_UPLOAD ||
+    /sub(ir|í|i)|mand(ar|á|a)|cargar|propio/.test(text)
+  ) {
+    return askStoreIconUpload(store, draft, setState, caps, msg.from);
+  }
+  if (
+    choice === CHOICE.ICON_GENERATE ||
+    choice === CHOICE.ICON_REGEN ||
+    /(gener(ar|á|a)|arm(ar|á|a)|hac(er|é|e)|dibuj|bot)/.test(text)
+  ) {
+    return startStoreIconGenerate(
+      store,
+      draft,
+      setState,
+      caps,
+      msg.from,
+      msg.text,
+    );
+  }
+  if (choice === CHOICE.ICON_DONE || choice === CHOICE.MENU_BACK) {
+    await setState("IDLE", draft);
+    return [menuMessage(caps, msg.from)];
+  }
+  return openStoreIconHub(store, draft, setState, caps, msg.from);
+}
+
+async function askStoreIconUpload(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  from: string,
+): Promise<OutboundMessage[]> {
+  const blocked = await ensureStoreIconReady(store, draft, setState, caps, from);
+  if (blocked) return blocked;
+
+  await setState("ICON_WAIT_UPLOAD", clearStockDraft(draft));
+  return [
+    {
+      kind: "text",
+      text:
+        "Mandame la imagen del icono de tu tienda (JPG o PNG; cuadrada queda mejor).\n" +
+        "En /asistente también podés tocar «Subir icono». Esto no cambia la foto de un producto.",
+    },
+    withOptions(
+      "Si preferís…",
+      [
+        { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
+        { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+      ],
+      caps,
+    ),
+  ];
+}
+
+async function applyUploadedStoreIcon(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  from: string,
+  msg: InboundMessage,
+): Promise<OutboundMessage[]> {
+  const blocked = await ensureStoreIconReady(store, draft, setState, caps, from);
+  if (blocked) return blocked;
+  if (msg.media?.kind !== "image") {
+    return askStoreIconUpload(store, draft, setState, caps, from);
+  }
+
+  let icons;
+  try {
+    const blob = await msg.media.fetch();
+    const bytes = Buffer.from(await blob.arrayBuffer());
+    icons = await buildAndUploadStoreIconsFromImage({
+      storeId: store.id,
+      imageBytes: bytes,
+    });
+  } catch (err) {
+    const timedOut = err instanceof Error && /timeout/i.test(err.message);
+    console.warn("[bot] store icon upload failed", err);
+    await setState("ICON_WAIT_UPLOAD", draft);
+    return [
+      {
+        kind: "text",
+        text: timedOut
+          ? "Tardó demasiado preparar tu icono. Probá con una imagen más chica."
+          : "No pude usar esa imagen. Probá con otra JPG o PNG (no muy pesada).",
+      },
+      withOptions(
+        "¿Qué hacemos?",
+        [
+          { id: CHOICE.ICON_UPLOAD, label: "Probar otra imagen" },
+          { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
+          { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+        ],
+        caps,
+      ),
+    ];
+  }
+
+  const updated = await updateStoreIcons(store.id, {
+    icon192Url: icons.icon192Url,
+    icon512Url: icons.icon512Url,
+    iconAppleUrl: icons.iconAppleUrl,
+    // Subida raster: limpiar SVG AI/monograma previo.
+    iconSvgUrl: null,
+  });
+  if (updated) store = updated;
+  revalidateStore(store.slug);
+  await setState("ICON_PREVIEW", clearStockDraft(draft));
+
+  return [
+    {
+      kind: "image",
+      url: icons.icon512Url,
+      caption: "Así queda tu icono con la imagen que mandaste.",
+    },
+    withOptions(
+      "¿Lo dejamos así?",
+      [
+        { id: CHOICE.ICON_REGEN, label: "Generar otro" },
+        { id: CHOICE.ICON_UPLOAD, label: "Subir otro" },
+        { id: CHOICE.ICON_DONE, label: "Listo" },
+      ],
+      caps,
+    ),
+  ];
+}
+
 /**
  * Generar / cambiar icono PWA: Gemini SVG → PNG (o monograma) → Blob → preview.
  * Misma pipeline para WhatsApp y /asistente.
  */
-async function startStoreIconFlow(
+async function startStoreIconGenerate(
   store: Store,
   draft: ConversationDraft,
   setState: SetState,
@@ -1976,16 +2348,8 @@ async function startStoreIconFlow(
   from: string,
   chatHint?: string,
 ): Promise<OutboundMessage[]> {
-  if (!store.slug || store.status !== "active") {
-    await setState("IDLE", draft);
-    return [
-      {
-        kind: "text",
-        text: "Primero terminá de armar la tienda; después generamos el icono de la app.",
-      },
-      menuMessage(caps, from),
-    ];
-  }
+  const blocked = await ensureStoreIconReady(store, draft, setState, caps, from);
+  if (blocked) return blocked;
 
   const products = await listProductsByStore(store.id, { includeHidden: true });
   let icons;
@@ -2035,6 +2399,7 @@ async function startStoreIconFlow(
       "¿Lo dejamos así?",
       [
         { id: CHOICE.ICON_REGEN, label: "Generar otro" },
+        { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
         { id: CHOICE.ICON_DONE, label: "Listo" },
       ],
       caps,

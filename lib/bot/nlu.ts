@@ -9,6 +9,7 @@ const freeTextActionSchema = z.object({
     "create_product",
     "change_photo",
     "generate_icon",
+    "upload_icon",
     "help",
     "menu",
     "unknown",
@@ -290,13 +291,23 @@ export async function interpretFreeText(
   if (/cambia(r|le)? (la )?foto/.test(lowered)) {
     return { intent: "change_photo", productHint: text };
   }
+  // Subir icono de la TIENDA (no foto de producto).
   if (
-    /\b(icono|ícono|favicon|logo de (la )?app|icono de (la )?(app|tienda|pwa))\b/.test(
-      lowered,
-    ) ||
-    /gener(ar|á|a)? (el )?icono|cambi(ar|á|a)? (el )?icono|nuevo icono|icono (de )?pwa/.test(
+    /sub(ir|í|i) (mi )?(icono|ícono|logo)|mand(ar|á|a) (mi )?(icono|ícono|logo)|cargar (mi )?(icono|ícono|logo)|mi (propio )?(icono|ícono|logo)|icono propio/.test(
       lowered,
     )
+  ) {
+    return { intent: "upload_icon" };
+  }
+  // Armar / pedir icono de la tienda (texto o audio → STT).
+  if (
+    /\b(icono|ícono|favicon)\b/.test(lowered) ||
+    /logo de (la )?(app|tienda)/.test(lowered) ||
+    /icono de (la )?(app|tienda|pwa)/.test(lowered) ||
+    /(gener(ar|á|a)|arm(ar|á|a)|hac(er|é|e)|cre(ar|á|a)|dibuj(ar|á|a)|cambi(ar|á|a)) (el )?(icono|ícono)/.test(
+      lowered,
+    ) ||
+    /nuevo icono|icono (de )?pwa|icono (de )?mi tienda/.test(lowered)
   ) {
     return { intent: "generate_icon" };
   }
@@ -307,6 +318,7 @@ export async function interpretFreeText(
   }
 
   const nluPrompt = `Sos el NLU de un bot de tienda por WhatsApp para personas mayores en Argentina.
+Intents: change_photo = foto de un PRODUCTO; generate_icon = armar/cambiar el ICONO de la TIENDA (app); upload_icon = subir imagen propia como icono de la tienda.
 Del mensaje, devolvé una acción tipada. No inventes. Mensaje: """${text}"""`;
 
   try {

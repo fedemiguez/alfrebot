@@ -19,7 +19,7 @@ export type StoreIconUrls = {
   icon512Url: string;
   iconAppleUrl: string;
   iconSvgUrl: string;
-  source: "ai" | "monogram";
+  source: "ai" | "monogram" | "upload";
   /** true si caímos a monograma por timeout/error de AI o sharp. */
   fellBack?: boolean;
 };
@@ -292,4 +292,50 @@ export async function monogramPngBuffer(
   size: number,
 ): Promise<Buffer> {
   return svgToPngSafe(monogramSvg(storeName), size);
+}
+
+/**
+ * Icono propio: rasteriza una foto/logo a PNG 192/512/180 y sube a Blob.
+ * Misma forma que el pipeline AI (preview + manifest).
+ */
+export async function buildAndUploadStoreIconsFromImage(input: {
+  storeId: string;
+  imageBytes: Buffer;
+}): Promise<StoreIconUrls> {
+  if (!input.imageBytes.length) {
+    throw new Error("imagen vacía");
+  }
+
+  async function raster(size: number): Promise<Buffer> {
+    return withTimeout(
+      sharp(input.imageBytes, { failOn: "none", limitInputPixels: 268402689 })
+        .rotate()
+        .resize(size, size, { fit: "cover", position: "centre" })
+        .png({ compressionLevel: 6 })
+        .toBuffer(),
+      SHARP_TIMEOUT_MS,
+      `sharp-upload-${size}`,
+    );
+  }
+
+  const [png192, png512, pngApple] = await Promise.all([
+    raster(ICON_SIZES.png192).then((buf) =>
+      uploadIconSafe(buf, `${input.storeId}-up-192.png`, "image/png"),
+    ),
+    raster(ICON_SIZES.png512).then((buf) =>
+      uploadIconSafe(buf, `${input.storeId}-up-512.png`, "image/png"),
+    ),
+    raster(ICON_SIZES.apple).then((buf) =>
+      uploadIconSafe(buf, `${input.storeId}-up-180.png`, "image/png"),
+    ),
+  ]);
+
+  return {
+    icon192Url: png192.url,
+    icon512Url: png512.url,
+    iconAppleUrl: pngApple.url,
+    // Subida raster: no hay SVG fuente; dejamos vacío para no inventar markup.
+    iconSvgUrl: "",
+    source: "upload",
+  };
 }

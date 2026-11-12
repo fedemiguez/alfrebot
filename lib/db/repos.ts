@@ -654,9 +654,20 @@ export async function updateStoreIcons(
     icon192Url: string;
     icon512Url: string;
     iconAppleUrl: string;
+    /**
+     * SVG fuente. `undefined` = no tocar el valor previo (memoria).
+     * `null` o `""` = limpiar (p. ej. subida raster sin SVG).
+     */
     iconSvgUrl?: string | null;
   },
 ): Promise<Store | null> {
+  const nextSvg =
+    icons.iconSvgUrl === undefined
+      ? undefined
+      : icons.iconSvgUrl && icons.iconSvgUrl.length > 0
+        ? icons.iconSvgUrl
+        : null;
+
   if (!hasDatabaseUrl()) {
     const mem = getMemoryDb();
     const current = mem.stores.get(storeId);
@@ -666,7 +677,8 @@ export async function updateStoreIcons(
       icon192Url: icons.icon192Url,
       icon512Url: icons.icon512Url,
       iconAppleUrl: icons.iconAppleUrl,
-      iconSvgUrl: icons.iconSvgUrl ?? current.iconSvgUrl,
+      iconSvgUrl:
+        nextSvg === undefined ? current.iconSvgUrl : nextSvg,
     });
     mem.stores.set(storeId, updated);
     return updated;
@@ -678,7 +690,7 @@ export async function updateStoreIcons(
       icon192Url: icons.icon192Url,
       icon512Url: icons.icon512Url,
       iconAppleUrl: icons.iconAppleUrl,
-      iconSvgUrl: icons.iconSvgUrl ?? null,
+      iconSvgUrl: nextSvg === undefined ? null : nextSvg,
       updatedAt: now(),
     })
     .where(eq(stores.id, storeId))
