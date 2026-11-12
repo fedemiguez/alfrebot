@@ -46,6 +46,11 @@ export const stores = pgTable("stores", {
   icon512Url: text("icon_512_url"),
   iconAppleUrl: text("icon_apple_url"),
   iconSvgUrl: text("icon_svg_url"),
+  /**
+   * Color de acento de la vitrina (hex `#rrggbb`). Null = terracota de marca.
+   * Migrar con `npm run db:push` si hay DATABASE_URL.
+   */
+  accentColor: text("accent_color"),
   isDemo: boolean("is_demo").default(false).notNull(),
   status: text("status").default("onboarding").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })

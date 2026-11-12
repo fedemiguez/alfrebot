@@ -35,6 +35,10 @@ export type PendingSetupPlan = {
   storeName?: string;
   iconHint?: string;
   iconMode?: "generate" | "upload";
+  /** Hex `#rrggbb` de acento (Fase A personalización). */
+  accentColor?: string;
+  /** Nombre legible del swatch (ej. Verde). */
+  accentLabel?: string;
   productTitles?: string[];
   deferPhotos?: boolean;
 };
@@ -78,6 +82,10 @@ export type ConversationDraft = {
   stockModePending?: boolean;
   /** Intents en cola (multi-mensaje / onboarding proactivo). */
   pendingSetupPlan?: PendingSetupPlan;
+  /** Hex pendiente de confirmar (flujo Color). */
+  accentColorPending?: string;
+  /** Label del swatch pendiente de confirmar. */
+  accentLabelPending?: string;
   [key: string]: unknown;
 };
 
@@ -275,6 +283,7 @@ export async function upsertStore(input: {
       icon512Url: null,
       iconAppleUrl: null,
       iconSvgUrl: null,
+      accentColor: null,
       isDemo: input.isDemo ?? false,
       status: input.status ?? "onboarding",
       createdAt: now(),
@@ -655,6 +664,27 @@ export async function updateStoreContactPhone(
   const rows = await db
     .update(stores)
     .set({ contactPhone, updatedAt: now() })
+    .where(eq(stores.id, storeId))
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function updateStoreAccentColor(
+  storeId: string,
+  accentColor: string | null,
+): Promise<Store | null> {
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    const current = mem.stores.get(storeId);
+    if (!current) return null;
+    const updated = touchStore({ ...current, accentColor });
+    mem.stores.set(storeId, updated);
+    return updated;
+  }
+  const db = getDb();
+  const rows = await db
+    .update(stores)
+    .set({ accentColor, updatedAt: now() })
     .where(eq(stores.id, storeId))
     .returning();
   return rows[0] ?? null;

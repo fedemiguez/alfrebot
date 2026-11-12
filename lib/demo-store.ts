@@ -18,6 +18,7 @@ export const DEMO_STORE: Store = {
   icon512Url: null,
   iconAppleUrl: null,
   iconSvgUrl: null,
+  accentColor: null,
   isDemo: false,
   status: "active",
   createdAt: new Date("2026-11-01T12:00:00.000Z"),

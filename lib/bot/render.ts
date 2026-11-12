@@ -12,6 +12,12 @@ export const CHOICE = {
   MENU_PRICE: "menu_price",
   MENU_PHOTO: "menu_photo",
   MENU_ICON: "menu_icon",
+  /** Tienda → Personalizar (color, y más en fases B/C). */
+  MENU_PERSONALIZE: "menu_personalize",
+  /** Personalizar → Color de acento. */
+  PERSONALIZE_COLOR: "personalize_color",
+  /** Prefijo al elegir swatch: accent_<id> (ej. accent_verde). */
+  ACCENT_PREFIX: "accent_",
   MENU_CONTACT: "menu_contact",
   /** Generar código para gestionar la misma tienda desde WhatsApp. */
   MENU_LINK_WA: "menu_link_wa",

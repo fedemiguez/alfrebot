@@ -75,12 +75,23 @@ import {
   saveConversation,
   slugExists,
   updateProduct,
+  updateStoreAccentColor,
   updateStoreIcons,
   upsertStore,
   type ConversationDraft,
   type ProductDraft,
 } from "@/lib/db/repos";
 import type { Store } from "@/lib/db/schema";
+import {
+  ACCENT_SWATCHES,
+  matchAccentFromText,
+  normalizeAccentHex,
+  resolveAccentHex,
+  swatchByHex,
+  swatchById,
+  wantsAccentColorText,
+  type AccentSwatch,
+} from "@/lib/store-accent";
 import {
   buildAndUploadStoreIcons,
   buildAndUploadStoreIconsFromImage,
@@ -114,7 +125,10 @@ export type BotState =
   | "PHOTO_INPUT"
   | "ICON_HUB"
   | "ICON_WAIT_UPLOAD"
-  | "ICON_PREVIEW";
+  | "ICON_PREVIEW"
+  | "PERSONALIZE_HUB"
+  | "ACCENT_PICK"
+  | "ACCENT_CONFIRM";
 
 const DEFAULT_CAPS: ChannelCapabilities = {
   buttons: true,
@@ -154,6 +168,8 @@ function clearStockDraft(d: ConversationDraft): ConversationDraft {
     stockPhotoBlobKeyPending: undefined,
     stockModePending: undefined,
     pendingChoices: undefined,
+    accentColorPending: undefined,
+    accentLabelPending: undefined,
   };
 }
 
@@ -181,7 +197,8 @@ function takeNextQueuedProductTitle(
   const pendingSetupPlan: PendingSetupPlan | undefined =
     rest.length > 0 ||
     draft.pendingSetupPlan?.iconMode ||
-    draft.pendingSetupPlan?.storeName
+    draft.pendingSetupPlan?.storeName ||
+    draft.pendingSetupPlan?.accentColor
       ? {
           ...draft.pendingSetupPlan,
           productTitles: rest.length > 0 ? rest : undefined,
@@ -221,13 +238,43 @@ async function flushPendingSetupPlan(
     });
   }
 
-  let nextDraft: ConversationDraft = { ...draft };
+  let workingPlan: PendingSetupPlan = { ...plan };
+  let nextDraft: ConversationDraft = { ...draft, pendingSetupPlan: workingPlan };
 
-  if (plan.iconMode === "upload") {
+  if (workingPlan.accentColor) {
+    const hex = normalizeAccentHex(workingPlan.accentColor);
+    if (hex) {
+      const updated = await updateStoreAccentColor(store.id, hex);
+      if (updated) store = updated;
+      revalidateStore(store.slug);
+      const label =
+        workingPlan.accentLabel || swatchByHex(hex)?.label || hex;
+      replies.push({
+        kind: "text",
+        text: `Listo: color de acento «${label}». Los botones y links de tu vitrina usan ese color.\n${store.slug ? storeUrl(store.slug) : ""}`.trim(),
+      });
+    }
+    workingPlan = {
+      ...workingPlan,
+      accentColor: undefined,
+      accentLabel: undefined,
+    };
+    nextDraft = { ...nextDraft, pendingSetupPlan: workingPlan };
+  }
+
+  if (
+    !workingPlan.iconMode &&
+    !(workingPlan.productTitles?.length)
+  ) {
+    await setState("IDLE", { ...nextDraft, pendingSetupPlan: undefined });
+    return replies;
+  }
+
+  if (workingPlan.iconMode === "upload") {
     nextDraft = {
       ...nextDraft,
       pendingSetupPlan: {
-        ...plan,
+        ...workingPlan,
         iconMode: undefined,
         iconHint: undefined,
       },
@@ -242,14 +289,14 @@ async function flushPendingSetupPlan(
     return [...replies, ...uploadReplies];
   }
 
-  if (plan.iconMode === "generate") {
-    const hintText = plan.iconHint
-      ? `armar icono ${plan.iconHint}`
+  if (workingPlan.iconMode === "generate") {
+    const hintText = workingPlan.iconHint
+      ? `armar icono ${workingPlan.iconHint}`
       : "armar icono";
     nextDraft = {
       ...nextDraft,
       pendingSetupPlan: {
-        ...plan,
+        ...workingPlan,
         iconMode: undefined,
         iconHint: undefined,
       },
@@ -263,9 +310,9 @@ async function flushPendingSetupPlan(
       msg,
       hintText,
     );
-    if (plan.productTitles?.length) {
-      const list = plan.productTitles.join(", ");
-      const defer = plan.deferPhotos
+    if (workingPlan.productTitles?.length) {
+      const list = workingPlan.productTitles.join(", ");
+      const defer = workingPlan.deferPhotos
         ? " Cuando quieras mandame la foto de cada uno (podés poner el nombre en el texto)."
         : " Mandame la foto del primero cuando puedas.";
       replies.push({
@@ -276,12 +323,12 @@ async function flushPendingSetupPlan(
     return [...replies, ...iconReplies];
   }
 
-  if (plan.productTitles?.length) {
-    const list = plan.productTitles.join(", ");
-    const first = plan.productTitles[0];
+  if (workingPlan.productTitles?.length) {
+    const list = workingPlan.productTitles.join(", ");
+    const first = workingPlan.productTitles[0];
     replies.push({
       kind: "text",
-      text: plan.deferPhotos
+      text: workingPlan.deferPhotos
         ? `Dejé en cola: ${list}. Cuando quieras, mandame la foto (si podés, escribí el nombre; si no, uso «${first}»).`
         : `Empecemos por «${first}». Mandame la foto (o escribí el nombre en el mensaje con la foto).`,
     });
@@ -428,7 +475,54 @@ function storeMenuMessage(caps: ChannelCapabilities): OutboundMessage {
     "Tienda — ¿qué necesitás?",
     [
       { id: CHOICE.MENU_ICON, label: "Icono de la tienda" },
+      { id: CHOICE.MENU_PERSONALIZE, label: "Personalizar" },
       { id: CHOICE.MENU_STORE, label: "Ver mi tienda" },
+      { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+    ],
+    caps,
+  );
+}
+
+function personalizeHubMessage(caps: ChannelCapabilities): OutboundMessage {
+  return withOptions(
+    "Personalizar — ¿qué cambiamos?",
+    [
+      { id: CHOICE.PERSONALIZE_COLOR, label: "Color" },
+      { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+    ],
+    caps,
+  );
+}
+
+function accentPickMessage(
+  store: Store,
+  caps: ChannelCapabilities,
+): OutboundMessage {
+  const current = resolveAccentHex(store.accentColor);
+  const currentLabel = swatchByHex(current)?.label ?? current;
+  const options: Option[] = ACCENT_SWATCHES.map((s) => ({
+    id: `${CHOICE.ACCENT_PREFIX}${s.id}`,
+    label: s.label,
+  }));
+  options.push({ id: CHOICE.MENU_BACK, label: "Volver al menú" });
+  return withOptions(
+    `Elegí un color para botones («Lo quiero»), links y acentos de tu vitrina.\nAhora: ${currentLabel}.`,
+    options,
+    caps,
+  );
+}
+
+function accentConfirmMessage(
+  swatch: Pick<AccentSwatch, "label" | "hex">,
+  store: Store,
+  caps: ChannelCapabilities,
+): OutboundMessage {
+  const link = store.slug ? `\nVista: ${storeUrl(store.slug)}` : "";
+  return withOptions(
+    `¿Dejamos el color «${swatch.label}» (${swatch.hex})?\nLos botones y precios de la vitrina van a usar ese color.${link}`,
+    [
+      { id: CHOICE.YES, label: "Sí, guardar" },
+      { id: CHOICE.NO, label: "Otro color" },
       { id: CHOICE.MENU_BACK, label: "Volver al menú" },
     ],
     caps,
@@ -469,6 +563,7 @@ function helpMessage(): OutboundMessage {
       "Precio: menú → Productos → Cambiar precio, o pedime cambiar el precio y te listo los productos (ej. «cambiar el precio de la lámpara»).\n" +
       "Foto de un PRODUCTO: menú → Productos → Cambiar foto, o pedime cambiar la foto y te listo los productos; después mandás la foto nueva y confirmamos.\n" +
       "Icono de la TIENDA (no es la foto de un producto): menú → Tienda → Icono de la tienda. Pedime por texto o audio «armar icono» / «icono de la tienda», o «subir icono» y mandá tu imagen.\n" +
+      "Color de la vitrina: menú → Tienda → Personalizar → Color, o pedime «quiero verde» / «color azul».\n" +
       "WhatsApp de pedidos: menú → WhatsApp → WhatsApp pedidos (el número donde te escriben los clientes).\n" +
       "Si armaste la tienda en la web y querés gestionarla por WhatsApp: menú → WhatsApp → Vincular WhatsApp, después desde el celular escribí «ya tengo cuenta» y el código.\n" +
       "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
@@ -784,6 +879,9 @@ async function handleMessageBody(
       state === "ICON_HUB" ||
       state === "ICON_WAIT_UPLOAD" ||
       state === "ICON_PREVIEW" ||
+      state === "PERSONALIZE_HUB" ||
+      state === "ACCENT_PICK" ||
+      state === "ACCENT_CONFIRM" ||
       state.startsWith("STOCK_") ||
       state.startsWith("PRODUCT_"))
   ) {
@@ -1437,7 +1535,8 @@ async function handleMessageBody(
         : "";
     const hasPlan =
       Boolean(draft.pendingSetupPlan?.iconMode) ||
-      Boolean(draft.pendingSetupPlan?.productTitles?.length);
+      Boolean(draft.pendingSetupPlan?.productTitles?.length) ||
+      Boolean(draft.pendingSetupPlan?.accentColor);
     replies.push({
       kind: "text",
       text: hasPlan
@@ -1527,6 +1626,37 @@ async function handleMessageBody(
       return openStoreIconHub(store, draft, setState, caps, msg);
     }
     if (
+      choice === CHOICE.MENU_PERSONALIZE ||
+      msg.choiceId === CHOICE.MENU_PERSONALIZE
+    ) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      return openPersonalizeHub(draft, setState, caps);
+    }
+    if (
+      choice === CHOICE.PERSONALIZE_COLOR ||
+      msg.choiceId === CHOICE.PERSONALIZE_COLOR
+    ) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      return openAccentPick(store, draft, setState, caps);
+    }
+    if (
+      (choice?.startsWith(CHOICE.ACCENT_PREFIX) ||
+        msg.choiceId?.startsWith(CHOICE.ACCENT_PREFIX)) &&
+      store
+    ) {
+      const id = (choice ?? msg.choiceId ?? "").slice(CHOICE.ACCENT_PREFIX.length);
+      const swatch = swatchById(id);
+      if (swatch) {
+        return startAccentConfirm(store, draft, setState, caps, swatch);
+      }
+    }
+    if (
       choice === CHOICE.ICON_UPLOAD ||
       msg.choiceId === CHOICE.ICON_UPLOAD
     ) {
@@ -1600,12 +1730,14 @@ async function handleMessageBody(
       return startContactEditFlow(store, draft, setState, caps, msg);
     }
 
-    // Multi-intent en IDLE: logo + lista de productos en un solo mensaje.
+    // Multi-intent en IDLE: logo + color + lista de productos en un solo mensaje.
     if (msg.text && store) {
       const idlePlan = parseSetupPlan(msg.text);
       if (
         idlePlan &&
-        (idlePlan.iconMode || (idlePlan.productTitles?.length ?? 0) > 0)
+        (idlePlan.iconMode ||
+          idlePlan.accentColor ||
+          (idlePlan.productTitles?.length ?? 0) > 0)
       ) {
         draft = {
           ...draft,
@@ -1703,6 +1835,24 @@ async function handleMessageBody(
         );
       }
       return openStoreIconHub(store, draft, setState, caps, msg);
+    }
+    if (action.intent === "set_accent_color" && store) {
+      const fromHint = action.accentHint
+        ? swatchByHex(action.accentHint) ??
+          (normalizeAccentHex(action.accentHint)
+            ? {
+                id: "custom",
+                label: action.accentHint,
+                hex: normalizeAccentHex(action.accentHint)!,
+                aliases: [] as string[],
+              }
+            : null)
+        : null;
+      const swatch = fromHint ?? matchAccentFromText(msg.text ?? "");
+      if (swatch) {
+        return startAccentConfirm(store, draft, setState, caps, swatch);
+      }
+      return openAccentPick(store, draft, setState, caps);
     }
     if (action.intent === "mark_out_of_stock" && store) {
       const spoken = await trySpokenStockConfirm(
@@ -2157,6 +2307,93 @@ async function handleMessageBody(
     return replies;
   }
 
+  if (state === "PERSONALIZE_HUB" && store) {
+    if (choice === CHOICE.MENU_BACK) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [menuMessage(caps, msg.from)];
+    }
+    if (
+      choice === CHOICE.PERSONALIZE_COLOR ||
+      /color|acento|paleta|verde|azul|rojo/.test(normalizeLoose(msg.text ?? ""))
+    ) {
+      if (wantsAccentColorText(msg.text ?? "") || matchAccentFromText(msg.text ?? "")) {
+        const swatch = matchAccentFromText(msg.text ?? "");
+        if (swatch) {
+          return startAccentConfirm(store, draft, setState, caps, swatch);
+        }
+      }
+      return openAccentPick(store, draft, setState, caps);
+    }
+    return openPersonalizeHub(draft, setState, caps);
+  }
+
+  if (state === "ACCENT_PICK" && store) {
+    if (choice === CHOICE.MENU_BACK) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [menuMessage(caps, msg.from)];
+    }
+    if (choice?.startsWith(CHOICE.ACCENT_PREFIX)) {
+      const swatch = swatchById(choice.slice(CHOICE.ACCENT_PREFIX.length));
+      if (swatch) {
+        return startAccentConfirm(store, draft, setState, caps, swatch);
+      }
+    }
+    const fromText = matchAccentFromText(msg.text ?? "");
+    if (fromText) {
+      return startAccentConfirm(store, draft, setState, caps, fromText);
+    }
+    return [
+      {
+        kind: "text",
+        text: "No reconocí ese color. Elegí uno de la lista o escribí el nombre (ej. verde).",
+      },
+      accentPickMessage(store, caps),
+    ];
+  }
+
+  if (state === "ACCENT_CONFIRM" && store) {
+    const text = msg.text?.trim() ?? "";
+    if (choice === CHOICE.MENU_BACK) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [menuMessage(caps, msg.from)];
+    }
+    if (choice === CHOICE.NO || isNegative(text) || /otro/.test(normalizeLoose(text))) {
+      return openAccentPick(store, clearStockDraft(draft), setState, caps);
+    }
+    if (choice === CHOICE.YES || isAffirmative(text)) {
+      const hex = normalizeAccentHex(draft.accentColorPending);
+      if (!hex) {
+        return openAccentPick(store, clearStockDraft(draft), setState, caps);
+      }
+      const updated = await updateStoreAccentColor(store.id, hex);
+      revalidateStore(store.slug);
+      const label =
+        draft.accentLabelPending || swatchByHex(hex)?.label || hex;
+      await setState("IDLE", clearStockDraft(draft));
+      return [
+        {
+          kind: "text",
+          text: updated?.slug
+            ? `Guardé el color «${label}». Mirá tu vitrina: ${storeUrl(updated.slug)}`
+            : `Guardé el color «${label}».`,
+        },
+        menuMessage(caps, msg.from),
+      ];
+    }
+    const pending = draft.accentColorPending
+      ? {
+          label: draft.accentLabelPending || draft.accentColorPending,
+          hex: draft.accentColorPending,
+        }
+      : null;
+    if (!pending) {
+      return openAccentPick(store, clearStockDraft(draft), setState, caps);
+    }
+    return [
+      accentConfirmMessage(pending, store, caps),
+    ];
+  }
+
   if (state === "PHOTO_INPUT" && store) {
     const product = draft.stockProductId
       ? await getProduct(draft.stockProductId)
@@ -2478,6 +2715,42 @@ async function continuePriceEdit(
       caps,
     ),
   ];
+}
+
+async function openPersonalizeHub(
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+): Promise<OutboundMessage[]> {
+  await setState("PERSONALIZE_HUB", clearStockDraft(draft));
+  return [personalizeHubMessage(caps)];
+}
+
+async function openAccentPick(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+): Promise<OutboundMessage[]> {
+  await setState("ACCENT_PICK", clearStockDraft(draft));
+  return [accentPickMessage(store, caps)];
+}
+
+async function startAccentConfirm(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  swatch: Pick<AccentSwatch, "label" | "hex">,
+): Promise<OutboundMessage[]> {
+  const hex = normalizeAccentHex(swatch.hex) ?? swatch.hex.toLowerCase();
+  const nextDraft: ConversationDraft = {
+    ...clearStockDraft(draft),
+    accentColorPending: hex,
+    accentLabelPending: swatch.label,
+  };
+  await setState("ACCENT_CONFIRM", nextDraft);
+  return [accentConfirmMessage({ label: swatch.label, hex }, store, caps)];
 }
 
 async function ensureStoreIconReady(

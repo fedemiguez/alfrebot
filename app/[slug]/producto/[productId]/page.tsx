@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, type CSSProperties } from "react";
 import {
   HowToOrderNote,
   NoPublicPhoneNote,
@@ -13,6 +13,7 @@ import { StoreContactLine } from "@/components/store-contact";
 import { formatPriceArs } from "@/lib/format";
 import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
+import { accentStyleVars } from "@/lib/store-accent";
 import { getCachedProduct } from "@/lib/store-data";
 
 export async function generateMetadata({
@@ -40,9 +41,14 @@ async function ProductBody({
   const purchase = storePurchaseProps(store);
   if (!purchase) notFound();
 
+  const accentVars = accentStyleVars(store.accentColor);
+
   return (
     <StorePurchaseProvider store={purchase}>
-      <div className="fade-in mx-auto w-full max-w-3xl px-5 py-10">
+      <div
+        className="fade-in mx-auto w-full max-w-3xl px-5 py-10"
+        style={accentVars as CSSProperties}
+      >
         <StoreHomeLink slug={slug} />
 
         <div className="relative aspect-square overflow-hidden border border-[var(--border)] bg-white">

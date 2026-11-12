@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Suspense } from "react";
+import { Suspense, type CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/product-card";
 import {
@@ -15,6 +15,7 @@ import { hasTranscriptionConfigured } from "@/lib/bot/transcribe";
 import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
 import { monogramIconPath } from "@/lib/store-icon";
+import { accentStyleVars } from "@/lib/store-accent";
 import { getCachedStore } from "@/lib/store-data";
 
 export async function generateStaticParams() {
@@ -67,16 +68,21 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
 
   const iconSrc = store.icon192Url || monogramIconPath(slug, 192);
 
+  const accentVars = accentStyleVars(store.accentColor);
+
   return (
     <StorePurchaseProvider store={purchase}>
-      <div className="fade-in mx-auto w-full max-w-5xl px-5 py-10">
+      <div
+        className="fade-in mx-auto w-full max-w-5xl px-5 py-10"
+        style={accentVars as CSSProperties}
+      >
         <header className="flex items-start gap-4">
           <Image
             src={iconSrc}
             alt=""
             width={72}
             height={72}
-            className="mt-1 size-[4.5rem] shrink-0 rounded-xl border border-[var(--border)] bg-[var(--card)] object-cover"
+            className="mt-1 size-[4.5rem] shrink-0 rounded-xl border border-[var(--border)] bg-[var(--card)] object-cover ring-2 ring-[var(--primary)]/25"
             priority
             unoptimized={
               iconSrc.startsWith("/") || iconSrc.startsWith("data:")
@@ -84,7 +90,9 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
           />
           <div className="min-w-0">
             <h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight text-[var(--ink)] sm:text-5xl">
-              {store.name}
+              <span className="border-b-[3px] border-[var(--primary)] pb-0.5">
+                {store.name}
+              </span>
             </h1>
             {store.ownerName && (
               <p className="mt-3 text-[1.1rem] text-[var(--muted)]">
