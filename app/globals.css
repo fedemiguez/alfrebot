@@ -6,7 +6,8 @@
   --card: #ffffff;
   --border: #f2e6e2;
   --ink: #0f172a;
-  --muted: #475569;
+  /* Más oscuro que slate-600: mejor contraste para lectura (Norma). */
+  --muted: #334155;
   --primary: #9a3412;
   --primary-fg: #ffffff;
   --accent: #059669;

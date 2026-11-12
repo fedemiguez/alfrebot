@@ -18,7 +18,7 @@ export function StoreContactLine({
 
   return (
     <p>
-      {prefix} {ownerName || "la dueña"} al{" "}
+      {prefix} {ownerName || "el dueño"} al{" "}
       <a
         href={href}
         target="_blank"

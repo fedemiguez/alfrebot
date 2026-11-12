@@ -12,12 +12,12 @@ export default function Home() {
         <h1 className="mt-5 max-w-2xl text-[1.65rem] font-normal leading-snug text-[var(--ink)] sm:text-3xl">
           Armá tu tienda charlando: por WhatsApp o en la web.
         </h1>
-        <p className="mt-4 max-w-xl text-[1.15rem] text-[var(--muted)]">
-          Dos caminos: WhatsApp con tu celular, o la web con Google / email. El
+        <p className="mt-4 max-w-xl text-[1.2rem] leading-relaxed text-[var(--muted)]">
+          Dos caminos: WhatsApp con tu celular, o la web con Google o email. El
           catálogo queda online y los pedidos siguen por WhatsApp.
         </p>
 
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
           <Link href="/registro" className="btn btn-primary">
             Armá por WhatsApp
           </Link>
@@ -30,8 +30,8 @@ export default function Home() {
           <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold text-[var(--ink)]">
             Tienda de ejemplo
           </h2>
-          <p className="mt-2 max-w-lg text-[var(--muted)]">
-            Cerámicas de Norma — cómo se ve una tienda armada con alfrebot.
+          <p className="mt-3 max-w-lg text-[1.1rem] leading-relaxed text-[var(--muted)]">
+            Cerámicas de Norma — así se ve una tienda armada con alfrebot.
           </p>
           <Link
             href="/ceramicas-de-norma"

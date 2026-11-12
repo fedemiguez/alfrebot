@@ -15,7 +15,7 @@ export const alfrebotClerkAppearance = {
     colorInputBackground: "#ffffff",
     colorInputText: "#0f172a",
     colorText: "#0f172a",
-    colorTextSecondary: "#475569",
+    colorTextSecondary: "#334155",
     colorDanger: "#9a3412",
     colorSuccess: "#059669",
     borderRadius: "4px",

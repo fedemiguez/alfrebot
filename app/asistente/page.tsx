@@ -51,12 +51,12 @@ export default function AsistentePage() {
         <p className="font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--primary)]">
           alfrebot
         </p>
-        <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
+        <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)] sm:text-4xl">
           Armá tu tienda en la web
         </h1>
-        <p className="mt-2 max-w-2xl text-[var(--muted)]">
-          Mismo asistente que por WhatsApp. Estás registrada con email; cuando
-          el bot te pida el WhatsApp de pedidos, ese número es el que ven tus
+        <p className="mt-3 max-w-2xl text-[1.15rem] leading-relaxed text-[var(--muted)]">
+          Mismo ayudante que por WhatsApp. Ya tenés cuenta con email; cuando el
+          bot te pida el WhatsApp de pedidos, ese número es el que ven tus
           clientes.
         </p>
         <div className="mt-8">

@@ -48,19 +48,19 @@ export default function SignInPage() {
         <h1 className="mb-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--ink)]">
           Entrar
         </h1>
-        <p className="mb-8 max-w-lg text-[var(--muted)]">
+        <p className="mb-8 max-w-lg text-[1.15rem] leading-relaxed text-[var(--muted)]">
           Continuá con Google o con el email de tu cuenta.
         </p>
         <Suspense fallback={<SignInFallback />}>
           <AuthSignInForm />
         </Suspense>
-        <p className="mt-8 text-[15px] text-[var(--muted)]">
+        <p className="mt-8 text-[1.05rem] text-[var(--muted)]">
           ¿Todavía no tenés cuenta?{" "}
           <Link
             href="/sign-up"
-            className="font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
+            className="inline-flex min-h-11 items-center font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
           >
-            Registrate
+            Creá una
           </Link>
           .
         </p>

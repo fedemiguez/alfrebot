@@ -8,7 +8,7 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
         <Link
           href="/"
-          className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-[var(--primary)]"
+          className="inline-flex min-h-11 items-center font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-[var(--primary)]"
         >
           alfrebot
         </Link>
