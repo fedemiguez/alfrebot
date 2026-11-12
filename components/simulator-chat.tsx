@@ -88,7 +88,12 @@ export function SimulatorChat({
     for (const r of replies) {
       if (r.kind !== "text") continue;
       const urlMatch = r.text.match(/https?:\/\/[^\s]+\/([a-z0-9-]+)/i);
-      if (urlMatch?.[1] && urlMatch[1] !== "probar" && urlMatch[1] !== "registro") {
+      if (
+        urlMatch?.[1] &&
+        urlMatch[1] !== "asistente" &&
+        urlMatch[1] !== "probar" &&
+        urlMatch[1] !== "registro"
+      ) {
         setStoreSlug(urlMatch[1]);
         return;
       }
@@ -123,7 +128,7 @@ export function SimulatorChat({
           error?: string;
         };
         if (!res.ok) {
-          throw new Error(data.error || "El simulador no respondió");
+          throw new Error(data.error || "El asistente no respondió");
         }
         const replies = data.replies ?? [];
         extractSlug(replies);

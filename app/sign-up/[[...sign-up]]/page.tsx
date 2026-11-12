@@ -49,7 +49,7 @@ export default function SignUpPage() {
           Armá tu tienda en la web
         </h1>
         <p className="mb-8 max-w-lg text-[var(--muted)]">
-          Entrá con Google o con tu email. Después usás el mismo ayudante que por
+          Entrá con Google o con tu email. Después usás el mismo asistente que por
           WhatsApp y cargás el número de pedidos para el catálogo.
         </p>
         <Suspense fallback={<SignUpFallback />}>

@@ -21,7 +21,7 @@ npm run dev
 Dos caminos para la dueña (misma tabla `stores`):
 
 1. **WhatsApp:** [http://localhost:3000/registro](http://localhost:3000/registro) → celular → Abrir WhatsApp.
-2. **Web (Google / email):** [http://localhost:3000/sign-up](http://localhost:3000/sign-up) → `/probar` con el mismo motor. Pedidos del catálogo siguen por WhatsApp (`contact_phone`).
+2. **Web (Google / email):** [http://localhost:3000/sign-up](http://localhost:3000/sign-up) → `/asistente` con el mismo motor. Pedidos del catálogo siguen por WhatsApp (`contact_phone`).
 
 La key de dueña es `stores.channel_identity` (`+549…` o `clerk:{userId}`). Si la dueña web carga un WhatsApp que ya tiene tienda, se vincula la misma fila (`clerk_user_id`) — no se crea otra cuenta. Clerk autentica el camino web; no reemplaza el camino Meta.
 
@@ -55,7 +55,7 @@ Sin Neon, el fallback en memoria ya incluye los campos.
 
 ## Meta WhatsApp
 
-Ver `.env.example`. Webhook: `GET/POST /api/whatsapp/meta`. Mientras `META_TEST_MODE=true`, el registro deriva números no verificados al chat web (`/probar`).
+Ver `.env.example`. Webhook: `GET/POST /api/whatsapp/meta`. Mientras `META_TEST_MODE=true`, el registro deriva números no verificados al chat web (`/asistente`).
 
 ## Stock y pausa (bot / chat web)
 
@@ -99,11 +99,11 @@ Dueña: Sí, guardar
 
 Si pone `0`, queda agotado. Siempre hay confirmación antes de guardar. Con botones/listas de Meta (o del simulador); si no hay botones, respondé con el número de la opción.
 
-## Audios (WhatsApp / `/probar`)
+## Audios (WhatsApp / `/asistente`)
 
 Podés **dictar** nombre, precio, descripción, cantidad o pedidos de stock. El bot transcribe con Gemini (AI Gateway o `GOOGLE_GENERATIVE_AI_API_KEY`) y, si Google falla o se satura, con **Groq Whisper** (`GROQ_API_KEY`). Sigue el mismo flujo de siempre, con un eco `Te escuché: «…»` antes de la respuesta.
 
-- En `/probar`: botón 🎤 → hablá → tocá de nuevo para enviar.
+- En `/asistente`: botón 🎤 → hablá → tocá de nuevo para enviar.
 - En WhatsApp real: mandá un audio como siempre (ogg/opus).
 - Sin API key: el bot responde *No pude escuchar el audio…* y sigue usable por texto/botones.
 - El audio **no** reemplaza la foto al cargar un producto.

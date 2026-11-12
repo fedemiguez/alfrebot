@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { isClerkConfigured } from "@/lib/clerk";
 
-const isProtectedRoute = createRouteMatcher(["/probar(.*)"]);
+const isProtectedRoute = createRouteMatcher([
+  "/asistente(.*)",
+  "/probar(.*)",
+]);
 
 export default isClerkConfigured()
   ? clerkMiddleware(async (auth, req) => {
