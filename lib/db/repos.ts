@@ -46,7 +46,7 @@ export type ConversationDraft = {
   pendingChoices?: string[];
   /** Producto seleccionado en flujo de stock / precio. */
   stockProductId?: string;
-  /** Acción pendiente de stock/precio a confirmar. */
+  /** Acción pendiente de stock/precio/foto a confirmar. */
   stockAction?:
     | "pause"
     | "resume"
@@ -54,11 +54,16 @@ export type ConversationDraft = {
     | "hide"
     | "show"
     | "set_mode"
-    | "set_price";
+    | "set_price"
+    | "change_photo";
   /** Cantidad pendiente de confirmar. */
   stockQtyPending?: number;
   /** Precio pendiente de confirmar (centavos). */
   stockPricePending?: number;
+  /** URL de foto nueva pendiente de confirmar. */
+  stockPhotoUrlPending?: string;
+  /** Blob key de foto nueva pendiente de confirmar. */
+  stockPhotoBlobKeyPending?: string;
   /** Modo de stock pendiente (true = cantidades). */
   stockModePending?: boolean;
   [key: string]: unknown;

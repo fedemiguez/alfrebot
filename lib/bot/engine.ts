@@ -86,7 +86,8 @@ export type BotState =
   | "STOCK_ACTIONS"
   | "STOCK_QTY"
   | "STOCK_CONFIRM"
-  | "PRICE_INPUT";
+  | "PRICE_INPUT"
+  | "PHOTO_INPUT";
 
 const DEFAULT_CAPS: ChannelCapabilities = {
   buttons: true,
@@ -122,6 +123,8 @@ function clearStockDraft(d: ConversationDraft): ConversationDraft {
     stockAction: undefined,
     stockQtyPending: undefined,
     stockPricePending: undefined,
+    stockPhotoUrlPending: undefined,
+    stockPhotoBlobKeyPending: undefined,
     stockModePending: undefined,
     pendingChoices: undefined,
   };
@@ -214,6 +217,8 @@ function menuMessage(
 ): OutboundMessage {
   const options: { id: string; label: string }[] = [
     { id: CHOICE.MENU_ADD, label: "Cargar producto" },
+    { id: CHOICE.MENU_PRICE, label: "Cambiar precio" },
+    { id: CHOICE.MENU_PHOTO, label: "Cambiar foto" },
     { id: CHOICE.MENU_STORE, label: "Ver mi tienda" },
     { id: CHOICE.MENU_STOCK, label: "Stock / pausa" },
     { id: CHOICE.MENU_CONTACT, label: "WhatsApp pedidos" },
@@ -231,7 +236,8 @@ function helpMessage(): OutboundMessage {
     text:
       "Soy tu ayudante para armar la tienda. Podés mandarme fotos de tus productos y te voy guiando. También podés mandarme audios (nombre, precio, stock).\n\n" +
       "Stock: menú → Stock / pausa, o pedime el listado, pausar, reactivar o cambiar cantidad (por texto o audio).\n" +
-      "Precio: pedime cambiar el precio y te listo los productos, o nombrá uno (ej. «cambiar el precio de la lámpara»).\n" +
+      "Precio: menú → Cambiar precio, o pedime cambiar el precio y te listo los productos (ej. «cambiar el precio de la lámpara»).\n" +
+      "Foto: menú → Cambiar foto, o pedime cambiar la foto y te listo los productos; después mandás la foto nueva y confirmamos.\n" +
       "WhatsApp de pedidos: el número donde te escriben los clientes (puede ser distinto al que usás para gestionar la tienda).\n" +
       "Si armaste la tienda en la web y querés gestionarla por WhatsApp: en el chat web tocá Vincular WhatsApp, después desde el celular escribí «ya tengo cuenta» y el código.\n" +
       "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
@@ -541,6 +547,7 @@ async function handleMessageBody(
     (state === "IDLE" ||
       state === "ASK_LINK_CODE" ||
       state === "PRICE_INPUT" ||
+      state === "PHOTO_INPUT" ||
       state.startsWith("STOCK_") ||
       state.startsWith("PRODUCT_"))
   ) {
@@ -1165,6 +1172,20 @@ async function handleMessageBody(
       }
       return openStockHub(store, draft, setState, caps);
     }
+    if (choice === CHOICE.MENU_PRICE || msg.choiceId === CHOICE.MENU_PRICE) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      return startPriceEditFlow(store, draft, setState, caps, msg.from, undefined);
+    }
+    if (choice === CHOICE.MENU_PHOTO || msg.choiceId === CHOICE.MENU_PHOTO) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      return startPhotoEditFlow(store, draft, setState, caps, msg.from, undefined);
+    }
     if (msg.media?.kind === "image") {
       return startProductFromImage(msg, draft, caps, setState);
     }
@@ -1221,6 +1242,16 @@ async function handleMessageBody(
     }
     if (action.intent === "set_price" && store) {
       return startPriceEditFlow(
+        store,
+        draft,
+        setState,
+        caps,
+        msg.from,
+        msg.text ?? action.productHint,
+      );
+    }
+    if (action.intent === "change_photo" && store) {
+      return startPhotoEditFlow(
         store,
         draft,
         setState,
@@ -1371,6 +1402,9 @@ async function handleMessageBody(
         draft.stockPricePending ?? null,
       );
     }
+    if (draft.stockAction === "change_photo") {
+      return continuePhotoEdit(store, draft, setState, product);
+    }
     draft = { ...draft, stockProductId: product.id };
     return replyWithChoices(
       draft,
@@ -1444,6 +1478,9 @@ async function handleMessageBody(
     if (choice === CHOICE.STOCK_SET_PRICE) {
       return continuePriceEdit(store, draft, setState, caps, product, null);
     }
+    if (choice === CHOICE.STOCK_CHANGE_PHOTO) {
+      return continuePhotoEdit(store, draft, setState, product);
+    }
     if (choice === CHOICE.STOCK_HIDE) {
       draft = { ...draft, stockAction: "hide" };
       return replyWithChoices(
@@ -1504,9 +1541,10 @@ async function handleMessageBody(
 
   if (state === "STOCK_CONFIRM" && store) {
     const text = msg.text?.trim() ?? "";
-    const priceFlow = draft.stockAction === "set_price";
+    const idleEditFlow =
+      draft.stockAction === "set_price" || draft.stockAction === "change_photo";
     if (choice === CHOICE.NO || isNegative(text)) {
-      if (priceFlow) {
+      if (idleEditFlow) {
         await setState("IDLE", clearStockDraft(draft));
         return [
           { kind: "text", text: "No guardé nada." },
@@ -1521,24 +1559,76 @@ async function handleMessageBody(
       const product = draft.stockProductId
         ? await getProduct(draft.stockProductId)
         : null;
+      const confirmMsg = confirmStockMessage(draft, product, store, caps);
+      const preview =
+        draft.stockAction === "change_photo" && draft.stockPhotoUrlPending
+          ? ([
+              {
+                kind: "image" as const,
+                url: draft.stockPhotoUrlPending,
+                caption: "Así quedaría la foto nueva",
+              },
+            ] satisfies OutboundMessage[])
+          : undefined;
       return replyWithChoices(
         draft,
         setState,
         "STOCK_CONFIRM",
-        confirmStockMessage(draft, product, store, caps),
+        confirmMsg,
+        preview,
       );
     }
 
     const applied = await applyStockAction(store, draft);
     revalidateStore(store.slug);
     store = (await getStoreForChannelIdentity(msg.from)) ?? store;
-    if (priceFlow) {
+    if (idleEditFlow) {
       await setState("IDLE", clearStockDraft(draft));
       return [{ kind: "text", text: applied }, menuMessage(caps, msg.from)];
     }
     return openStockHub(store, clearStockDraft(draft), setState, caps, [
       { kind: "text", text: applied },
     ]);
+  }
+
+  if (state === "PHOTO_INPUT" && store) {
+    const product = draft.stockProductId
+      ? await getProduct(draft.stockProductId)
+      : null;
+    if (!product || product.storeId !== store.id) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [
+        { kind: "text", text: "No encontré ese producto." },
+        menuMessage(caps, msg.from),
+      ];
+    }
+    if (msg.media?.kind !== "image") {
+      replies.push({
+        kind: "text",
+        text: `Necesito la foto nueva de "${product.title}". Mandamela cuando puedas (o escribí cancelar).`,
+      });
+      return replies;
+    }
+    const resolved = await resolveInboundImage(msg);
+    const nextDraft: ConversationDraft = {
+      ...draft,
+      stockAction: "change_photo",
+      stockPhotoUrlPending: resolved.imageUrl,
+      stockPhotoBlobKeyPending: resolved.imageBlobKey,
+    };
+    return replyWithChoices(
+      nextDraft,
+      setState,
+      "STOCK_CONFIRM",
+      confirmStockMessage(nextDraft, product, store, caps),
+      [
+        {
+          kind: "image",
+          url: resolved.imageUrl,
+          caption: "Así quedaría la foto nueva",
+        },
+      ],
+    );
   }
 
   if (state === "PRICE_INPUT" && store) {
@@ -1810,6 +1900,103 @@ async function continuePriceEdit(
 }
 
 /**
+ * "cambiar la foto" / "cambiar la foto de la lámpara":
+ * lista productos o fuzzy + pide la foto nueva + confirmación Sí/No.
+ */
+async function startPhotoEditFlow(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  from: string,
+  rawText: string | undefined,
+): Promise<OutboundMessage[]> {
+  const products = await listProductsByStore(store.id, { includeHidden: true });
+  if (products.length === 0) {
+    await setState("IDLE", clearStockDraft(draft));
+    return [
+      {
+        kind: "text",
+        text: "Todavía no hay productos. Mandame una foto para cargar uno.",
+      },
+      menuMessage(caps, from),
+    ];
+  }
+
+  const matches = rawText ? findProductsByHint(products, rawText) : [];
+
+  if (matches.length === 1) {
+    return continuePhotoEdit(store, draft, setState, matches[0]!);
+  }
+
+  const pickFrom = matches.length > 1 ? matches : products;
+  const nextDraft: ConversationDraft = {
+    ...clearStockDraft(draft),
+    stockAction: "change_photo",
+  };
+  const prompt =
+    matches.length > 1
+      ? "Encontré más de uno. ¿De cuál querés cambiar la foto?"
+      : "¿De cuál producto querés cambiar la foto?";
+  return replyWithChoices(
+    nextDraft,
+    setState,
+    "STOCK_PICK",
+    withOptions(prompt, productPickOptions(pickFrom), caps),
+  );
+}
+
+async function continuePhotoEdit(
+  _store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  product: Product,
+): Promise<OutboundMessage[]> {
+  const nextDraft: ConversationDraft = {
+    ...clearStockDraft(draft),
+    stockProductId: product.id,
+    stockAction: "change_photo",
+  };
+  await setState("PHOTO_INPUT", nextDraft);
+  return [
+    {
+      kind: "text",
+      text: `Mandá la foto nueva de "${product.title}". Cuando la reciba te pido confirmación antes de guardar.`,
+    },
+  ];
+}
+
+async function resolveInboundImage(
+  msg: InboundMessage,
+): Promise<{ imageUrl: string; imageBlobKey?: string }> {
+  if (msg.media?.url && !msg.media.url.startsWith("data:")) {
+    return { imageUrl: msg.media.url };
+  }
+  if (!msg.media) {
+    return { imageUrl: "/api/placeholder?name=producto" };
+  }
+  try {
+    const blob = await msg.media.fetch();
+    if (msg.media.url?.startsWith("data:")) {
+      const uploaded = await uploadDataUrl(
+        msg.media.url,
+        `product-${Date.now()}.jpg`,
+      );
+      return { imageUrl: uploaded.url, imageBlobKey: uploaded.pathname };
+    }
+    const uploaded = await uploadProductImage(
+      blob,
+      `product-${Date.now()}.jpg`,
+      msg.media.mime || "image/jpeg",
+    );
+    return { imageUrl: uploaded.url, imageBlobKey: uploaded.pathname };
+  } catch (err) {
+    console.warn("[bot] image upload failed, using placeholder", err);
+    return { imageUrl: "/api/placeholder?name=producto" };
+  }
+}
+
+/**
  * Audio/texto libre tipo "pausá la lata de cerveza":
  * matchea producto y pasa a confirmación (Sí/No) sin pasar por el hub.
  */
@@ -1947,6 +2134,15 @@ async function applyStockAction(store: Store, draft: ConversationDraft): Promise
     await updateProduct(product.id, { priceCents: price });
     return `Listo, "${product.title}" ahora sale ${formatPriceArs(price)}.`;
   }
+  if (draft.stockAction === "change_photo") {
+    const imageUrl = draft.stockPhotoUrlPending;
+    if (!imageUrl) return "No recibí la foto nueva.";
+    await updateProduct(product.id, {
+      imageUrl,
+      imageBlobKey: draft.stockPhotoBlobKeyPending ?? null,
+    });
+    return `Listo, actualicé la foto de "${product.title}".`;
+  }
   return "Listo.";
 }
 
@@ -1956,32 +2152,7 @@ async function startProductFromImage(
   caps: ChannelCapabilities,
   setState: (s: BotState, d?: ConversationDraft) => Promise<void>,
 ): Promise<OutboundMessage[]> {
-  let imageUrl: string | undefined;
-  let imageBlobKey: string | undefined;
-
-  if (msg.media?.url && !msg.media.url.startsWith("data:")) {
-    imageUrl = msg.media.url;
-  } else if (msg.media) {
-    try {
-      const blob = await msg.media.fetch();
-      if (msg.media.url?.startsWith("data:")) {
-        const uploaded = await uploadDataUrl(msg.media.url, `piece-${Date.now()}.jpg`);
-        imageUrl = uploaded.url;
-        imageBlobKey = uploaded.pathname;
-      } else {
-        const uploaded = await uploadProductImage(
-          blob,
-          `piece-${Date.now()}.jpg`,
-          msg.media.mime || "image/jpeg",
-        );
-        imageUrl = uploaded.url;
-        imageBlobKey = uploaded.pathname;
-      }
-    } catch (err) {
-      console.warn("[bot] image upload failed, using placeholder", err);
-      imageUrl = "/api/placeholder?name=producto";
-    }
-  }
+  const { imageUrl, imageBlobKey } = await resolveInboundImage(msg);
 
   const hints = msg.text ? parseCaptionHints(msg.text) : {};
   const product: ProductDraft = {
@@ -2027,7 +2198,7 @@ function productConfirmMessages(
   product: ProductDraft,
   caps: ChannelCapabilities,
 ): OutboundMessage[] {
-  const caption = `${product.title ?? "Pieza"} · ${formatPriceArs(product.priceCents ?? null)}${
+  const caption = `${product.title ?? "Producto"} · ${formatPriceArs(product.priceCents ?? null)}${
     product.description ? `\n${product.description}` : ""
   }`;
   const options = [
