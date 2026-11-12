@@ -38,6 +38,14 @@ export const stores = pgTable("stores", {
   checkoutMode: text("checkout_mode").default("whatsapp").notNull().$type<CheckoutMode>(),
   /** Si true, la tienda lleva cantidad numérica por producto; si false, solo pausa (agotado). */
   tracksQuantity: boolean("tracks_quantity").default(false).notNull(),
+  /**
+   * Iconos PWA (PNG en Blob). Migrar con `npm run db:push` si hay DATABASE_URL.
+   * Pipeline: Gemini Flash → SVG → raster 192/512/180 → Blob.
+   */
+  icon192Url: text("icon_192_url"),
+  icon512Url: text("icon_512_url"),
+  iconAppleUrl: text("icon_apple_url"),
+  iconSvgUrl: text("icon_svg_url"),
   isDemo: boolean("is_demo").default(false).notNull(),
   status: text("status").default("onboarding").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })

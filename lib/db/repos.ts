@@ -259,6 +259,10 @@ export async function upsertStore(input: {
       showPhone: input.showPhone ?? true,
       checkoutMode: input.checkoutMode ?? "whatsapp",
       tracksQuantity: input.tracksQuantity ?? false,
+      icon192Url: null,
+      icon512Url: null,
+      iconAppleUrl: null,
+      iconSvgUrl: null,
       isDemo: input.isDemo ?? false,
       status: input.status ?? "onboarding",
       createdAt: now(),
@@ -639,6 +643,44 @@ export async function updateStoreContactPhone(
   const rows = await db
     .update(stores)
     .set({ contactPhone, updatedAt: now() })
+    .where(eq(stores.id, storeId))
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function updateStoreIcons(
+  storeId: string,
+  icons: {
+    icon192Url: string;
+    icon512Url: string;
+    iconAppleUrl: string;
+    iconSvgUrl?: string | null;
+  },
+): Promise<Store | null> {
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    const current = mem.stores.get(storeId);
+    if (!current) return null;
+    const updated = touchStore({
+      ...current,
+      icon192Url: icons.icon192Url,
+      icon512Url: icons.icon512Url,
+      iconAppleUrl: icons.iconAppleUrl,
+      iconSvgUrl: icons.iconSvgUrl ?? current.iconSvgUrl,
+    });
+    mem.stores.set(storeId, updated);
+    return updated;
+  }
+  const db = getDb();
+  const rows = await db
+    .update(stores)
+    .set({
+      icon192Url: icons.icon192Url,
+      icon512Url: icons.icon512Url,
+      iconAppleUrl: icons.iconAppleUrl,
+      iconSvgUrl: icons.iconSvgUrl ?? null,
+      updatedAt: now(),
+    })
     .where(eq(stores.id, storeId))
     .returning();
   return rows[0] ?? null;

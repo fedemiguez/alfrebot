@@ -94,6 +94,7 @@ export const CHOICE = {
   MENU_STOCK: "menu_stock",
   MENU_PRICE: "menu_price",
   MENU_PHOTO: "menu_photo",
+  MENU_ICON: "menu_icon",
   MENU_CONTACT: "menu_contact",
   /** Generar código para gestionar la misma tienda desde WhatsApp. */
   MENU_LINK_WA: "menu_link_wa",
@@ -102,6 +103,10 @@ export const CHOICE = {
   MENU_HELP: "menu_help",
   /** Volver al menú principal (no confundir con Ayuda). */
   MENU_BACK: "menu_back",
+  /** Regenerar icono PWA. */
+  ICON_REGEN: "icon_regen",
+  /** Cerrar flujo de icono. */
+  ICON_DONE: "icon_done",
   CHECKOUT_WA: "checkout_whatsapp",
   CHECKOUT_CART: "checkout_cart",
   CONTACT_SAME: "contact_same",

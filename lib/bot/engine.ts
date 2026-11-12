@@ -57,11 +57,13 @@ import {
   saveConversation,
   slugExists,
   updateProduct,
+  updateStoreIcons,
   upsertStore,
   type ConversationDraft,
   type ProductDraft,
 } from "@/lib/db/repos";
 import type { Store } from "@/lib/db/schema";
+import { buildAndUploadStoreIcons } from "@/lib/store-icon";
 
 export type BotState =
   | "NEW"
@@ -87,7 +89,8 @@ export type BotState =
   | "STOCK_QTY"
   | "STOCK_CONFIRM"
   | "PRICE_INPUT"
-  | "PHOTO_INPUT";
+  | "PHOTO_INPUT"
+  | "ICON_PREVIEW";
 
 const DEFAULT_CAPS: ChannelCapabilities = {
   buttons: true,
@@ -219,6 +222,7 @@ function menuMessage(
     { id: CHOICE.MENU_ADD, label: "Cargar producto" },
     { id: CHOICE.MENU_PRICE, label: "Cambiar precio" },
     { id: CHOICE.MENU_PHOTO, label: "Cambiar foto" },
+    { id: CHOICE.MENU_ICON, label: "Icono de la app" },
     { id: CHOICE.MENU_STORE, label: "Ver mi tienda" },
     { id: CHOICE.MENU_STOCK, label: "Stock / pausa" },
     { id: CHOICE.MENU_CONTACT, label: "WhatsApp pedidos" },
@@ -238,6 +242,7 @@ function helpMessage(): OutboundMessage {
       "Stock: menú → Stock / pausa, o pedime el listado, pausar, reactivar o cambiar cantidad (por texto o audio).\n" +
       "Precio: menú → Cambiar precio, o pedime cambiar el precio y te listo los productos (ej. «cambiar el precio de la lámpara»).\n" +
       "Foto: menú → Cambiar foto, o pedime cambiar la foto y te listo los productos; después mandás la foto nueva y confirmamos.\n" +
+      "Icono: menú → Icono de la app, o pedime «generar icono» / «cambiar icono». Armamos un dibujo (o iniciales) y lo usamos en la app de tu tienda.\n" +
       "WhatsApp de pedidos: el número donde te escriben los clientes (puede ser distinto al que usás para gestionar la tienda).\n" +
       "Si armaste la tienda en la web y querés gestionarla por WhatsApp: en el chat web tocá Vincular WhatsApp, después desde el celular escribí «ya tengo cuenta» y el código.\n" +
       "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
@@ -548,6 +553,7 @@ async function handleMessageBody(
       state === "ASK_LINK_CODE" ||
       state === "PRICE_INPUT" ||
       state === "PHOTO_INPUT" ||
+      state === "ICON_PREVIEW" ||
       state.startsWith("STOCK_") ||
       state.startsWith("PRODUCT_"))
   ) {
@@ -1186,6 +1192,13 @@ async function handleMessageBody(
       }
       return startPhotoEditFlow(store, draft, setState, caps, msg.from, undefined);
     }
+    if (choice === CHOICE.MENU_ICON || msg.choiceId === CHOICE.MENU_ICON) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      return startStoreIconFlow(store, draft, setState, caps, msg.from, msg.text);
+    }
     if (msg.media?.kind === "image") {
       return startProductFromImage(msg, draft, caps, setState);
     }
@@ -1259,6 +1272,9 @@ async function handleMessageBody(
         msg.from,
         msg.text ?? action.productHint,
       );
+    }
+    if (action.intent === "generate_icon" && store) {
+      return startStoreIconFlow(store, draft, setState, caps, msg.from, msg.text);
     }
     if (action.intent === "mark_out_of_stock" && store) {
       const spoken = await trySpokenStockConfirm(
@@ -1591,6 +1607,55 @@ async function handleMessageBody(
     ]);
   }
 
+  if (state === "ICON_PREVIEW" && store) {
+    const text = msg.text?.trim() ?? "";
+    if (
+      choice === CHOICE.ICON_DONE ||
+      choice === CHOICE.YES ||
+      isAffirmative(text)
+    ) {
+      await setState("IDLE", draft);
+      return [
+        {
+          kind: "text",
+          text: store.slug
+            ? `Listo. Ese icono queda para tu app: ${storeUrl(store.slug)} (también al agregar la tienda al inicio del celular).`
+            : "Listo. Ese icono queda guardado para tu tienda.",
+        },
+        menuMessage(caps, msg.from),
+      ];
+    }
+    if (
+      choice === CHOICE.ICON_REGEN ||
+      choice === CHOICE.CHANGE ||
+      /regener|otro|cambiar|nueva?/.test(normalizeLoose(text))
+    ) {
+      return startStoreIconFlow(store, draft, setState, caps, msg.from, msg.text);
+    }
+    replies.push({
+      kind: "text",
+      text: "Tocá Listo si te gusta, o Generar otro para probar de nuevo (o escribí cancelar).",
+    });
+    if (store.icon512Url) {
+      replies.push({
+        kind: "image",
+        url: store.icon512Url,
+        caption: "Tu icono actual",
+      });
+    }
+    replies.push(
+      withOptions(
+        "¿Qué hacemos?",
+        [
+          { id: CHOICE.ICON_REGEN, label: "Generar otro" },
+          { id: CHOICE.ICON_DONE, label: "Listo" },
+        ],
+        caps,
+      ),
+    );
+    return replies;
+  }
+
   if (state === "PHOTO_INPUT" && store) {
     const product = draft.stockProductId
       ? await getProduct(draft.stockProductId)
@@ -1896,6 +1961,78 @@ async function continuePriceEdit(
       kind: "text",
       text: `¿A cómo querés dejar "${product.title}"? Hoy sale ${formatPriceArs(product.priceCents)}. Decime el precio nuevo (texto o audio).`,
     },
+  ];
+}
+
+/**
+ * Generar / cambiar icono PWA: Gemini SVG → PNG (o monograma) → Blob → preview.
+ * Misma pipeline para WhatsApp y /asistente.
+ */
+async function startStoreIconFlow(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  from: string,
+  chatHint?: string,
+): Promise<OutboundMessage[]> {
+  if (!store.slug || store.status !== "active") {
+    await setState("IDLE", draft);
+    return [
+      {
+        kind: "text",
+        text: "Primero terminá de armar la tienda; después generamos el icono de la app.",
+      },
+      menuMessage(caps, from),
+    ];
+  }
+
+  const products = await listProductsByStore(store.id, { includeHidden: true });
+  let icons;
+  try {
+    icons = await buildAndUploadStoreIcons({
+      store,
+      products,
+      chatHint,
+    });
+  } catch (err) {
+    console.warn("[bot] store icon pipeline failed", err);
+    await setState("IDLE", draft);
+    return [
+      {
+        kind: "text",
+        text: "No pude armar el icono ahora. Probá de nuevo en un rato o pedime el menú.",
+      },
+      menuMessage(caps, from),
+    ];
+  }
+
+  const updated = await updateStoreIcons(store.id, icons);
+  if (updated) {
+    store = updated;
+  }
+  revalidateStore(store.slug);
+  await setState("ICON_PREVIEW", clearStockDraft(draft));
+
+  const how =
+    icons.source === "ai"
+      ? "Lo dibujé a partir del nombre de tu tienda."
+      : "Usé tus iniciales (si querés, pedí Generar otro cuando haya AI disponible).";
+
+  return [
+    {
+      kind: "image",
+      url: icons.icon512Url,
+      caption: `Así se ve el icono de tu tienda.\n${how}`,
+    },
+    withOptions(
+      "¿Lo dejamos así?",
+      [
+        { id: CHOICE.ICON_REGEN, label: "Generar otro" },
+        { id: CHOICE.ICON_DONE, label: "Listo" },
+      ],
+      caps,
+    ),
   ];
 }
 

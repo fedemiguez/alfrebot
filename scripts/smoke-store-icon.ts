@@ -1,0 +1,135 @@
+/**
+ * Smoke: icono PWA — menú / NLU → monograma SVG→PNG → preview imagen → Listo.
+ * Sin secretos ni llamadas a LLM (forceMonogram vía ausencia de keys + pipeline local).
+ */
+import { handleMessage } from "../lib/bot/engine";
+import type { OutboundMessage } from "../lib/channels/types";
+import { getMemoryDb } from "../lib/db/memory";
+import { getStoreForChannelIdentity } from "../lib/db/repos";
+import { monogramSvg, storeInitials, svgToPng } from "../lib/store-icon";
+
+const caps = { buttons: true, maxButtons: 3, maxListRows: 10 };
+const from = "+01155558888";
+
+function reset() {
+  const mem = getMemoryDb();
+  mem.stores.clear();
+  mem.products.clear();
+  mem.conversations.clear();
+  mem.signupIntents.clear();
+  mem.channelLinkIntents?.clear();
+  mem.processedMessages.clear();
+}
+
+let n = 0;
+async function say(text?: string, choiceId?: string) {
+  n += 1;
+  const replies = await handleMessage(
+    {
+      channel: "simulator",
+      from,
+      messageId: `smoke_icon_${n}_${Date.now()}`,
+      text,
+      choiceId,
+    },
+    caps,
+  );
+  const flat = replies
+    .map((r) =>
+      r.kind === "text"
+        ? r.text
+        : `[image] ${(r.caption || "").slice(0, 80)} url=${r.url.slice(0, 48)}…`,
+    )
+    .join(" | ");
+  console.log(`> ${choiceId || text || ""}`);
+  console.log(`< ${flat.slice(0, 360)}`);
+  return replies;
+}
+
+function assert(cond: unknown, msg: string): asserts cond {
+  if (!cond) throw new Error(msg);
+}
+
+function hasImage(replies: OutboundMessage[]): boolean {
+  return replies.some((r) => r.kind === "image" && Boolean(r.url));
+}
+
+function menuHasIcon(replies: OutboundMessage[]): boolean {
+  return replies.some(
+    (r) =>
+      r.kind === "text" &&
+      r.options?.some((o) => o.id === "menu_icon" && o.label === "Icono de la app"),
+  );
+}
+
+async function onboard() {
+  await say("Empezar");
+  await say("Norma");
+  await say("Sí", "yes");
+  await say("Cerámicas Smoke Icon");
+  await say("Sí", "yes");
+  await say("Sí", "yes");
+  await say("11 5555-8888");
+  await say(undefined, "stock_pause_mode");
+  await say(undefined, "checkout_whatsapp");
+}
+
+async function main() {
+  // Unit: monograma + raster
+  const initials = storeInitials("Cerámicas de Norma");
+  assert(initials === "CN", `initials expected CN got ${initials}`);
+  const svg = monogramSvg("Cerámicas de Norma");
+  assert(/<svg[\s>]/i.test(svg), "monogram svg");
+  const png = await svgToPng(svg, 192);
+  assert(png.length > 100, "png bytes");
+  assert(png[0] === 0x89 && png[1] === 0x50, "png magic");
+  console.log("OK: monogram → png 192");
+
+  reset();
+  await onboard();
+
+  const menu = await say("menú");
+  assert(menuHasIcon(menu), "menu includes Icono de la app");
+
+  const gen = await say(undefined, "menu_icon");
+  assert(hasImage(gen), "preview image after menu_icon");
+  assert(
+    gen.some(
+      (r) =>
+        r.kind === "text" &&
+        r.options?.some((o) => o.id === "icon_regen" || o.id === "icon_done"),
+    ),
+    "regen/done options",
+  );
+
+  let store = await getStoreForChannelIdentity(from);
+  assert(store?.icon192Url, "icon192Url saved");
+  assert(store?.icon512Url, "icon512Url saved");
+  assert(store?.iconAppleUrl, "iconAppleUrl saved");
+  assert(store?.iconSvgUrl, "iconSvgUrl saved");
+  console.log("OK: icons persisted after menu flow");
+
+  const nlu = await say("cambiar icono");
+  // Puede regenerar (nueva imagen) estando en ICON_PREVIEW o desde IDLE
+  assert(
+    hasImage(nlu) ||
+      nlu.some((r) => r.kind === "text" && /icono|Listo|Generar/i.test(r.text)),
+    "NLU generate_icon responds",
+  );
+
+  // Cerrar preview si quedó abierto
+  await say(undefined, "icon_done");
+
+  const again = await say("generar icono");
+  assert(hasImage(again), "NLU generar icono shows png");
+  store = await getStoreForChannelIdentity(from);
+  assert(store?.icon512Url, "icon still present");
+
+  await say(undefined, "icon_done");
+  console.log("OK: smoke-store-icon");
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
