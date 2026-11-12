@@ -26,6 +26,20 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://alfrebot.com.ar",
   ),
+  icons: {
+    icon: [
+      { url: "/icons/alfrebot-robot.svg", type: "image/svg+xml" },
+      { url: "/icons/alfrebot-robot-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    shortcut: "/icons/alfrebot-robot.svg",
+    apple: [
+      {
+        url: "/icons/alfrebot-robot-180.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
