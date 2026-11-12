@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/product-card";
@@ -8,6 +9,7 @@ import {
   StorePurchaseProvider,
 } from "@/components/store-purchase";
 import { StoreContactLine } from "@/components/store-contact";
+import { StoreInstallCta } from "@/components/store-install-cta";
 import { StoreVoiceAssistant } from "@/components/store-voice-assistant";
 import { hasTranscriptionConfigured } from "@/lib/bot/transcribe";
 import { resolveStoreContactPhone } from "@/lib/phone";
@@ -62,18 +64,33 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
   const purchase = storePurchaseProps(store);
   if (!purchase) notFound();
 
+  const iconSrc = store.icon192Url || `/${slug}/icon/192`;
+
   return (
     <StorePurchaseProvider store={purchase}>
       <div className="fade-in mx-auto w-full max-w-5xl px-5 py-10">
-        <header>
-          <h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight text-[var(--ink)] sm:text-5xl">
-            {store.name}
-          </h1>
-          {store.ownerName && (
-            <p className="mt-3 text-[1.1rem] text-[var(--muted)]">
-              Productos de {store.ownerName}
-            </p>
-          )}
+        <header className="flex items-start gap-4">
+          <Image
+            src={iconSrc}
+            alt=""
+            width={72}
+            height={72}
+            className="mt-1 size-[4.5rem] shrink-0 rounded-xl border border-[var(--border)] bg-[var(--card)] object-cover"
+            priority
+            unoptimized={
+              iconSrc.startsWith("/") || iconSrc.startsWith("data:")
+            }
+          />
+          <div className="min-w-0">
+            <h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight text-[var(--ink)] sm:text-5xl">
+              {store.name}
+            </h1>
+            {store.ownerName && (
+              <p className="mt-3 text-[1.1rem] text-[var(--muted)]">
+                Productos de {store.ownerName}
+              </p>
+            )}
+          </div>
         </header>
 
         {store.isDemo && (
@@ -83,6 +100,8 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
         )}
 
         <HowToOrderNote checkoutMode={purchase.checkoutMode} />
+
+        <StoreInstallCta storeName={store.name} />
 
         <NoPublicPhoneNote
           showPhone={store.showPhone}

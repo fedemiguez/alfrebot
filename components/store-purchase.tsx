@@ -416,26 +416,52 @@ export function HowToOrderNote({
   /** Variante más corta (ficha de producto / panel). */
   compact?: boolean;
 }) {
-  const text =
-    checkoutMode === "cart"
-      ? compact
+  if (compact) {
+    const text =
+      checkoutMode === "cart"
         ? "Agregá lo que quieras. Después abrí Pedido y mandalo por WhatsApp."
-        : "Para pedir: tocá Agregar al pedido en cada producto. Cuando termines, abrí Pedido (abajo a la derecha) y mandalo por WhatsApp. No se cobra acá."
-      : compact
-        ? "Tocá Lo quiero para pedirlo por WhatsApp."
-        : "Para pedir: tocá Lo quiero en el producto que te gusta. Se abre WhatsApp para escribirle al dueño. No se cobra acá.";
+        : "Tocá Lo quiero para pedirlo por WhatsApp.";
+    return (
+      <p
+        className="mt-4 text-[1.1rem] leading-relaxed text-[var(--ink)]"
+        role="note"
+      >
+        {text}
+      </p>
+    );
+  }
+
+  const steps =
+    checkoutMode === "cart"
+      ? [
+          "Buscá el producto",
+          "Tocá Agregar al pedido",
+          "Abrí Pedido y mandalo por WhatsApp",
+        ]
+      : [
+          "Buscá el producto",
+          "Tocá Lo quiero",
+          "Escribile por WhatsApp",
+        ];
 
   return (
-    <p
-      className={
-        compact
-          ? "mt-4 text-[1.1rem] leading-relaxed text-[var(--ink)]"
-          : "mt-5 rounded border border-[var(--border)] bg-[var(--paper)] px-4 py-4 text-[1.15rem] leading-relaxed text-[var(--ink)]"
-      }
+    <div
+      className="mt-5 rounded border border-[var(--border)] bg-[var(--paper)] px-4 py-4"
       role="note"
+      aria-labelledby="how-to-order-title"
     >
-      {text}
-    </p>
+      <p
+        id="how-to-order-title"
+        className="font-[family-name:var(--font-display)] text-[1.2rem] font-semibold text-[var(--ink)]"
+      >
+        Cómo pedir
+      </p>
+      <ol className="mt-3 list-decimal space-y-2 pl-6 text-[1.15rem] leading-relaxed text-[var(--ink)]">
+        {steps.map((step) => (
+          <li key={step}>{step}</li>
+        ))}
+      </ol>
+    </div>
   );
 }
 

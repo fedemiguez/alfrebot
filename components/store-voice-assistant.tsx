@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatPriceArs } from "@/lib/format";
 import type { StorePurchaseInfo } from "@/lib/store-purchase";
@@ -332,8 +331,7 @@ export function StoreVoiceAssistant({
         Buscar hablando
       </h2>
       <p className="mt-2 text-[1.15rem] leading-relaxed text-[var(--ink)]">
-        Tocá Hablar y decí qué buscás. Si encontrás algo, tocá Lo quiero para
-        pedirlo por WhatsApp.
+        Tocá Hablar y decí qué buscás.
       </p>
 
       <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -358,14 +356,14 @@ export function StoreVoiceAssistant({
         )}
       </div>
 
-      <p
-        className="mt-5 min-h-[3.5rem] font-[family-name:var(--font-display)] text-[1.55rem] font-semibold leading-snug text-[var(--ink)] sm:text-[1.75rem]"
-        aria-live="polite"
-      >
-        {displayText
-          ? `“${displayText}”`
-          : spokenLine || "Acá va a aparecer lo que digas."}
-      </p>
+      {(displayText || spokenLine) && (
+        <p
+          className="mt-5 font-[family-name:var(--font-display)] text-[1.55rem] font-semibold leading-snug text-[var(--ink)] sm:text-[1.75rem]"
+          aria-live="polite"
+        >
+          {displayText ? `“${displayText}”` : spokenLine}
+        </p>
+      )}
 
       {spokenLine && displayText && (
         <p className="mt-2 text-[1.15rem] leading-relaxed text-[var(--muted)]" aria-live="polite">
@@ -436,15 +434,6 @@ export function StoreVoiceAssistant({
           ))}
         </ul>
       )}
-
-      <p className="mt-5 text-[0.95rem] leading-relaxed text-[var(--muted)]">
-        Privacidad: lo que digas se escucha en este celular. Solo se manda un
-        audio a internet si el celular no puede entenderlo. No guardamos tu voz.{" "}
-        <Link href="/privacidad" className="underline underline-offset-2">
-          Más en Privacidad
-        </Link>
-        .
-      </p>
     </section>
   );
 }
