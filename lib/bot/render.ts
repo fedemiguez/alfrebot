@@ -106,6 +106,7 @@ export const CHOICE = {
   STOCK_PAUSE: "stock_pause",
   STOCK_RESUME: "stock_resume",
   STOCK_SET_QTY: "stock_set_qty",
+  STOCK_SET_PRICE: "stock_set_price",
   STOCK_HIDE: "stock_hide",
   STOCK_SHOW: "stock_show",
   STOCK_QTY_MODE: "stock_qty_mode",

@@ -41,12 +41,21 @@ export type ConversationDraft = {
   editProductId?: string;
   /** Ids de opciones del último listado (para responder con número). */
   pendingChoices?: string[];
-  /** Producto seleccionado en flujo de stock. */
+  /** Producto seleccionado en flujo de stock / precio. */
   stockProductId?: string;
-  /** Acción pendiente de stock a confirmar. */
-  stockAction?: "pause" | "resume" | "set_qty" | "hide" | "show" | "set_mode";
+  /** Acción pendiente de stock/precio a confirmar. */
+  stockAction?:
+    | "pause"
+    | "resume"
+    | "set_qty"
+    | "hide"
+    | "show"
+    | "set_mode"
+    | "set_price";
   /** Cantidad pendiente de confirmar. */
   stockQtyPending?: number;
+  /** Precio pendiente de confirmar (centavos). */
+  stockPricePending?: number;
   /** Modo de stock pendiente (true = cantidades). */
   stockModePending?: boolean;
   [key: string]: unknown;
