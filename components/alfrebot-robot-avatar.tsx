@@ -1,4 +1,4 @@
-/** Icono robot simple de Alfre (sin marcas Meta). */
+/** Icono robot simple de alfrebot (sin marcas Meta). */
 export function AlfrebotRobotAvatar({
   size = 40,
   className = "",
@@ -13,7 +13,8 @@ export function AlfrebotRobotAvatar({
       alt=""
       width={size}
       height={size}
-      className={`rounded-full ${className}`}
+      className={`block shrink-0 self-start rounded-full object-cover ${className}`}
+      style={{ width: size, height: size, maxWidth: size, maxHeight: size }}
       aria-hidden
     />
   );

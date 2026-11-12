@@ -23,7 +23,7 @@ const V2_INTRO_ITEM: ChatItem = {
   messages: [
     {
       kind: "text",
-      text: "¡Hola! Soy Alfre, tu ayudante para armar la tienda. ¿Cómo preferís seguir?",
+      text: "¡Hola! Soy alfrebot, tu ayudante para armar la tienda. ¿Cómo preferís seguir?",
       options: [
         { id: V2_CHANNEL_WEB, label: "Seguir en este chat" },
         { id: V2_CHANNEL_WA, label: "Ir a WhatsApp" },
@@ -551,7 +551,7 @@ export function SimulatorChat({
           )}
           <div className="min-w-0 flex-1">
             <p className="font-[family-name:var(--font-display)] text-lg font-semibold leading-tight">
-              Alfre
+              alfrebot
             </p>
             <p className="truncate text-[15px] text-white/90">
               {isV2 ? "en línea · chat web" : `Chat web · ${displayIdentity}`}
@@ -639,14 +639,16 @@ export function SimulatorChat({
             ) : (
               <div key={item.id} className="space-y-2">
                 {item.messages.map((m, idx) => (
-                  <div key={`${item.id}_${idx}`} className="flex justify-start gap-2">
+                  <div
+                    key={`${item.id}_${idx}`}
+                    className="flex items-start justify-start gap-2"
+                  >
                     {isV2 && idx === 0 && (
-                      <AlfrebotRobotAvatar
-                        size={28}
-                        className="mt-1 shrink-0 shadow-sm"
-                      />
+                      <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 grow-0 basis-7 self-start overflow-hidden rounded-full shadow-sm">
+                        <AlfrebotRobotAvatar size={28} />
+                      </span>
                     )}
-                    <div className="fade-in max-w-[90%] rounded-lg rounded-tl-sm bg-white px-3 py-2 text-[17px] text-[var(--ink)] shadow-sm">
+                    <div className="fade-in min-w-0 max-w-[90%] flex-1 rounded-lg rounded-tl-sm bg-white px-3 py-2 text-[17px] text-[var(--ink)] shadow-sm">
                       {m.kind === "image" && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -707,8 +709,12 @@ export function SimulatorChat({
             </div>
           )}
           {(sending || pending) && !sendingAudio && !uploading && (
-            <div className="flex justify-start gap-2">
-              {isV2 && <AlfrebotRobotAvatar size={28} className="mt-1 shrink-0" />}
+            <div className="flex items-start justify-start gap-2">
+              {isV2 && (
+                <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 grow-0 basis-7 self-start overflow-hidden rounded-full">
+                  <AlfrebotRobotAvatar size={28} />
+                </span>
+              )}
               <div className="rounded-lg bg-white/90 px-3 py-2 text-[16px] text-[var(--muted)] shadow-sm">
                 <span className="inline-flex gap-1">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-[#075E54]/50" />

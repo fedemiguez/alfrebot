@@ -49,7 +49,7 @@ export default function AsistentePage() {
       <Suspense
         fallback={
           <div className="flex h-dvh items-center justify-center bg-[#ECE5DD] text-[var(--muted)]">
-            Cargando Alfre…
+            Cargando alfrebot…
           </div>
         }
       >
