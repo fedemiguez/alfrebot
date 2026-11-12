@@ -101,6 +101,10 @@ export const CHOICE = {
   /** En WhatsApp: ya armé la tienda en la web. */
   LINK_EXISTING: "link_existing",
   MENU_HELP: "menu_help",
+  /** Grupos del menú principal (progressive disclosure). */
+  MENU_GROUP_PRODUCTS: "menu_group_products",
+  MENU_GROUP_STORE: "menu_group_store",
+  MENU_GROUP_WA: "menu_group_wa",
   /** Volver al menú principal (no confundir con Ayuda). */
   MENU_BACK: "menu_back",
   /** Armar icono PWA con el bot (AI o composición por productos/pedido). */

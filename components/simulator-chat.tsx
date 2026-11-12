@@ -476,8 +476,8 @@ export function SimulatorChat({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-      <section className="flex min-h-[70vh] flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[#ECE5DD] shadow-sm">
-        <div className="flex items-center gap-3 bg-[#075E54] px-4 py-3 text-white">
+      <section className="flex h-[min(70vh,calc(100dvh-10rem))] min-h-[28rem] flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[#ECE5DD] shadow-sm">
+        <div className="flex shrink-0 items-center gap-3 bg-[#075E54] px-4 py-3 text-white">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 font-[family-name:var(--font-display)] font-semibold">
             A
           </div>
@@ -490,7 +490,7 @@ export function SimulatorChat({
         </div>
 
         {continueWaLink && (
-          <div className="border-b border-black/5 bg-[#FFF8E7] px-4 py-3 text-[17px] leading-relaxed text-[var(--ink)]">
+          <div className="shrink-0 border-b border-black/5 bg-[#FFF8E7] px-4 py-3 text-[17px] leading-relaxed text-[var(--ink)]">
             {identityMode === "clerk" ? (
               <>
                 Los pedidos de clientes van por WhatsApp. Cuando el bot te pida
@@ -522,7 +522,7 @@ export function SimulatorChat({
           </div>
         )}
 
-        <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-4">
           {items.length === 0 && (
             <div className="mx-auto max-w-sm rounded-lg bg-white/90 p-4 text-center text-[17px] leading-relaxed text-[var(--ink)]">
               <p>Este chat usa el mismo ayudante que WhatsApp.</p>
@@ -626,7 +626,7 @@ export function SimulatorChat({
 
         <form
           onSubmit={onSendText}
-          className="flex min-w-0 items-end gap-1.5 border-t border-black/5 bg-[#F0F0F0] p-3 sm:gap-2"
+          className="flex shrink-0 min-w-0 items-end gap-1.5 border-t border-black/5 bg-[#F0F0F0] p-3 sm:gap-2"
         >
           {/*
             Inputs fuera de display:none: en varios Android/iOS el capture
@@ -721,16 +721,6 @@ export function SimulatorChat({
             Enviar
           </button>
         </form>
-        <div className="flex flex-wrap items-center gap-2 border-t border-black/5 bg-[#F0F0F0] px-3 pb-3 lg:hidden">
-          <button
-            type="button"
-            className="min-h-11 rounded border border-[var(--border)] bg-white px-3 text-[15px] font-semibold text-[var(--ink)]"
-            disabled={busy || !phone}
-            onClick={() => setIconPickOpen(true)}
-          >
-            Subir icono de la tienda
-          </button>
-        </div>
 
         {pickSourceOpen && (
           <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
@@ -754,7 +744,7 @@ export function SimulatorChat({
               </h2>
               <p className="mt-1 text-[16px] text-[var(--muted)]">
                 Para cargar o cambiar la foto de un producto. El icono de la
-                tienda va aparte (botón Subir icono).
+                tienda va por el menú → Tienda → Icono de la tienda.
               </p>
               <div className="mt-5 flex flex-col gap-3">
                 <button

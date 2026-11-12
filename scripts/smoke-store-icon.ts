@@ -78,6 +78,14 @@ function hasImage(replies: OutboundMessage[]): boolean {
   return replies.some((r) => r.kind === "image" && Boolean(r.url));
 }
 
+function menuHasStoreGroup(replies: OutboundMessage[]): boolean {
+  return replies.some(
+    (r) =>
+      r.kind === "text" &&
+      r.options?.some((o) => o.id === "menu_group_store" && o.label === "Tienda"),
+  );
+}
+
 function menuHasIcon(replies: OutboundMessage[]): boolean {
   return replies.some(
     (r) =>
@@ -203,7 +211,9 @@ async function main() {
   await onboard();
 
   const menu = await say("menú");
-  assert(menuHasIcon(menu), "menu includes Icono de la tienda");
+  assert(menuHasStoreGroup(menu), "menu includes grupo Tienda");
+  const storeGroup = await say(undefined, "menu_group_store");
+  assert(menuHasIcon(storeGroup), "Tienda includes Icono de la tienda");
 
   const hub = await say(undefined, "menu_icon");
   assert(hasOption(hub, "icon_generate"), "hub has Que lo arme el bot");

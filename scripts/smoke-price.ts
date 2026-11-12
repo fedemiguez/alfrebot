@@ -53,7 +53,12 @@ function hasMainMenu(replies: Awaited<ReturnType<typeof say>>): boolean {
   return replies.some(
     (r) =>
       r.kind === "text" &&
-      r.options?.some((o) => o.id === "menu_add" || o.id === "menu_store"),
+      r.options?.some(
+        (o) =>
+          o.id === "menu_group_products" ||
+          o.id === "menu_add" ||
+          o.id === "menu_store",
+      ),
   );
 }
 
