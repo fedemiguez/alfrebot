@@ -34,7 +34,8 @@ Clerk se provisiona desde Vercel Marketplace (`CLERK_*` en preview/production). 
 ## Scripts
 
 - `npm run build` — build de producción
-- `npm run db:generate` / `npm run db:push` — esquema Drizzle → Neon (requiere `DATABASE_URL`)
+- `npm run db:generate` / `npm run db:push` — esquema Drizzle → Neon (requiere `DATABASE_URL`; hace falta tras agregar columnas de iconos PWA)
+- Smokes: `npx tsx scripts/smoke-store-icon.ts` (y los demás `scripts/smoke-*.ts`)
 
 ## Pedidos en el catálogo
 
@@ -49,14 +50,17 @@ Clerk se provisiona desde Vercel Marketplace (`CLERK_*` en preview/production). 
 - `stores.checkout_mode` (`whatsapp` | `cart`, default `whatsapp`)
 - `stores.contact_phone` — WhatsApp público para catálogo / Lo quiero
 - `channel_link_intents` — códigos de un solo uso para vincular Clerk ↔ WhatsApp
+- `stores.icon_192_url` / `icon_512_url` / `icon_apple_url` / `icon_svg_url` — iconos PWA (PNG/SVG en Blob)
 
-Con `DATABASE_URL`:
+Con `DATABASE_URL` (después de pull/merge de columnas nuevas):
 
 ```bash
 npm run db:push
 ```
 
 Sin Neon, el fallback en memoria ya incluye los campos.
+
+**Icono de la app (PWA):** en el menú del bot → **Icono de la app** (o «generar icono» / «cambiar icono»). Gemini Flash arma un SVG; se rasteriza a PNG 192/512/180 y se guarda en Blob. Si no hay AI, usa monograma con iniciales. El manifest `/{slug}/manifest.webmanifest` y el catálogo usan esas URLs.
 
 ## Meta WhatsApp
 

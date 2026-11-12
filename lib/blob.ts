@@ -29,6 +29,32 @@ export async function uploadProductImage(
   return { url: blob.url, pathname: blob.pathname };
 }
 
+/**
+ * Sube un asset de icono PWA (PNG/SVG). Sin Blob token, data URL (smoke/local).
+ */
+export async function uploadStoreIcon(
+  bytes: Buffer,
+  filename: string,
+  contentType: string,
+): Promise<UploadedImage> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (!token) {
+    const b64 = bytes.toString("base64");
+    return {
+      url: `data:${contentType};base64,${b64}`,
+      pathname: `mock/icons/${filename}`,
+    };
+  }
+
+  const blob = await put(`store-icons/${Date.now()}-${filename}`, bytes, {
+    access: "public",
+    contentType,
+    token,
+  });
+
+  return { url: blob.url, pathname: blob.pathname };
+}
+
 export async function uploadDataUrl(dataUrl: string, filename: string): Promise<UploadedImage> {
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!match) {

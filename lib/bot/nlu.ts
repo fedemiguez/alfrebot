@@ -8,6 +8,7 @@ const freeTextActionSchema = z.object({
     "manage_stock",
     "create_product",
     "change_photo",
+    "generate_icon",
     "help",
     "menu",
     "unknown",
@@ -288,6 +289,16 @@ export async function interpretFreeText(
   }
   if (/cambia(r|le)? (la )?foto/.test(lowered)) {
     return { intent: "change_photo", productHint: text };
+  }
+  if (
+    /\b(icono|ícono|favicon|logo de (la )?app|icono de (la )?(app|tienda|pwa))\b/.test(
+      lowered,
+    ) ||
+    /gener(ar|á|a)? (el )?icono|cambi(ar|á|a)? (el )?icono|nuevo icono|icono (de )?pwa/.test(
+      lowered,
+    )
+  ) {
+    return { intent: "generate_icon" };
   }
 
   // LLM opcional: Gateway o Google directo

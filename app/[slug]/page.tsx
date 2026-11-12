@@ -23,14 +23,32 @@ export async function generateMetadata({
   const { store, products } = await getCachedStore(slug);
   if (!store) return { title: "Tienda" };
   const firstImage = products.find((p) => p.imageUrl)?.imageUrl;
+  const icon192 = store.icon192Url || `/${slug}/icon/192`;
+  const icon512 = store.icon512Url || `/${slug}/icon/512`;
+  const apple = store.iconAppleUrl || `/${slug}/icon/180`;
   return {
     title: store.name || "Tienda",
     description: store.ownerName
       ? `Catálogo de ${store.ownerName}`
       : "Catálogo armado con alfrebot",
+    manifest: `/${slug}/manifest.webmanifest`,
+    appleWebApp: {
+      capable: true,
+      title: store.name || "Tienda",
+      statusBarStyle: "default",
+    },
+    icons: {
+      icon: [
+        { url: icon192, sizes: "192x192", type: "image/png" },
+        { url: icon512, sizes: "512x512", type: "image/png" },
+      ],
+      apple: [{ url: apple, sizes: "180x180", type: "image/png" }],
+    },
     openGraph: firstImage
       ? { images: [{ url: firstImage }] }
-      : undefined,
+      : store.icon512Url
+        ? { images: [{ url: store.icon512Url }] }
+        : undefined,
   };
 }
 
