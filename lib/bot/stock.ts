@@ -73,6 +73,7 @@ export function productActionOptions(
     options.push({ id: CHOICE.STOCK_SET_QTY, label: "Cambiar cantidad" });
   }
   options.push({ id: CHOICE.STOCK_SET_PRICE, label: "Cambiar precio" });
+  options.push({ id: CHOICE.STOCK_CHANGE_PHOTO, label: "Cambiar foto" });
   if (product.hidden) {
     options.push({ id: CHOICE.STOCK_SHOW, label: "Mostrar en tienda" });
   } else {
@@ -109,6 +110,8 @@ export function confirmStockMessage(
       text = `¿Volvemos a mostrar "${product.title}" en la tienda?`;
     } else if (action === "set_price") {
       text = `¿Dejamos "${product.title}" a ${formatPriceArs(draft.stockPricePending)}?`;
+    } else if (action === "change_photo") {
+      text = `¿Cambiamos la foto de "${product.title}"?`;
     }
   }
   return withOptions(
@@ -157,7 +160,7 @@ export function extractProductSearchHint(raw: string): string {
       " ",
     )
     .replace(
-      /\b(pausar|pausa|pause|reactivar|reactiva|marcar|marcalo|como|agotado|sin stock|stock|cantidad|unidades|listado|mostrame|ver|cambiar|cambiale|cambia|precio|sale|ahora|poner|ponele|pone|pon)\b/g,
+      /\b(pausar|pausa|pause|reactivar|reactiva|marcar|marcalo|como|agotado|sin stock|stock|cantidad|unidades|listado|mostrame|ver|cambiar|cambiale|cambia|precio|sale|ahora|poner|ponele|pone|pon|foto|fotos|imagen|imagenes|picture|nueva|nuevo)\b/g,
       " ",
     )
     .replace(/\b(la|el|los|las|de|del|un|una|unos|unas|al)\b/g, " ")

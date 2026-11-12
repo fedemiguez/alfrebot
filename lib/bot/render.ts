@@ -92,6 +92,8 @@ export const CHOICE = {
   MENU_ADD: "menu_add",
   MENU_STORE: "menu_store",
   MENU_STOCK: "menu_stock",
+  MENU_PRICE: "menu_price",
+  MENU_PHOTO: "menu_photo",
   MENU_CONTACT: "menu_contact",
   /** Generar código para gestionar la misma tienda desde WhatsApp. */
   MENU_LINK_WA: "menu_link_wa",
@@ -111,6 +113,7 @@ export const CHOICE = {
   STOCK_RESUME: "stock_resume",
   STOCK_SET_QTY: "stock_set_qty",
   STOCK_SET_PRICE: "stock_set_price",
+  STOCK_CHANGE_PHOTO: "stock_change_photo",
   STOCK_HIDE: "stock_hide",
   STOCK_SHOW: "stock_show",
   STOCK_QTY_MODE: "stock_qty_mode",
