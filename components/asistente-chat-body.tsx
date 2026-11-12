@@ -23,6 +23,7 @@ export async function AsistenteChatBody({
     user?.primaryEmailAddress?.emailAddress ??
     user?.emailAddresses?.[0]?.emailAddress ??
     undefined;
+  const ownerImageUrl = user?.imageUrl ?? null;
   const identity = clerkIdentityKey(userId);
   const botDigits = metaBotNumber();
   const continueWaLink = `https://wa.me/${botDigits}?text=${encodeURIComponent(
@@ -33,6 +34,7 @@ export async function AsistenteChatBody({
     <SimulatorChat
       initialPhone={identity}
       ownerEmail={email}
+      ownerImageUrl={ownerImageUrl}
       continueWaLink={continueWaLink}
       identityMode="clerk"
       variant={variant}

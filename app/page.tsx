@@ -1,49 +1,54 @@
 import Link from "next/link";
-import { SiteHeader } from "@/components/site-header";
 
 export default function Home() {
   return (
-    <>
-      <SiteHeader />
-      <main className="fade-in mx-auto flex w-full max-w-5xl flex-1 flex-col px-5 pb-20 pt-14">
-        <p className="font-[family-name:var(--font-display)] text-5xl font-semibold tracking-tight text-[var(--primary)] sm:text-6xl md:text-7xl">
+    <main className="relative flex min-h-dvh flex-1 flex-col overflow-hidden bg-[#ECE5DD]">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse at 20% 0%, rgba(37, 211, 102, 0.22), transparent 50%), radial-gradient(ellipse at 90% 80%, rgba(7, 94, 84, 0.18), transparent 45%)",
+        }}
+      />
+
+      <div className="relative z-10 mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+        <p className="fade-in font-[family-name:var(--font-display)] text-5xl font-semibold tracking-tight text-[#075E54] sm:text-6xl">
           alfrebot
         </p>
-        <h1 className="mt-5 max-w-2xl text-[1.65rem] font-normal leading-snug text-[var(--ink)] sm:text-3xl">
-          Armá tu tienda charlando: por WhatsApp o en la web.
-        </h1>
-        <p className="mt-4 max-w-xl text-[1.2rem] leading-relaxed text-[var(--muted)]">
-          Dos caminos: WhatsApp con tu celular, o la web con Google o email. El
-          catálogo queda online y los pedidos siguen por WhatsApp.
-        </p>
 
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <Link href="/registro" className="btn btn-primary">
-            Armá por WhatsApp
-          </Link>
-          <Link href="/sign-up" className="btn btn-secondary">
-            Armá en la web
-          </Link>
+        {/* Gancho para futura animación del robot (no bloquea el lanzamiento). */}
+        <div
+          data-alfrebot-robot-slot
+          className="mt-8 flex h-28 w-28 items-center justify-center sm:h-32 sm:w-32"
+          aria-hidden
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/alfrebot-robot.svg"
+            alt=""
+            width={112}
+            height={112}
+            className="h-24 w-24 rounded-2xl shadow-sm sm:h-28 sm:w-28"
+          />
         </div>
 
-        <section className="mt-16 border-t border-[var(--border)] pt-10">
-          <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold text-[var(--ink)]">
-            Tienda de ejemplo
-          </h2>
-          <p className="mt-3 max-w-lg text-[1.1rem] leading-relaxed text-[var(--muted)]">
-            Cerámicas de Norma — así se ve una tienda armada con alfrebot.
-          </p>
-          <Link
-            href="/ceramicas-de-norma"
-            className="btn btn-secondary mt-5 inline-flex"
-          >
-            Ver Cerámicas de Norma
-          </Link>
-        </section>
-      </main>
-      <footer className="border-t border-[var(--border)] px-5 py-6 text-center text-[15px] text-[var(--muted)]">
+        <h1 className="fade-in mt-8 max-w-md text-[1.35rem] font-normal leading-snug text-[#0f172a] sm:text-[1.5rem] [animation-delay:60ms]">
+          Tu asistente para crear tiendas virtuales de forma sencilla, en unos 5
+          minutos.
+        </h1>
+
+        <Link
+          href="/asistente"
+          className="fade-in mt-10 inline-flex min-h-12 min-w-[12rem] items-center justify-center rounded-full bg-[#25D366] px-8 text-[1.1rem] font-semibold text-white shadow-sm transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54] [animation-delay:120ms]"
+        >
+          Comenzar
+        </Link>
+      </div>
+
+      <footer className="relative z-10 px-5 py-5 text-center text-[14px] text-[#075E54]/70">
         alfrebot · alfrebot.com.ar
       </footer>
-    </>
+    </main>
   );
 }

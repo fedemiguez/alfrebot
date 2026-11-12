@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { AlfrebotRobotAvatar } from "@/components/alfrebot-robot-avatar";
+import { OwnerChatAvatar } from "@/components/owner-chat-avatar";
 import type { OutboundMessage } from "@/lib/channels/types";
 import { segmentUrls } from "@/lib/bot/render";
 
@@ -47,6 +48,7 @@ export function SimulatorChat({
   initialCode,
   continueWaLink,
   ownerEmail,
+  ownerImageUrl,
   identityMode = "phone",
   variant = "classic",
 }: {
@@ -54,6 +56,8 @@ export function SimulatorChat({
   initialCode?: string;
   continueWaLink?: string;
   ownerEmail?: string;
+  /** Foto Clerk del dueño; sin valor → silueta genérica en v2. */
+  ownerImageUrl?: string | null;
   identityMode?: "phone" | "clerk";
   /** classic = shell v1 con aside; v2 = chat WhatsApp-like a pantalla completa. */
   variant?: "classic" | "v2";
@@ -623,7 +627,30 @@ export function SimulatorChat({
           )}
           {items.map((item) =>
             item.role === "user" ? (
-              <div key={item.id} className="flex justify-end">
+              <div
+                key={item.id}
+                className={
+                  isV2
+                    ? "relative flex justify-end pr-9"
+                    : "flex justify-end"
+                }
+              >
+                {isV2 && (
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute right-0 top-0 overflow-hidden rounded-full shadow-sm"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      minWidth: 28,
+                      minHeight: 28,
+                      maxWidth: 28,
+                      maxHeight: 28,
+                    }}
+                  >
+                    <OwnerChatAvatar imageUrl={ownerImageUrl} size={28} />
+                  </div>
+                )}
                 <div className="fade-in max-w-[85%] rounded-lg rounded-tr-sm bg-[#DCF8C6] px-3 py-2 text-[17px] text-[var(--ink)] shadow-sm">
                   {item.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element

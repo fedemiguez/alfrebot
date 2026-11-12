@@ -22,10 +22,24 @@ export const metadata: Metadata = {
     template: "%s · alfrebot",
   },
   description:
-    "Armá tu tienda por WhatsApp o en la web con email. Alfrebot ayuda a personas como Norma a mostrar sus productos sin complicaciones.",
+    "alfrebot: tu asistente para crear tiendas virtuales de forma sencilla, en unos 5 minutos.",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://alfrebot.com.ar",
   ),
+  icons: {
+    icon: [
+      { url: "/icons/alfrebot-robot.svg", type: "image/svg+xml" },
+      { url: "/icons/alfrebot-robot-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    shortcut: "/icons/alfrebot-robot.svg",
+    apple: [
+      {
+        url: "/icons/alfrebot-robot-180.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
