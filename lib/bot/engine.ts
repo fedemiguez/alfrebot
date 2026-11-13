@@ -309,7 +309,7 @@ async function flushPendingSetupPlan(
         workingPlan.accentLabel || swatchByHex(hex)?.label || hex;
       replies.push({
         kind: "text",
-        text: `Listo: color de acento «${label}». Los botones y links de tu vitrina usan ese color.\n${store.slug ? storeUrl(store.slug) : ""}`.trim(),
+        text: `¡Listo! Ya puse el color **${label}** en los botones y detalles de tu página.\n${store.slug ? storeUrl(store.slug) : ""}\n\n¿Querés cambiar algo más?`.trim(),
       });
     }
     workingPlan = {
@@ -330,7 +330,7 @@ async function flushPendingSetupPlan(
         workingPlan.businessKindLabel || kindById(kind)?.label || kind;
       replies.push({
         kind: "text",
-        text: `Listo: rubro «${label}». Las fotos llevan el marco y el fondo de la vitrina una trama de iconos de ese rubro.\n${store.slug ? storeUrl(store.slug) : ""}`.trim(),
+        text: `¡Listo! Tu negocio quedó como **${label}**. Las fotos llevan el marco y el fondo unos dibujitos de ese tipo.\n${store.slug ? storeUrl(store.slug) : ""}\n\n¿Querés cambiar algo más?`.trim(),
       });
     }
     workingPlan = {
@@ -351,7 +351,7 @@ async function flushPendingSetupPlan(
         workingPlan.themeLabel || themeById(theme)?.label || theme;
       replies.push({
         kind: "text",
-        text: `Listo: estilo «${label}».\n${store.slug ? storeUrl(store.slug) : ""}`.trim(),
+        text: `¡Listo! Ya cambié el estilo de fondo a **${label}**.\n${store.slug ? storeUrl(store.slug) : ""}\n\n¿Querés cambiar algo más?`.trim(),
       });
     }
     workingPlan = {
@@ -370,8 +370,8 @@ async function flushPendingSetupPlan(
     replies.push({
       kind: "text",
       text: welcome
-        ? `Listo: frase «${welcome}».\n${store.slug ? storeUrl(store.slug) : ""}`.trim()
-        : `Listo: saqué la frase de bienvenida.\n${store.slug ? storeUrl(store.slug) : ""}`.trim(),
+        ? `¡Listo! Ya puse el saludo «${welcome}» en tu página.\n${store.slug ? storeUrl(store.slug) : ""}\n\n¿Querés cambiar algo más?`.trim()
+        : `¡Listo! Saqué el saludo de tu página.\n${store.slug ? storeUrl(store.slug) : ""}\n\n¿Querés cambiar algo más?`.trim(),
     });
     workingPlan = {
       ...workingPlan,
@@ -853,21 +853,21 @@ function askContactPhonePrompt(
 function linkFailureMessage(detail: string): string {
   switch (detail) {
     case "invalid_code":
-      return "Ese código no existe o ya se usó. Generá uno nuevo en el chat web (Manejar desde acá).";
+      return "Ese código no existe o ya se usó.\n\nGenerá uno nuevo en el chat web (Manejar desde acá). Si preferís, **Cancelar** te saca sin tocar tu tienda.";
     case "expired":
-      return "Ese código venció (valen 30 minutos). Generá uno nuevo en el chat web.";
+      return "Ese código venció (valen 30 minutos).\n\nGenerá uno nuevo en el chat web. **Cancelar** te saca sin borrar nada.";
     case "no_clerk_store":
-      return "No encontré una tienda armada con esa cuenta web. Terminá el alta en la web y después pedime el código otra vez.";
+      return "Todavía no veo una tienda armada con esa cuenta web.\n\nTerminá el alta en la web y después pedime el código otra vez. O **Cancelar** para volver.";
     case "conflict_both_have_products":
-      return "Ese WhatsApp y esa cuenta web tienen tiendas distintas con productos. Escribime a soporte o usá un solo camino por ahora.";
+      return "Ese WhatsApp y esa cuenta web tienen tiendas distintas con productos.\n\nUsá un solo camino por ahora, o escribime a soporte. **Cancelar** no borra nada.";
     case "wa_store_has_other_clerk":
-      return "Ese WhatsApp ya está unido a otra cuenta de email.";
+      return "Ese WhatsApp ya está unido a otra cuenta de email.\n\nSi necesitás ayuda, escribinos. **Cancelar** te saca sin cambios.";
     case "wa_not_valid":
-      return "Para unir la tienda tenés que escribirme desde un celular argentino (WhatsApp).";
+      return "Para unir la tienda tenés que escribirme desde un celular argentino (WhatsApp).\n\n**Cancelar** te saca sin borrar nada.";
     case "wa_identity_taken":
-      return "Ese número ya tiene otra tienda. Si es tuya, escribinos.";
+      return "Ese número ya tiene otra tienda. Si es tuya, escribinos.\n\n**Cancelar** te saca sin tocar nada.";
     default:
-      return "No pude unir la cuenta ahora. Probá de nuevo o cancelá y pedime el menú.";
+      return "No pude unir la cuenta ahora.\n\nProbá de nuevo, o **Cancelar** y pedime el menú — no se borra tu tienda.";
   }
 }
 
@@ -956,7 +956,10 @@ async function startGenerateLinkCode(
   });
   if ("error" in created) {
     return [
-      { kind: "text", text: "No pude generar el código. Probá de nuevo en un rato." },
+      {
+        kind: "text",
+        text: "No pude generar el código ahora.\n\nProbá de nuevo en un rato, o **Cancelar** para volver al menú.",
+      },
       menuMessage(caps, msg.from),
     ];
   }
@@ -1416,7 +1419,7 @@ async function handleMessageBody(
       }
       replies.push({
         kind: "text",
-        text: "No entendí bien el nombre. Escribí solo cómo te llamás, por ejemplo: Norma.",
+        text: "No te entendí bien el nombre.\n\nDecime solo cómo te llamás, por ejemplo: Norma. También podés mandarme un audio 🎤.",
       });
       return replies;
     }
@@ -1718,7 +1721,7 @@ async function handleMessageBody(
     if (!contactPhone) {
       replies.push({
         kind: "text",
-        text: "No entendí el número. Probá así: 11 1234-5678 o 351 123-4567.",
+        text: "No te entendí el número.\n\nProbá así: 11 1234-5678 o 351 123-4567. También podés mandarme un audio 🎤.",
       });
       return replies;
     }
@@ -2302,7 +2305,7 @@ async function handleMessageBody(
       return openStockHub(store, draft, setState, caps, [
         {
           kind: "text",
-          text: "No encontré ese producto. Elegí uno y confirmamos antes de guardar.",
+          text: "No encontré ese producto.\n\nDecime **Ver mis productos** o elegí uno de la lista. **Cancelar** te saca sin borrar nada.",
         },
       ]);
     }
@@ -2384,7 +2387,7 @@ async function handleMessageBody(
         [
           {
             kind: "text",
-            text: "No atrapé eso. Tocá Volver al menú para Ver mi tienda o WhatsApp pedidos.",
+            text: "No te entendí.\n\nTocá **Volver al menú** o decime **Cancelar** — no se borra nada. También podés mandarme un audio 🎤.",
           },
         ],
       );
@@ -2407,7 +2410,10 @@ async function handleMessageBody(
     }
     const product = await getProduct(productId);
     if (!product || product.storeId !== store.id) {
-      replies.push({ kind: "text", text: "No encontré ese producto." });
+      replies.push({
+        kind: "text",
+        text: "No encontré ese producto.\n\nDecime **Ver mis productos** o **Cancelar** para volver — no se borra nada.",
+      });
       return openStockHub(store, draft, setState, caps);
     }
     // Venimos de audio/texto "pausá X" / "cambiar precio de X" con varios matches
@@ -2453,7 +2459,10 @@ async function handleMessageBody(
       : null;
     if (!product || product.storeId !== store.id) {
       return openStockHub(store, clearStockDraft(draft), setState, caps, [
-        { kind: "text", text: "No encontré ese producto." },
+        {
+          kind: "text",
+          text: "No encontré ese producto.\n\nDecime **Ver mis productos** o **Cancelar** para volver — no se borra nada.",
+        },
       ]);
     }
     if (choice === CHOICE.CHANGE) {
@@ -2679,8 +2688,8 @@ async function handleMessageBody(
         {
           kind: "text",
           text: store.slug
-            ? `Listo. Ese icono queda para tu tienda: ${storeUrl(store.slug)} (también al agregar la tienda al inicio del celular).`
-            : "Listo. Ese icono queda guardado para tu tienda.",
+            ? `¡Listo! Ya quedó la foto o logo de tu negocio.\n${storeUrl(store.slug)}\n(También al agregar la tienda al inicio del celular.)\n\n¿Querés cambiar algo más?`
+            : "¡Listo! Ya quedó la foto o logo de tu negocio.\n\n¿Querés cambiar algo más?",
         },
         menuMessage(caps, msg.from),
       ];
@@ -2835,7 +2844,7 @@ async function handleMessageBody(
     return [
       {
         kind: "text",
-        text: "No reconocí ese color. Elegí uno de la lista o escribí el nombre (ej. verde).",
+        text: "No te entendí ese color.\n\nElegí uno de la lista, escribí el nombre (ej. verde) o mandame un audio 🎤.",
       },
       accentPickMessage(store, caps),
     ];
@@ -2864,8 +2873,8 @@ async function handleMessageBody(
         {
           kind: "text",
           text: updated?.slug
-            ? `Guardé el color «${label}». Mirá tu vitrina: ${storeUrl(updated.slug)}`
-            : `Guardé el color «${label}».`,
+            ? `¡Listo! Ya puse el color **${label}** en tu página.\n${storeUrl(updated.slug)}\n\n¿Querés cambiar algo más?`
+            : `¡Listo! Ya puse el color **${label}** en tu página.\n\n¿Querés cambiar algo más?`,
         },
         menuMessage(caps, msg.from),
       ];
@@ -2902,7 +2911,7 @@ async function handleMessageBody(
     return [
       {
         kind: "text",
-        text: "No reconocí ese rubro. Elegí Artesanal, Comida o Ropa (o escribí «cerámica», «comida», «ropa»).",
+        text: "No te entendí el tipo de negocio.\n\nElegí Artesanal, Comida o Ropa (o escribí «cerámica», «comida», «ropa»). También podés mandarme un audio 🎤.",
       },
       kindPickMessage(store, caps),
     ];
@@ -2931,8 +2940,8 @@ async function handleMessageBody(
         {
           kind: "text",
           text: updated?.slug
-            ? `Guardé el rubro «${label}». Mirá el marco en las fotos y la trama del fondo: ${storeUrl(updated.slug)}`
-            : `Guardé el rubro «${label}».`,
+            ? `¡Listo! Tu negocio quedó como **${label}**. Mirá el marco en las fotos: ${storeUrl(updated.slug)}\n\n¿Querés cambiar algo más?`
+            : `¡Listo! Tu negocio quedó como **${label}**.\n\n¿Querés cambiar algo más?`,
         },
         menuMessage(caps, msg.from),
       ];
@@ -2971,7 +2980,7 @@ async function handleMessageBody(
     return [
       {
         kind: "text",
-        text: "No reconocí ese estilo. Elegí Claro WA, Crema artesanal u Oscuro suave.",
+        text: "No te entendí ese estilo.\n\nElegí Claro WA, Crema artesanal u Oscuro suave. También podés mandarme un audio 🎤.",
       },
       themePickMessage(store, caps),
     ];
@@ -3000,8 +3009,8 @@ async function handleMessageBody(
         {
           kind: "text",
           text: updated?.slug
-            ? `Guardé el estilo «${label}». Mirá tu vitrina: ${storeUrl(updated.slug)}`
-            : `Guardé el estilo «${label}».`,
+            ? `¡Listo! Ya cambié el estilo a **${label}**.\n${storeUrl(updated.slug)}\n\n¿Querés cambiar algo más?`
+            : `¡Listo! Ya cambié el estilo a **${label}**.\n\n¿Querés cambiar algo más?`,
         },
         menuMessage(caps, msg.from),
       ];
@@ -3048,7 +3057,7 @@ async function handleMessageBody(
       return [
         {
           kind: "text",
-          text: "No entendí la frase. Probá algo corto, tipo «Envíos a todo el país».",
+          text: "No te entendí el saludo.\n\nProbá algo corto, tipo «Envíos a todo el país». También podés mandarme un audio 🎤.",
         },
         welcomeAskMessage(store, caps),
       ];
@@ -3079,11 +3088,11 @@ async function handleMessageBody(
           kind: "text",
           text: welcome
             ? updated?.slug
-              ? `Guardé la frase. Mirá tu vitrina: ${storeUrl(updated.slug)}`
-              : "Guardé la frase."
+              ? `¡Listo! Ya puse el saludo en tu página.\n${storeUrl(updated.slug)}\n\n¿Querés cambiar algo más?`
+              : "¡Listo! Ya puse el saludo en tu página.\n\n¿Querés cambiar algo más?"
             : updated?.slug
-              ? `Saqué la frase. Mirá tu vitrina: ${storeUrl(updated.slug)}`
-              : "Saqué la frase de bienvenida.",
+              ? `¡Listo! Saqué el saludo de tu página.\n${storeUrl(updated.slug)}\n\n¿Querés cambiar algo más?`
+              : "¡Listo! Saqué el saludo de tu página.\n\n¿Querés cambiar algo más?",
         },
         menuMessage(caps, msg.from),
       ];
@@ -3124,11 +3133,11 @@ async function handleMessageBody(
           kind: "text",
           text: openNow
             ? updated?.slug
-              ? `Listo: banner «Abierto ahora» activo. Mirá tu vitrina: ${storeUrl(updated.slug)}`
-              : "Listo: banner «Abierto ahora» activo."
+              ? `¡Listo! El cartelito ahora dice **Abierto**.\n${storeUrl(updated.slug)}\n\n¿Querés cambiar algo más?`
+              : "¡Listo! El cartelito ahora dice **Abierto**.\n\n¿Querés cambiar algo más?"
             : updated?.slug
-              ? `Listo: sin banner de abierto. Mirá tu vitrina: ${storeUrl(updated.slug)}`
-              : "Listo: sin banner de abierto.",
+              ? `¡Listo! El cartelito ahora dice **Cerrado**.\n${storeUrl(updated.slug)}\n\n¿Querés cambiar algo más?`
+              : "¡Listo! El cartelito ahora dice **Cerrado**.\n\n¿Querés cambiar algo más?",
         },
         menuMessage(caps, msg.from),
       ];
@@ -3143,7 +3152,10 @@ async function handleMessageBody(
     if (!product || product.storeId !== store.id) {
       await setState("IDLE", clearStockDraft(draft));
       return [
-        { kind: "text", text: "No encontré ese producto." },
+        {
+          kind: "text",
+          text: "No encontré ese producto.\n\nDecime **Ver mis productos** o **Cancelar** para volver — no se borra nada.",
+        },
         menuMessage(caps, msg.from),
       ];
     }
@@ -3185,7 +3197,10 @@ async function handleMessageBody(
     if (!product || product.storeId !== store.id) {
       await setState("IDLE", clearStockDraft(draft));
       return [
-        { kind: "text", text: "No encontré ese producto." },
+        {
+          kind: "text",
+          text: "No encontré ese producto.\n\nDecime **Ver mis productos** o **Cancelar** para volver — no se borra nada.",
+        },
         menuMessage(caps, msg.from),
       ];
     }
@@ -3193,7 +3208,7 @@ async function handleMessageBody(
     if (price == null) {
       replies.push(
         withCancelEscape(
-          `No entendí el precio. Hoy "${product.title}" sale ${formatPriceArs(product.priceCents)}. Probá con 15 mil o 15000 (texto o audio).`,
+          `No te entendí el precio. Hoy "${product.title}" sale ${formatPriceArs(product.priceCents)}.\n\nProbá con 15 mil o 15000 (texto o audio 🎤). **Cancelar** te saca sin cambiar nada.`,
           caps,
         ),
       );
@@ -3265,7 +3280,7 @@ async function handleMessageBody(
     if (price == null) {
       replies.push(
         withCancelEscape(
-          "No entendí el precio. Probá con 15 mil o 15000 (texto o audio).",
+          "No te entendí el precio.\n\nProbá con 15 mil o 15000 (texto o audio 🎤). **Cancelar** te saca sin guardar nada.",
           caps,
         ),
       );
@@ -3811,7 +3826,7 @@ async function ensureStoreIconReady(
     return [
       {
         kind: "text",
-        text: "Primero terminá de armar la tienda; después armamos el icono de la tienda.",
+        text: "Primero terminá de armar la tienda; después ponemos la foto o logo del negocio.",
       },
       menuMessage(caps, from),
     ];
@@ -4018,8 +4033,8 @@ async function applyUploadedStoreIcon(
       {
         kind: "text",
         text: timedOut
-          ? "Tardó demasiado preparar tu icono. Probá con una imagen más chica."
-          : "No pude usar esa imagen. Probá con otra JPG o PNG (no muy pesada).",
+          ? "Tardó demasiado preparar tu foto del negocio. Probá con una imagen más chica."
+          : "No pude usar esa imagen.\n\nProbá con otra JPG o PNG (no muy pesada), o **Volver al menú**.",
       },
       withOptions(
         "¿Qué hacemos?",
@@ -4049,7 +4064,7 @@ async function applyUploadedStoreIcon(
     {
       kind: "image",
       url: icons.icon512Url,
-      caption: "Así queda tu icono con la imagen que mandaste.",
+      caption: "Así queda la foto de tu negocio con la imagen que mandaste.",
     },
     withOptions(
       "¿Lo dejamos así?",
@@ -4118,7 +4133,7 @@ async function applyProfileStoreIcon(
         kind: "text",
         text: timedOut
           ? "Tardó demasiado bajar tu foto de cuenta. Probá de nuevo en un rato."
-          : "No pude usar tu foto de cuenta ahora. Probá subir una imagen o que lo arme el bot.",
+          : "No pude usar tu foto de cuenta ahora.\n\nProbá subir una imagen, que lo arme el bot, o **Volver al menú**.",
       },
       withOptions(
         "¿Qué hacemos?",
@@ -4147,7 +4162,7 @@ async function applyProfileStoreIcon(
     {
       kind: "image",
       url: icons.icon512Url,
-      caption: "Así queda tu icono con tu foto de cuenta.",
+      caption: "Así queda la foto de tu negocio con tu foto de cuenta.",
     },
     withOptions(
       "¿Lo dejamos así?",
@@ -4196,8 +4211,8 @@ async function startStoreIconGenerate(
       {
         kind: "text",
         text: timedOut
-          ? "Tardó demasiado armar el icono (la IA o el dibujo se trabaron). Probá de nuevo en un rato, o pedime el menú."
-          : "No pude armar el icono ahora. Probá de nuevo en un rato o pedime el menú.",
+          ? "Tardó demasiado armar la foto del negocio. Probá de nuevo en un rato, o pedime el menú."
+          : "No pude armar la foto del negocio ahora.\n\nProbá de nuevo en un rato, o pedime el menú.",
       },
       menuMessage(caps, msg.from),
     ];
@@ -4212,8 +4227,8 @@ async function startStoreIconGenerate(
 
   const usedHint = icons.designHint || designHint;
   const caption = usedHint
-    ? `Armé este icono con lo que pediste (“${usedHint.slice(0, 80)}”). ¿Querés otro diferente?`
-    : "En base a tus productos o al nombre de la tienda te armé este icono. ¿Querés otro diferente?";
+    ? `Armé esta foto del negocio con lo que pediste (“${usedHint.slice(0, 80)}”). ¿Querés otra diferente?`
+    : "En base a tus productos o al nombre de la tienda te armé esta foto del negocio. ¿Querés otra diferente?";
 
   return [
     {
@@ -4422,15 +4437,15 @@ async function applyStockAction(store: Store, draft: ConversationDraft): Promise
       tracksQuantity,
     });
     return tracksQuantity
-      ? "Listo: ahora llevás cantidades. Podés ponerle número a cada producto."
-      : "Listo: ahora solo pausás. Los productos agotados se ven como Agotado.";
+      ? "¡Listo! Ahora llevás cantidades con números por producto.\n\n¿Querés cambiar algo más?"
+      : "¡Listo! Ahora solo marcás Agotado o Disponible.\n\n¿Querés cambiar algo más?";
   }
 
   const product = draft.stockProductId
     ? await getProduct(draft.stockProductId)
     : null;
   if (!product || product.storeId !== store.id) {
-    return "No encontré el producto.";
+    return "No encontré ese producto.\n\nDecime **Ver mis productos** o **Cancelar** para volver — no se borra nada.";
   }
 
   if (draft.stockAction === "pause") {
@@ -4438,43 +4453,47 @@ async function applyStockAction(store: Store, draft: ConversationDraft): Promise
       inStock: false,
       ...(store.tracksQuantity ? { quantity: 0 } : {}),
     });
-    return `Marqué "${product.title}" como agotado.`;
+    return `¡Listo! Avisé que "${product.title}" no queda.\n\n¿Querés cambiar algo más?`;
   }
   if (draft.stockAction === "resume") {
     await updateProduct(product.id, { inStock: true });
-    return `Reactivé "${product.title}".`;
+    return `¡Listo! "${product.title}" volvió a estar a la venta.\n\n¿Querés cambiar algo más?`;
   }
   if (draft.stockAction === "set_qty") {
     const qty = draft.stockQtyPending ?? 0;
     await updateProduct(product.id, { quantity: qty });
     return qty === 0
-      ? `"${product.title}" quedó en 0 → se ve Agotado.`
-      : `Guardé ${qty} unidades de "${product.title}".`;
+      ? `¡Listo! "${product.title}" quedó en 0 y se ve como Agotado.\n\n¿Querés cambiar algo más?`
+      : `¡Listo! Guardé ${qty} unidades de "${product.title}".\n\n¿Querés cambiar algo más?`;
   }
   if (draft.stockAction === "hide") {
     await updateProduct(product.id, { hidden: true });
-    return `Oculté "${product.title}" de la tienda (no se borró).`;
+    return `¡Listo! Oculté "${product.title}" de la tienda (no se borró).\n\n¿Querés cambiar algo más?`;
   }
   if (draft.stockAction === "show") {
     await updateProduct(product.id, { hidden: false });
-    return `Volví a mostrar "${product.title}" en la tienda.`;
+    return `¡Listo! Volví a mostrar "${product.title}" en la tienda.\n\n¿Querés cambiar algo más?`;
   }
   if (draft.stockAction === "set_price") {
     const price = draft.stockPricePending;
-    if (price == null) return "No entendí el precio nuevo.";
+    if (price == null) {
+      return "No te entendí el precio nuevo.\n\nProbá con 15 mil o 15000, o mandame un audio 🎤.";
+    }
     await updateProduct(product.id, { priceCents: price });
-    return `Listo, "${product.title}" ahora sale ${formatPriceArs(price)}.`;
+    return `¡Listo! Ya cambié el precio de "${product.title}" a ${formatPriceArs(price)}.\n\n¿Querés cambiar algo más?`;
   }
   if (draft.stockAction === "change_photo") {
     const imageUrl = draft.stockPhotoUrlPending;
-    if (!imageUrl) return "No recibí la foto nueva.";
+    if (!imageUrl) {
+      return "No recibí la foto nueva.\n\nMandame otra, o **Cancelar** para volver — no se borra nada.";
+    }
     await updateProduct(product.id, {
       imageUrl,
       imageBlobKey: draft.stockPhotoBlobKeyPending ?? null,
     });
-    return `Listo, actualicé la foto de "${product.title}".`;
+    return `¡Listo! Ya actualicé la foto de "${product.title}".\n\n¿Querés cambiar algo más?`;
   }
-  return "Listo.";
+  return "¡Listo!\n\n¿Querés cambiar algo más?";
 }
 
 async function startProductFromImage(
@@ -4563,7 +4582,7 @@ function categoryConfirmMessage(
   const label = suggested?.trim();
   if (!label) {
     return withOptions(
-      "¿Querés ponerle una categoría? Aparece en los filtros de la vitrina.",
+      "¿Querés ponerle una categoría? Aparece en los filtros de tu página.",
       [
         { id: CHOICE.META_EDIT, label: "Escribir" },
         { id: CHOICE.META_SKIP, label: "Saltar" },
@@ -4588,7 +4607,7 @@ function materialConfirmMessage(
   const label = suggested?.trim();
   if (!label) {
     return withOptions(
-      "¿Querés indicar el material de la pieza? Se muestra como badge en la vitrina.",
+      "¿Querés indicar el material de la pieza? Se muestra como una etiqueta en tu página.",
       [
         { id: CHOICE.META_EDIT, label: "Escribir" },
         { id: CHOICE.META_SKIP, label: "Saltar" },

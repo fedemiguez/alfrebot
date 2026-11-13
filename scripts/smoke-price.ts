@@ -153,7 +153,7 @@ async function main() {
       (r) =>
         r.kind === "text" &&
         /Lámpara azul/.test(r.text) &&
-        /ahora sale/.test(r.text),
+        /Ya cambié el precio|a \$\s*40\.?000/.test(r.text),
     ),
     "mensaje de precio guardado",
   );

@@ -278,7 +278,7 @@ async function main() {
   );
   const autoCap = captionOf(gen);
   assert(
-    /productos o al nombre|armé este icono/i.test(autoCap),
+    /productos o al nombre|armé esta foto/i.test(autoCap),
     `auto copy mentions productos/nombre, got: ${autoCap}`,
   );
   assert(!/iniciales/i.test(autoCap), "auto copy must not mention iniciales");
