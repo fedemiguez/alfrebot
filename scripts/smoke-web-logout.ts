@@ -77,7 +77,10 @@ async function main() {
     "pide confirmación con Sí, cerrar sesión",
   );
   assert(
-    !ask.some((r) => r.options?.some((o) => o.label === "Cancelar")),
+    !ask.some(
+      (r) =>
+        r.kind === "text" && r.options?.some((o) => o.label === "Cancelar"),
+    ),
     "sin Cancelar en confirmación de logout",
   );
   const convAsk = await getConversation(clerkFrom);

@@ -33,7 +33,7 @@ async function say(text?: string, choiceId?: string) {
     caps,
   );
   const flat = replies
-    .map((r) => (r.kind === "text" ? r.text : `[image] ${r.caption || ""}`))
+    .map((r) => (r.kind === "text" || r.kind === "sign_out" ? r.text : `[image] `))
     .join(" | ");
   console.log(`> ${choiceId || text}`);
   console.log(`< ${flat.slice(0, 240)}`);

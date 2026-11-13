@@ -1176,10 +1176,10 @@ export function SimulatorChat({
           </button>
         </form>
 
+        {identityMode === "clerk" && (
+          <WebChatSignOut requestId={signOutRequestId} />
+        )}
         {needsClerkGate && (
-          {identityMode === "clerk" && (
-            <WebChatSignOut requestId={signOutRequestId} />
-          )}
           <ChatAuthOverlay open={authOpen} onClose={dismissAuthOverlay} />
         )}
 

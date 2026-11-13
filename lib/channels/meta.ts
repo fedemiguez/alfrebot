@@ -145,6 +145,8 @@ async function sendMeta(to: string, msgs: OutboundMessage[]): Promise<void> {
 
   const toDigits = to.replace(/\D/g, "");
   for (const msg of msgs) {
+    // Never deliver Clerk web logout actions over WhatsApp.
+    if (msg.kind === "sign_out") continue;
     const body = buildWhatsAppPayload(toDigits, msg);
     const res = await fetch(
       `https://graph.facebook.com/${graphVersion()}/${phoneId}/messages`,
@@ -165,13 +167,26 @@ async function sendMeta(to: string, msgs: OutboundMessage[]): Promise<void> {
 }
 
 function buildWhatsAppPayload(to: string, msg: OutboundMessage) {
-  const interactive = msg.options?.length
-    ? msg.options.length <= 3
+  // sign_out is web/Clerk-only; never expose logout UX on Meta.
+  if (msg.kind === "sign_out") {
+    return {
+      messaging_product: "whatsapp",
+      to,
+      type: "text",
+      text: { body: msg.text },
+    };
+  }
+
+  const options = msg.options;
+  const bodyText =
+    msg.kind === "text" ? msg.text : msg.caption || "Elegí una opción";
+  const interactive = options?.length
+    ? options.length <= 3
       ? {
           type: "button",
-          body: { text: msg.kind === "text" ? msg.text : msg.caption || "Elegí una opción" },
+          body: { text: bodyText },
           action: {
-            buttons: msg.options.slice(0, 3).map((o) => ({
+            buttons: options.slice(0, 3).map((o) => ({
               type: "reply",
               reply: { id: o.id, title: o.label.slice(0, 20) },
             })),
@@ -179,13 +194,13 @@ function buildWhatsAppPayload(to: string, msg: OutboundMessage) {
         }
       : {
           type: "list",
-          body: { text: msg.kind === "text" ? msg.text : msg.caption || "Elegí una opción" },
+          body: { text: bodyText },
           action: {
             button: "Ver opciones",
             sections: [
               {
                 title: "Opciones",
-                rows: msg.options.slice(0, 10).map((o) => ({
+                rows: options.slice(0, 10).map((o) => ({
                   id: o.id,
                   title: o.label.slice(0, 24),
                 })),
