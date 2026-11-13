@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { AsistenteV2PreviewClient } from "@/components/asistente-v2-preview-client";
@@ -9,6 +9,13 @@ export const metadata: Metadata = {
   description:
     "Vista previa pública del chat WhatsApp-like (sin login). Solo para revisar UI.",
   robots: { index: false, follow: false },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 async function PreviewBody() {
