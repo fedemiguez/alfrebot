@@ -18,6 +18,7 @@ import {
   businessKindClassName,
   storePatternClassName,
 } from "@/lib/store-business-kind";
+import { iktShellPresentation } from "@/lib/store-ikt-theme";
 import { storeThemeClassName } from "@/lib/store-theme";
 import { getCachedProduct } from "@/lib/store-data";
 
@@ -46,15 +47,23 @@ async function ProductBody({
   const purchase = storePurchaseProps(store);
   if (!purchase) notFound();
 
-  const accentVars = accentStyleVars(store.accentColor);
+  const iktShell = iktShellPresentation(store);
+  const accentVars = iktShell.ikt
+    ? iktShell.styleVars
+    : accentStyleVars(store.accentColor);
   const kindClass = businessKindClassName(store.businessKind);
-  const themeClass = storeThemeClassName(store.theme);
+  // Con rubro Ikt: theme claro/crema/oscuro ignorado (decisión Federico).
+  const themeClass = iktShell.ikt
+    ? (iktShell.themeClassName ?? "")
+    : storeThemeClassName(store.theme);
   const patternClass = storePatternClassName(store.businessKind);
 
   return (
     <StorePurchaseProvider store={purchase}>
       <div
         className={`store-theme-shell fade-in ${themeClass} ${patternClass}`.trim()}
+        data-rubro={iktShell.ikt?.rubro}
+        data-palette={iktShell.ikt?.palette}
         style={accentVars as CSSProperties}
       >
       <div

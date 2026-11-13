@@ -441,3 +441,138 @@ body {
   line-height: 1.45;
   color: var(--muted);
 }
+
+/* ——— Iktweb design tokens (Fase 0) ——— */
+:root {
+  --ikt-bg: #ffffff;
+  --ikt-surface: #f8fafc;
+  --ikt-text-main: #0f172a;
+  --ikt-text-muted: #334155;
+  --ikt-primary: #000000;
+  --ikt-primary-text: #ffffff;
+  --ikt-border: #cbd5e1;
+  --ikt-radius-card: 14px;
+  --ikt-radius-btn: 10px;
+  --ikt-font-heading: var(--font-ikt-heading), "Plus Jakarta Sans", sans-serif;
+  --ikt-font-body: var(--font-ikt-body), Inter, sans-serif;
+}
+
+/*
+ * Con rubro Ikt: paleta sólida, fonts preview, theme claro/crema/oscuro ignorado.
+ * Mapea --ikt-* → tokens legacy de la vitrina (--bg/--ink/--primary/…).
+ */
+.store-theme-shell[data-rubro] {
+  --bg: var(--ikt-bg);
+  --paper: var(--ikt-surface);
+  --card: var(--ikt-surface);
+  --border: var(--ikt-border);
+  --ink: var(--ikt-text-main);
+  --muted: var(--ikt-text-muted);
+  --primary: var(--ikt-primary);
+  --primary-fg: var(--ikt-primary-text);
+  --soldout-bg: var(--ikt-surface);
+  --font-display: var(--font-ikt-heading);
+  --font-body: var(--font-ikt-body);
+  background: var(--ikt-bg);
+  color: var(--ikt-text-main);
+  font-family: var(--ikt-font-body);
+}
+
+.store-theme-shell[data-rubro] h1,
+.store-theme-shell[data-rubro] h2,
+.store-theme-shell[data-rubro] h3 {
+  font-family: var(--ikt-font-heading);
+}
+
+/* Ropa */
+.store-theme-shell[data-rubro="ropa"][data-palette="lino-arena"] {
+  --ikt-bg: #eae3d2;
+  --ikt-surface: #faf8f5;
+  --ikt-text-main: #2c221e;
+  --ikt-text-muted: #4a3c36;
+  --ikt-primary: #a65e38;
+  --ikt-primary-text: #ffffff;
+  --ikt-border: #d4c6b0;
+}
+
+.store-theme-shell[data-rubro="ropa"][data-palette="monochrome-noir"] {
+  --ikt-bg: #f4f4f4;
+  --ikt-surface: #ffffff;
+  --ikt-text-main: #111111;
+  --ikt-text-muted: #333333;
+  --ikt-primary: #111111;
+  --ikt-primary-text: #ffffff;
+  --ikt-border: #d4d4d4;
+}
+
+.store-theme-shell[data-rubro="ropa"][data-palette="botanical-sage"] {
+  --ikt-bg: #ecefca;
+  --ikt-surface: #fafdf2;
+  --ikt-text-main: #263625;
+  --ikt-text-muted: #3d4f3c;
+  --ikt-primary: #2f4f2e;
+  --ikt-primary-text: #ffffff;
+  --ikt-border: #c5cba8;
+}
+
+/* Comidas */
+.store-theme-shell[data-rubro="comidas"][data-palette="brasa-fuego"] {
+  --ikt-bg: #fffbeb;
+  --ikt-surface: #ffffff;
+  --ikt-text-main: #18181b;
+  --ikt-text-muted: #3f3f46;
+  --ikt-primary: #d84315;
+  --ikt-primary-text: #ffffff;
+  --ikt-border: #f0e0c8;
+}
+
+.store-theme-shell[data-rubro="comidas"][data-palette="trattoria-rustica"] {
+  --ikt-bg: #fdfbf7;
+  --ikt-surface: #ffffff;
+  --ikt-text-main: #4a1512;
+  --ikt-text-muted: #6b3a36;
+  --ikt-primary: #b45309;
+  --ikt-primary-text: #ffffff;
+  --ikt-border: #e8d9c8;
+}
+
+.store-theme-shell[data-rubro="comidas"][data-palette="cafe-matcha"] {
+  --ikt-bg: #faf6f0;
+  --ikt-surface: #ffffff;
+  --ikt-text-main: #2e1d1a;
+  --ikt-text-muted: #4a3834;
+  --ikt-primary: #4d6b18;
+  --ikt-primary-text: #ffffff;
+  --ikt-border: #e4d8c8;
+}
+
+/* Artesanías */
+.store-theme-shell[data-rubro="artesanias"][data-palette="arcilla-sol"] {
+  --ikt-bg: #faedcd;
+  --ikt-surface: #fffdf5;
+  --ikt-text-main: #4a2e1b;
+  --ikt-text-muted: #6b4a35;
+  --ikt-primary: #9c5a25;
+  --ikt-primary-text: #ffffff;
+  --ikt-border: #e5d4a8;
+}
+
+.store-theme-shell[data-rubro="artesanias"][data-palette="bosque-nogal"] {
+  --ikt-bg: #cad2c5;
+  --ikt-surface: #f4f7f2;
+  --ikt-text-main: #1f2d33;
+  --ikt-text-muted: #3a4a50;
+  --ikt-primary: #385950;
+  --ikt-primary-text: #ffffff;
+  --ikt-border: #a8b5a6;
+}
+
+.store-theme-shell[data-rubro="artesanias"][data-palette="indigo-telar"] {
+  --ikt-bg: #f1faee;
+  --ikt-surface: #ffffff;
+  --ikt-text-main: #162942;
+  --ikt-text-muted: #334a63;
+  --ikt-primary: #c92a37;
+  --ikt-primary-text: #ffffff;
+  --ikt-border: #c5d6c8;
+}
