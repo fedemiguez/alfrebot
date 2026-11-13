@@ -33,7 +33,11 @@ export function ProductCard({
   const isIktCard = isRopaIkt || isComidaIkt || isArtesaniaIkt;
   const ctaLabel = iktWantCtaLabel(businessKind);
   const materialBadge = isArtesaniaIkt
-    ? artesaniaMaterialBadgeText(product.title, product.description)
+    ? artesaniaMaterialBadgeText({
+        title: product.title,
+        description: product.description,
+        material: product.material,
+      })
     : null;
 
   return (

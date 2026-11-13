@@ -30,7 +30,11 @@ export function StoreArtesaniasCatalog({
     () =>
       products.filter((p) =>
         productMatchesArtesaniaCategory(
-          { title: p.title, description: p.description },
+          {
+            title: p.title,
+            description: p.description,
+            category: p.category,
+          },
           activeId,
         ),
       ),

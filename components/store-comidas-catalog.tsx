@@ -27,7 +27,11 @@ export function StoreComidasCatalog({
     () =>
       products.filter((p) =>
         productMatchesComidaCategory(
-          { title: p.title, description: p.description },
+          {
+            title: p.title,
+            description: p.description,
+            category: p.category,
+          },
           activeId,
         ),
       ),

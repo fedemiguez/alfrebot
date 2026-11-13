@@ -1,6 +1,5 @@
 /**
- * Badge de materialidad (Fase 4): heurística desde título/descripción
- * hasta que exista `products.material` + sugerencia AI (Fase 5).
+ * Badge de materialidad: preferencia de `products.material` + heurística (Fase 5).
  */
 
 export type ArtesaniaMaterial = {
@@ -84,6 +83,22 @@ function fold(text: string): string {
     .trim();
 }
 
+function emojiForMaterialLabel(label: string): string {
+  const haystack = fold(label);
+  for (const mat of MATERIAL_HEURISTICS) {
+    if (fold(mat.label) === haystack) return mat.emoji;
+    for (const kw of mat.keywords) {
+      const folded = fold(kw);
+      if (!folded) continue;
+      const re = new RegExp(
+        `(?:^|\\b)${folded.replace(/\s+/g, "\\s+")}(?:\\b|$)`,
+      );
+      if (re.test(haystack)) return mat.emoji;
+    }
+  }
+  return "✨";
+}
+
 /**
  * Infiere material usable para badge. Sin match claro → null
  * (no mostrar badge genérico).
@@ -110,12 +125,36 @@ export function inferArtesaniaMaterial(
   return null;
 }
 
+/**
+ * Badge: prioriza `products.material`; si no hay, heurística título/desc.
+ */
+export function resolveArtesaniaMaterial(product: {
+  title: string;
+  description?: string | null;
+  material?: string | null;
+}): ArtesaniaMaterial | null {
+  const saved = product.material?.replace(/\s+/g, " ").trim();
+  if (saved) {
+    return { label: saved, emoji: emojiForMaterialLabel(saved) };
+  }
+  return inferArtesaniaMaterial(product.title, product.description);
+}
+
 /** Texto completo del badge (emoji + label) o null. */
 export function artesaniaMaterialBadgeText(
-  title: string,
+  titleOrProduct:
+    | string
+    | {
+        title: string;
+        description?: string | null;
+        material?: string | null;
+      },
   description?: string | null,
 ): string | null {
-  const mat = inferArtesaniaMaterial(title, description);
+  const mat =
+    typeof titleOrProduct === "string"
+      ? inferArtesaniaMaterial(titleOrProduct, description)
+      : resolveArtesaniaMaterial(titleOrProduct);
   if (!mat) return null;
   return `${mat.emoji} ${mat.label}`;
 }

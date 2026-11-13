@@ -87,6 +87,7 @@ import {
   type ProductDraft,
 } from "@/lib/db/repos";
 import type { Store } from "@/lib/db/schema";
+import { suggestProductMeta } from "@/lib/suggest-product-meta";
 import {
   ACCENT_SWATCHES,
   matchAccentFromText,
@@ -147,6 +148,10 @@ export type BotState =
   | "PRODUCT_TITLE"
   | "PRODUCT_PRICE"
   | "PRODUCT_DESC"
+  | "PRODUCT_CATEGORY_CONFIRM"
+  | "PRODUCT_CATEGORY_EDIT"
+  | "PRODUCT_MATERIAL_CONFIRM"
+  | "PRODUCT_MATERIAL_EDIT"
   | "PRODUCT_CONFIRM"
   | "STOCK_HUB"
   | "STOCK_PICK"
@@ -3216,7 +3221,16 @@ async function handleMessageBody(
 
       return replies;
     }
-    const product = { ...productDraft(draft), title };
+    const product = {
+      ...productDraft(draft),
+      title,
+      category: undefined,
+      material: undefined,
+      categorySuggested: undefined,
+      materialSuggested: undefined,
+      categoryConfirmed: false,
+      materialConfirmed: false,
+    };
     draft = { ...draft, product };
     if (product.priceCents == null) {
       await setState("PRODUCT_PRICE", draft);
@@ -3276,8 +3290,206 @@ async function handleMessageBody(
       skipDesc: skip,
     };
     draft = { ...draft, product };
-    await setState("PRODUCT_CONFIRM", draft);
-    return productConfirmMessages(product, caps);
+    return beginProductCategoryFlow(store, draft, setState, caps);
+  }
+
+  if (state === "PRODUCT_CATEGORY_CONFIRM") {
+    const text = msg.text?.trim() ?? "";
+    if (
+      choice === CHOICE.META_USE ||
+      choice === CHOICE.YES ||
+      isAffirmative(text) ||
+      /^usar$/i.test(text)
+    ) {
+      const p = productDraft(draft);
+      const next = {
+        ...p,
+        category: p.categorySuggested?.trim() || null,
+        categoryConfirmed: true,
+      };
+      return beginProductMaterialFlow(
+        store,
+        { ...draft, product: next },
+        setState,
+        caps,
+      );
+    }
+    if (
+      choice === CHOICE.META_EDIT ||
+      choice === CHOICE.CHANGE ||
+      /^cambiar$/i.test(text)
+    ) {
+      return replyWithChoices(
+        draft,
+        setState,
+        "PRODUCT_CATEGORY_EDIT",
+        withOptions(
+          "Escribí la categoría que quieras (ej. Tazas, Abrigos, Pastas):",
+          [{ id: CHOICE.META_SKIP, label: "Saltar" }],
+          caps,
+        ),
+      );
+    }
+    if (choice === CHOICE.META_SKIP || /^saltar$/i.test(text)) {
+      const next = {
+        ...productDraft(draft),
+        category: null,
+        categoryConfirmed: true,
+      };
+      return beginProductMaterialFlow(
+        store,
+        { ...draft, product: next },
+        setState,
+        caps,
+      );
+    }
+    if (text) {
+      const next = {
+        ...productDraft(draft),
+        category: text,
+        categoryConfirmed: true,
+      };
+      return beginProductMaterialFlow(
+        store,
+        { ...draft, product: next },
+        setState,
+        caps,
+      );
+    }
+    return [
+      categoryConfirmMessage(productDraft(draft).categorySuggested, caps),
+    ];
+  }
+
+  if (state === "PRODUCT_CATEGORY_EDIT") {
+    const text = msg.text?.trim() ?? "";
+    if (
+      choice === CHOICE.META_SKIP ||
+      choice === CHOICE.SKIP ||
+      /^saltar$/i.test(text)
+    ) {
+      const next = {
+        ...productDraft(draft),
+        category: null,
+        categoryConfirmed: true,
+      };
+      return beginProductMaterialFlow(
+        store,
+        { ...draft, product: next },
+        setState,
+        caps,
+      );
+    }
+    if (!text) {
+      return replyWithChoices(
+        draft,
+        setState,
+        "PRODUCT_CATEGORY_EDIT",
+        withOptions(
+          "Escribí la categoría (ej. Tazas) o tocá Saltar.",
+          [{ id: CHOICE.META_SKIP, label: "Saltar" }],
+          caps,
+        ),
+      );
+    }
+    const next = {
+      ...productDraft(draft),
+      category: text,
+      categoryConfirmed: true,
+    };
+    return beginProductMaterialFlow(
+      store,
+      { ...draft, product: next },
+      setState,
+      caps,
+    );
+  }
+
+  if (state === "PRODUCT_MATERIAL_CONFIRM") {
+    const text = msg.text?.trim() ?? "";
+    if (
+      choice === CHOICE.META_USE ||
+      choice === CHOICE.YES ||
+      isAffirmative(text) ||
+      /^usar$/i.test(text)
+    ) {
+      const p = productDraft(draft);
+      const next = {
+        ...p,
+        material: p.materialSuggested?.trim() || null,
+        materialConfirmed: true,
+      };
+      return goToProductConfirm({ ...draft, product: next }, setState, caps);
+    }
+    if (
+      choice === CHOICE.META_EDIT ||
+      choice === CHOICE.CHANGE ||
+      /^cambiar$/i.test(text)
+    ) {
+      return replyWithChoices(
+        draft,
+        setState,
+        "PRODUCT_MATERIAL_EDIT",
+        withOptions(
+          "Escribí el material (ej. Cerámica esmaltada, Madera, Lana):",
+          [{ id: CHOICE.META_SKIP, label: "Saltar" }],
+          caps,
+        ),
+      );
+    }
+    if (choice === CHOICE.META_SKIP || /^saltar$/i.test(text)) {
+      const next = {
+        ...productDraft(draft),
+        material: null,
+        materialConfirmed: true,
+      };
+      return goToProductConfirm({ ...draft, product: next }, setState, caps);
+    }
+    if (text) {
+      const next = {
+        ...productDraft(draft),
+        material: text,
+        materialConfirmed: true,
+      };
+      return goToProductConfirm({ ...draft, product: next }, setState, caps);
+    }
+    return [
+      materialConfirmMessage(productDraft(draft).materialSuggested, caps),
+    ];
+  }
+
+  if (state === "PRODUCT_MATERIAL_EDIT") {
+    const text = msg.text?.trim() ?? "";
+    if (
+      choice === CHOICE.META_SKIP ||
+      choice === CHOICE.SKIP ||
+      /^saltar$/i.test(text)
+    ) {
+      const next = {
+        ...productDraft(draft),
+        material: null,
+        materialConfirmed: true,
+      };
+      return goToProductConfirm({ ...draft, product: next }, setState, caps);
+    }
+    if (!text) {
+      return replyWithChoices(
+        draft,
+        setState,
+        "PRODUCT_MATERIAL_EDIT",
+        withOptions(
+          "Escribí el material (ej. Cerámica) o tocá Saltar.",
+          [{ id: CHOICE.META_SKIP, label: "Saltar" }],
+          caps,
+        ),
+      );
+    }
+    const next = {
+      ...productDraft(draft),
+      material: text,
+      materialConfirmed: true,
+    };
+    return goToProductConfirm({ ...draft, product: next }, setState, caps);
   }
 
   if (state === "PRODUCT_CONFIRM") {
@@ -3316,6 +3528,8 @@ async function handleMessageBody(
         priceCents: p.priceCents,
         imageUrl: p.imageUrl,
         imageBlobKey: p.imageBlobKey,
+        category: p.category ?? null,
+        material: p.material ?? null,
         quantity: store.tracksQuantity ? 1 : null,
       });
       revalidateStore(store.slug);
@@ -4313,9 +4527,16 @@ function productConfirmMessages(
   product: ProductDraft,
   caps: ChannelCapabilities,
 ): OutboundMessage[] {
+  const metaLines: string[] = [];
+  if (product.category?.trim()) {
+    metaLines.push(`Categoría: ${product.category.trim()}`);
+  }
+  if (product.material?.trim()) {
+    metaLines.push(`Material: ${product.material.trim()}`);
+  }
   const caption = `${product.title ?? "Producto"} · ${formatPriceArs(product.priceCents ?? null)}${
     product.description ? `\n${product.description}` : ""
-  }`;
+  }${metaLines.length ? `\n${metaLines.join(" · ")}` : ""}`;
   const options = [
     { id: CHOICE.PUBLISH, label: "Publicar" },
     { id: CHOICE.CHANGE, label: "Cambiar algo" },
@@ -4324,4 +4545,145 @@ function productConfirmMessages(
     return imageWithOptions(product.imageUrl, caption, options, caps);
   }
   return [withOptions(`Así quedaría:\n${caption}`, options, caps)];
+}
+
+function categoryConfirmMessage(
+  suggested: string | null | undefined,
+  caps: ChannelCapabilities,
+): OutboundMessage {
+  const label = suggested?.trim();
+  if (!label) {
+    return withOptions(
+      "¿Querés ponerle una categoría? Aparece en los filtros de la vitrina.",
+      [
+        { id: CHOICE.META_EDIT, label: "Escribir" },
+        { id: CHOICE.META_SKIP, label: "Saltar" },
+      ],
+      caps,
+    );
+  }
+  return withOptions(
+    `Según el título, sugerí la categoría «${label}». ¿La usamos?`,
+    [
+      { id: CHOICE.META_USE, label: "Usar" },
+      { id: CHOICE.META_EDIT, label: "Cambiar" },
+    ],
+    caps,
+  );
+}
+
+function materialConfirmMessage(
+  suggested: string | null | undefined,
+  caps: ChannelCapabilities,
+): OutboundMessage {
+  const label = suggested?.trim();
+  if (!label) {
+    return withOptions(
+      "¿Querés indicar el material de la pieza? Se muestra como badge en la vitrina.",
+      [
+        { id: CHOICE.META_EDIT, label: "Escribir" },
+        { id: CHOICE.META_SKIP, label: "Saltar" },
+      ],
+      caps,
+    );
+  }
+  return withOptions(
+    `Para esta pieza artesanal sugerí el material «${label}». ¿Lo usamos?`,
+    [
+      { id: CHOICE.META_USE, label: "Usar" },
+      { id: CHOICE.META_EDIT, label: "Cambiar" },
+    ],
+    caps,
+  );
+}
+
+async function goToProductConfirm(
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+): Promise<OutboundMessage[]> {
+  await setState("PRODUCT_CONFIRM", draft);
+  return productConfirmMessages(productDraft(draft), caps);
+}
+
+/**
+ * Tras la descripción: sugerir categoría (AI + heurística) y pedir Usar/Cambiar.
+ */
+async function beginProductCategoryFlow(
+  store: Store | null,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+): Promise<OutboundMessage[]> {
+  const p = productDraft(draft);
+  if (p.categoryConfirmed) {
+    return beginProductMaterialFlow(store, draft, setState, caps);
+  }
+
+  const suggestion = await suggestProductMeta({
+    title: p.title || "",
+    description: p.description,
+    businessKind: store?.businessKind,
+  });
+
+  const nextProduct: ProductDraft = {
+    ...p,
+    categorySuggested: suggestion.category,
+    materialSuggested: suggestion.material,
+  };
+  const nextDraft = { ...draft, product: nextProduct };
+
+  return replyWithChoices(
+    nextDraft,
+    setState,
+    "PRODUCT_CATEGORY_CONFIRM",
+    categoryConfirmMessage(suggestion.category, caps),
+  );
+}
+
+/**
+ * Tras categoría: si rubro artesanal, sugerir material; si no, ir a confirmar publicación.
+ */
+async function beginProductMaterialFlow(
+  store: Store | null,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+): Promise<OutboundMessage[]> {
+  const kind = resolveBusinessKind(store?.businessKind);
+  if (kind !== "artesanal") {
+    const cleared = {
+      ...productDraft(draft),
+      material: null,
+      materialConfirmed: true,
+    };
+    return goToProductConfirm({ ...draft, product: cleared }, setState, caps);
+  }
+
+  const p = productDraft(draft);
+  if (p.materialConfirmed) {
+    return goToProductConfirm(draft, setState, caps);
+  }
+
+  let materialSuggested = p.materialSuggested ?? null;
+  if (materialSuggested == null) {
+    const suggestion = await suggestProductMeta({
+      title: p.title || "",
+      description: p.description,
+      businessKind: store?.businessKind,
+    });
+    materialSuggested = suggestion.material;
+  }
+
+  const nextDraft = {
+    ...draft,
+    product: { ...p, materialSuggested },
+  };
+
+  return replyWithChoices(
+    nextDraft,
+    setState,
+    "PRODUCT_MATERIAL_CONFIRM",
+    materialConfirmMessage(materialSuggested, caps),
+  );
 }

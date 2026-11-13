@@ -36,6 +36,12 @@ export const CHOICE = {
   OPEN_NOW_YES: "open_now_yes",
   /** Marcar tienda cerrada (ocultar banner). */
   OPEN_NOW_NO: "open_now_no",
+  /** Usar sugerencia AI de categoría/material. */
+  META_USE: "meta_use",
+  /** Editar a mano categoría/material. */
+  META_EDIT: "meta_edit",
+  /** Saltar categoría/material (sin guardar). */
+  META_SKIP: "meta_skip",
   MENU_CONTACT: "menu_contact",
   /** Generar código para gestionar la misma tienda desde WhatsApp. */
   MENU_LINK_WA: "menu_link_wa",

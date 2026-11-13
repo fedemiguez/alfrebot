@@ -27,7 +27,11 @@ export function StoreRopaCatalog({
     () =>
       products.filter((p) =>
         productMatchesRopaCategory(
-          { title: p.title, description: p.description },
+          {
+            title: p.title,
+            description: p.description,
+            category: p.category,
+          },
           activeId,
         ),
       ),

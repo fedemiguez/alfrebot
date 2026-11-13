@@ -1,12 +1,16 @@
 /**
- * Categorías de vitrina Ropa (Fase 2): heurística por palabras clave
- * hasta que exista `products.category` + sugerencia AI (Fase 5).
+ * Categorías de vitrina Ropa: heurística + preferencia de `products.category` (Fase 5).
  */
 
-export type RopaCategoryChip = {
-  id: string;
-  label: string;
-};
+import {
+  collectCategoryChips,
+  productMatchesCategory,
+  resolveProductCategoryChip,
+  type CategorizedProduct,
+  type CategoryChip,
+} from "@/lib/product-category";
+
+export type RopaCategoryChip = CategoryChip;
 
 /** Orden estable de chips conocidos (además de “Todo”). */
 const ROPA_CATEGORY_HEURISTICS: ReadonlyArray<{
@@ -151,28 +155,22 @@ export function inferRopaCategory(
   return null;
 }
 
+export function resolveRopaCategory(
+  product: CategorizedProduct,
+): RopaCategoryChip | null {
+  return resolveProductCategoryChip(product, inferRopaCategory);
+}
+
 /** Chips presentes en el catálogo: “Todo” + categorías con al menos un producto. */
 export function collectRopaCategoryChips(
-  products: ReadonlyArray<{ title: string; description?: string | null }>,
+  products: ReadonlyArray<CategorizedProduct>,
 ): RopaCategoryChip[] {
-  const seen = new Set<string>();
-  const chips: RopaCategoryChip[] = [{ id: "todo", label: "Todo" }];
-
-  for (const product of products) {
-    const cat = inferRopaCategory(product.title, product.description);
-    if (!cat || seen.has(cat.id)) continue;
-    seen.add(cat.id);
-    chips.push(cat);
-  }
-
-  return chips;
+  return collectCategoryChips(products, inferRopaCategory);
 }
 
 export function productMatchesRopaCategory(
-  product: { title: string; description?: string | null },
+  product: CategorizedProduct,
   categoryId: string,
 ): boolean {
-  if (!categoryId || categoryId === "todo") return true;
-  const cat = inferRopaCategory(product.title, product.description);
-  return cat?.id === categoryId;
+  return productMatchesCategory(product, categoryId, inferRopaCategory);
 }
