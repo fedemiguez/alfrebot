@@ -52,7 +52,14 @@ function subscribeStandalone(onStoreChange: () => void) {
  * Usa beforeinstallprompt cuando existe; en iOS muestra pasos de Compartir → Agregar a inicio.
  * Se oculta si la tienda ya corre como app (standalone).
  */
-export function StoreInstallCta({ storeName }: { storeName: string }) {
+export function StoreInstallCta({
+  storeName,
+  compact = false,
+}: {
+  storeName: string;
+  /** Variante secundaria bajo el buscador por voz. */
+  compact?: boolean;
+}) {
   const installed = useSyncExternalStore(
     subscribeStandalone,
     isStandaloneDisplay,
@@ -120,6 +127,51 @@ export function StoreInstallCta({ storeName }: { storeName: string }) {
 
     setOtherHelpOpen((open) => !open);
     setIosHelpOpen(false);
+  }
+
+  if (compact) {
+    return (
+      <div
+        className="store-install-compact"
+        aria-labelledby="store-install-title"
+      >
+        <p id="store-install-title">
+          {storeName}: {support}
+        </p>
+        <button
+          type="button"
+          className="store-install-compact-btn"
+          onClick={onPrimaryClick}
+          disabled={installing}
+          aria-expanded={iosHelpOpen || otherHelpOpen || undefined}
+          aria-controls={
+            iosHelpOpen || otherHelpOpen ? "store-install-help" : undefined
+          }
+        >
+          {installing ? "Abriendo…" : label}
+        </button>
+        {iosHelpOpen && (
+          <ol
+            id="store-install-help"
+            className="store-install-compact-help list-decimal space-y-1 pl-5"
+          >
+            <li>
+              Tocá <strong>Compartir</strong> en Safari.
+            </li>
+            <li>
+              Elegí <strong>Agregar a inicio</strong>.
+            </li>
+            <li>Confirmá y abrila como app.</li>
+          </ol>
+        )}
+        {otherHelpOpen && (
+          <p id="store-install-help" className="store-install-compact-help">
+            En el menú del navegador buscá <strong>Instalar app</strong> o{" "}
+            <strong>Agregar a la pantalla de inicio</strong>.
+          </p>
+        )}
+      </div>
+    );
   }
 
   return (

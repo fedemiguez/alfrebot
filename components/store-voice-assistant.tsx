@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { formatPriceArs } from "@/lib/format";
 import type { StorePurchaseInfo } from "@/lib/store-purchase";
 import {
@@ -31,6 +37,8 @@ type Phase =
   | "done"
   | "error";
 
+const IDLE_LABEL = "🎤 Tocar y hablar para buscar";
+
 export function StoreVoiceAssistant({
   store,
   products,
@@ -43,6 +51,7 @@ export function StoreVoiceAssistant({
   const [result, setResult] = useState<VoiceTurnResult | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [typedQuery, setTypedQuery] = useState("");
 
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -80,7 +89,7 @@ export function StoreVoiceAssistant({
       setTranscript(cleaned);
       setInterim("");
       if (!cleaned) {
-        setError("No escuché nada. Tocá Hablar y decí qué buscás.");
+        setError("No escuché nada. Tocá el micrófono y decí qué buscás.");
         setPhase("error");
         return;
       }
@@ -153,7 +162,7 @@ export function StoreVoiceAssistant({
       setError(
         cloudSttAvailable
           ? "Este navegador no puede grabar audio. Probá en Chrome o Safari."
-          : "Este navegador no entiende la voz. Probá en Chrome, o escribí el nombre del producto en la página.",
+          : "Este navegador no entiende la voz. Probá en Chrome, o escribí el nombre del producto abajo.",
       );
       return;
     }
@@ -179,7 +188,7 @@ export function StoreVoiceAssistant({
       recorder.onerror = () => {
         setPhase("error");
         stopMicTracks();
-        setError("Falló la grabación. Tocá Hablar de nuevo.");
+        setError("Falló la grabación. Tocá el micrófono de nuevo.");
       };
       recorder.onstop = () => {
         const type = recorder.mimeType || mime || "audio/webm";
@@ -188,7 +197,7 @@ export function StoreVoiceAssistant({
         stopMicTracks();
         if (blob.size < 64) {
           setPhase("error");
-          setError("El audio quedó vacío. Tocá Hablar, decí algo y tocá Listo.");
+          setError("El audio quedó vacío. Tocá el micrófono, decí algo y tocá Listo.");
           return;
         }
         if (!cloudSttAvailable) {
@@ -252,7 +261,7 @@ export function StoreVoiceAssistant({
       if (ev.error === "aborted") return;
       if (ev.error === "no-speech") {
         setPhase("error");
-        setError("No escuché nada. Tocá Hablar y probá de nuevo.");
+        setError("No escuché nada. Tocá el micrófono y probá de nuevo.");
         return;
       }
       if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
@@ -302,6 +311,27 @@ export function StoreVoiceAssistant({
     startWebSpeech();
   }
 
+  function onTypedSubmit(e: FormEvent) {
+    e.preventDefault();
+    const q = typedQuery.trim();
+    if (!q) return;
+    stopSpeaking();
+    try {
+      recognitionRef.current?.abort();
+    } catch {
+      /* ignore */
+    }
+    if (phase === "recording") {
+      try {
+        mediaRecorderRef.current?.stop();
+      } catch {
+        stopMicTracks();
+      }
+    }
+    setError(null);
+    applyTranscript(q);
+  }
+
   const displayText = interim || transcript;
   const hits =
     result?.kind === "results" || result?.kind === "want_ambiguous"
@@ -315,75 +345,84 @@ export function StoreVoiceAssistant({
       ? "Listo"
       : phase === "transcribing"
         ? "Escuchando…"
-        : "Hablar";
+        : IDLE_LABEL;
 
   const primaryBusy = phase === "transcribing";
+  const isListening = phase === "listening" || phase === "recording";
 
   return (
-    <section
-      className="mt-8 rounded border border-[var(--border)] bg-[var(--paper)] px-4 py-5 sm:px-5"
-      aria-labelledby="voice-assist-title"
-    >
-      <h2
-        id="voice-assist-title"
-        className="font-[family-name:var(--font-display)] text-[1.45rem] font-semibold text-[var(--ink)] sm:text-2xl"
-      >
-        Buscar hablando
-      </h2>
-      <p className="mt-2 text-[1.15rem] leading-relaxed text-[var(--ink)]">
-        Tocá Hablar y decí qué buscás.
-      </p>
-
-      <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
+    <section className="store-voice" aria-labelledby="voice-assist-title">
+      <div className="store-voice-sticky">
+        <h2 id="voice-assist-title" className="sr-only">
+          Buscar hablando
+        </h2>
         <button
           type="button"
           onClick={onPrimaryClick}
           disabled={primaryBusy}
-          className="btn btn-primary min-h-14 min-w-[10rem] text-[1.25rem] disabled:cursor-not-allowed disabled:opacity-60"
-          aria-pressed={phase === "listening" || phase === "recording"}
+          className={`store-voice-btn${isListening ? " is-listening" : ""}`}
+          aria-pressed={isListening}
+          aria-label={primaryLabel}
         >
           {primaryLabel}
         </button>
-        {(phase === "listening" || phase === "recording") && (
-          <p className="text-[1.15rem] font-medium text-[var(--primary)]" role="status">
+
+        <form className="store-voice-type" onSubmit={onTypedSubmit}>
+          <label htmlFor="store-voice-text" className="sr-only">
+            Buscar por texto
+          </label>
+          <span className="store-voice-type-icon" aria-hidden="true">
+            🔍
+          </span>
+          <input
+            id="store-voice-text"
+            type="search"
+            enterKeyHint="search"
+            autoComplete="off"
+            value={typedQuery}
+            onChange={(e) => setTypedQuery(e.target.value)}
+            placeholder="O escribí acá (ej: Camisa)…"
+            className="store-voice-input"
+          />
+        </form>
+
+        {isListening && (
+          <p className="store-voice-status" role="status">
             Escuchando…
           </p>
         )}
         {phase === "transcribing" && (
-          <p className="text-[1.15rem] text-[var(--muted)]" role="status">
+          <p className="store-voice-status is-muted" role="status">
             Entendiendo lo que dijiste…
           </p>
         )}
       </div>
 
       {(displayText || spokenLine) && (
-        <p
-          className="mt-5 font-[family-name:var(--font-display)] text-[1.55rem] font-semibold leading-snug text-[var(--ink)] sm:text-[1.75rem]"
-          aria-live="polite"
-        >
+        <p className="store-voice-transcript" aria-live="polite">
           {displayText ? `“${displayText}”` : spokenLine}
         </p>
       )}
 
       {spokenLine && displayText && (
-        <p className="mt-2 text-[1.15rem] leading-relaxed text-[var(--muted)]" aria-live="polite">
+        <p className="store-voice-spoken" aria-live="polite">
           {spokenLine}
         </p>
       )}
 
       {error && (
-        <p className="mt-3 text-[1.1rem] text-[var(--primary)]" role="alert">
+        <p className="store-voice-error" role="alert">
           {error}
         </p>
       )}
 
       {hits.length > 0 && (
-        <ul className="mt-5 space-y-4">
+        <ul className="store-voice-hits">
           {hits.map((hit) => (
             <li
               key={hit.id}
-              className={`border border-[var(--border)] bg-[var(--card)] px-4 py-4 ${
-                selectedId === hit.id ? "ring-2 ring-[var(--primary)]" : ""
+              className={`store-voice-hit${
+                selectedId === hit.id ? " is-selected" : ""
               }`}
             >
               <button
