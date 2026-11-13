@@ -46,7 +46,12 @@ export function stockHubMessage(
     ? "Tu tienda lleva cantidades con números."
     : "Tu tienda solo marca Agotado o Disponible, sin números.";
   return withOptions(
-    `${mode}\n¿Qué querés hacer con el stock?\n(Ver mi tienda y WhatsApp pedidos están en el menú.)`,
+    `${mode}\n\n` +
+      `Dale, decime por audio 🎤 o escrito qué producto querés modificar.\n\n` +
+      `Por ejemplo:\n` +
+      `• "Cambiá el precio de las empanadas a $10.000"\n` +
+      `• "Pausá el budín porque ya no me queda"\n\n` +
+      `Si no te acordás el nombre, tocá Ver listado.`,
     options,
     caps,
   );
@@ -66,12 +71,12 @@ export function productActionOptions(
 ): Option[] {
   const options: Option[] = [];
   if (product.inStock) {
-    options.push({ id: CHOICE.STOCK_PAUSE, label: "Pausar (agotado)" });
+    options.push({ id: CHOICE.STOCK_PAUSE, label: "Avisar que no queda" });
   } else {
-    options.push({ id: CHOICE.STOCK_RESUME, label: "Reactivar" });
+    options.push({ id: CHOICE.STOCK_RESUME, label: "Volver a venderlo" });
   }
   if (store.tracksQuantity) {
-    options.push({ id: CHOICE.STOCK_SET_QTY, label: "Cambiar cantidad" });
+    options.push({ id: CHOICE.STOCK_SET_QTY, label: "Cuántas unidades" });
   }
   options.push({ id: CHOICE.STOCK_SET_PRICE, label: "Cambiar precio" });
   options.push({ id: CHOICE.STOCK_CHANGE_PHOTO, label: "Cambiar foto" });

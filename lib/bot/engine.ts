@@ -130,6 +130,7 @@ import {
 } from "@/lib/store-icon";
 import {
   welcomeAskNameMessage,
+  helpGeneralMessage,
   welcomeBackMessage,
   welcomeMainMessage,
 } from "@/lib/bot/welcome-copy";
@@ -576,17 +577,21 @@ function menuMessage(
     { id: CHOICE.MENU_GROUP_WA, label: "WhatsApp" },
     { id: CHOICE.MENU_HELP, label: "Ayuda" },
   ];
-  return withOptions("¿Qué querés hacer?", options, caps);
+  return withOptions(
+    "¿Qué querés hacer?\n\nElegí del menú o mandame un audio 🎤 contándome.",
+    options,
+    caps,
+  );
 }
 
 function productsMenuMessage(caps: ChannelCapabilities): OutboundMessage {
   return withOptions(
-    "Productos — ¿qué necesitás?",
+    "Productos — ¿qué necesitás?\n\nTambién podés decirmelo por audio 🎤.",
     [
       { id: CHOICE.MENU_ADD, label: "Cargar producto" },
       { id: CHOICE.MENU_PRICE, label: "Cambiar precio" },
       { id: CHOICE.MENU_PHOTO, label: "Cambiar foto" },
-      { id: CHOICE.MENU_STOCK, label: "Stock / pausa" },
+      { id: CHOICE.MENU_STOCK, label: "Disponible o agotado" },
       { id: CHOICE.MENU_BACK, label: "Volver al menú" },
     ],
     caps,
@@ -595,10 +600,10 @@ function productsMenuMessage(caps: ChannelCapabilities): OutboundMessage {
 
 function storeMenuMessage(caps: ChannelCapabilities): OutboundMessage {
   return withOptions(
-    "Tienda — ¿qué necesitás?",
+    "Tienda — ¿qué necesitás?\n\nTambién podés decirmelo por audio 🎤.",
     [
-      { id: CHOICE.MENU_ICON, label: "Icono de la tienda" },
-      { id: CHOICE.MENU_PERSONALIZE, label: "Personalizar" },
+      { id: CHOICE.MENU_ICON, label: "Foto o logo" },
+      { id: CHOICE.MENU_PERSONALIZE, label: "Colores y estilo" },
       { id: CHOICE.MENU_STORE, label: "Ver mi tienda" },
       { id: CHOICE.MENU_BACK, label: "Volver al menú" },
     ],
@@ -608,13 +613,13 @@ function storeMenuMessage(caps: ChannelCapabilities): OutboundMessage {
 
 function personalizeHubMessage(caps: ChannelCapabilities): OutboundMessage {
   return withOptions(
-    "Personalizar — ¿qué cambiamos?",
+    "Colores y estilo — ¿qué cambiamos?\n\nTambién podés decirmelo por audio 🎤.",
     [
       { id: CHOICE.PERSONALIZE_COLOR, label: "Color" },
       { id: CHOICE.PERSONALIZE_THEME, label: "Estilo" },
-      { id: CHOICE.PERSONALIZE_KIND, label: "Rubro" },
-      { id: CHOICE.PERSONALIZE_WELCOME, label: "Frase de bienvenida" },
-      { id: CHOICE.PERSONALIZE_OPEN_NOW, label: "Abierto ahora" },
+      { id: CHOICE.PERSONALIZE_KIND, label: "Tipo de negocio" },
+      { id: CHOICE.PERSONALIZE_WELCOME, label: "Saludo a clientes" },
+      { id: CHOICE.PERSONALIZE_OPEN_NOW, label: "Abierto o cerrado" },
       { id: CHOICE.MENU_BACK, label: "Volver al menú" },
     ],
     caps,
@@ -626,10 +631,10 @@ function openNowPickMessage(
   caps: ChannelCapabilities,
 ): OutboundMessage {
   const nowLine = store.openNow
-    ? "Ahora: Abierto (banner visible en Comidas)."
-    : "Ahora: Cerrado (sin banner).";
+    ? "Ahora: el cartelito dice Abierto."
+    : "Ahora: el cartelito dice Cerrado.";
   return withOptions(
-    `¿Mostramos «Abierto ahora» en tu vitrina?\nSolo presentacional (sin horarios).\n${nowLine}`,
+    `¿Querés el cartelito de Abierto o Cerrado en tu página?\n(Solo se ve; no usa horarios.)\n${nowLine}`,
     [
       { id: CHOICE.OPEN_NOW_YES, label: "Abierto" },
       { id: CHOICE.OPEN_NOW_NO, label: "Cerrado" },
@@ -651,7 +656,7 @@ function accentPickMessage(
   }));
   options.push({ id: CHOICE.MENU_BACK, label: "Volver al menú" });
   return withOptions(
-    `Elegí un color para botones («Lo quiero»), links y acentos de tu vitrina.\nAhora: ${currentLabel}.`,
+    `Elegí un color para los botones y detalles de tu página.\nAhora: ${currentLabel}.\n\nTambién podés decirme el color por audio 🎤.`,
     options,
     caps,
   );
@@ -664,7 +669,7 @@ function accentConfirmMessage(
 ): OutboundMessage {
   const link = store.slug ? `\nVista: ${storeUrl(store.slug)}` : "";
   return withOptions(
-    `¿Dejamos el color «${swatch.label}» (${swatch.hex})?\nLos botones y precios de la vitrina van a usar ese color.${link}`,
+    `¿Dejamos el color «${swatch.label}»?\nLos botones y precios de tu página van a usar ese color.${link}`,
     [
       { id: CHOICE.YES, label: "Sí, guardar" },
       { id: CHOICE.NO, label: "Otro color" },
@@ -681,14 +686,14 @@ function kindPickMessage(
   const current = resolveBusinessKind(store.businessKind);
   const currentLabel = current
     ? (kindById(current)?.label ?? current)
-    : "Sin rubro (sin marco ni trama)";
+    : "Todavía sin tipo de negocio";
   const options: Option[] = BUSINESS_KINDS.map((k) => ({
     id: `${CHOICE.KIND_PREFIX}${k.id}`,
     label: k.label,
   }));
   options.push({ id: CHOICE.MENU_BACK, label: "Volver al menú" });
   return withOptions(
-    `¿De qué es tu negocio? Eso pone un marco en las fotos y una trama suave de iconos en el fondo de la vitrina.\nAhora: ${currentLabel}.`,
+    `¿De qué es tu negocio?\nEso pone un marco en las fotos y un fondo con dibujitos suaves.\nAhora: ${currentLabel}.\n\nTambién podés decirmelo por audio 🎤.`,
     options,
     caps,
   );
@@ -701,10 +706,10 @@ function kindConfirmMessage(
 ): OutboundMessage {
   const link = store.slug ? `\nVista: ${storeUrl(store.slug)}` : "";
   return withOptions(
-    `¿Dejamos el rubro «${kind.label}»?\nLas fotos llevan el marco ${kind.label.toLowerCase()} y el fondo de la vitrina una trama de iconos de ese rubro.${link}`,
+    `¿Dejamos el tipo «${kind.label}»?\nLas fotos llevan el marco ${kind.label.toLowerCase()} y el fondo unos dibujitos de ese tipo de negocio.${link}`,
     [
       { id: CHOICE.YES, label: "Sí, guardar" },
-      { id: CHOICE.NO, label: "Otro rubro" },
+      { id: CHOICE.NO, label: "Otro tipo" },
       { id: CHOICE.MENU_BACK, label: "Volver al menú" },
     ],
     caps,
@@ -725,7 +730,7 @@ function themePickMessage(
   }));
   options.push({ id: CHOICE.MENU_BACK, label: "Volver al menú" });
   return withOptions(
-    `Elegí un estilo de fondo para tu vitrina (el color de acento se mantiene).\nAhora: ${currentLabel}.`,
+    `Elegí un estilo de fondo para tu página (el color que ya elegiste se mantiene).\nAhora: ${currentLabel}.\n\nTambién podés decirmelo por audio 🎤.`,
     options,
     caps,
   );
@@ -755,15 +760,15 @@ function welcomeAskMessage(
   const current = normalizeWelcomeMessage(store.welcomeMessage);
   const nowLine = current
     ? `Ahora: «${current}».`
-    : "Ahora no tenés frase.";
+    : "Ahora no tenés saludo.";
   const options: Option[] = [
     { id: CHOICE.MENU_BACK, label: "Volver al menú" },
   ];
   if (current) {
-    options.unshift({ id: CHOICE.WELCOME_CLEAR, label: "Sin frase" });
+    options.unshift({ id: CHOICE.WELCOME_CLEAR, label: "Sin saludo" });
   }
   return withOptions(
-    `Escribí una frase corta debajo del nombre (máx. ${WELCOME_MESSAGE_MAX} caracteres).\nEj.: «Envíos a todo el país» o «Retiro en taller».\n${nowLine}`,
+    `Escribí o dictá por audio 🎤 el saludo que ven tus clientes debajo del nombre (máx. ${WELCOME_MESSAGE_MAX} caracteres).\nEj.: "Envíos a todo el país" o "Retiro en taller".\n${nowLine}`,
     options,
     caps,
   );
@@ -776,13 +781,13 @@ function welcomeConfirmMessage(
 ): OutboundMessage {
   const link = store.slug ? `\nVista: ${storeUrl(store.slug)}` : "";
   const body = phrase
-    ? `¿Dejamos la frase «${phrase}» debajo del nombre?${link}`
-    : `¿Sacamos la frase de bienvenida?${link}`;
+    ? `¿Dejamos el saludo «${phrase}» debajo del nombre?${link}`
+    : `¿Sacamos el saludo que ven tus clientes?${link}`;
   return withOptions(
     body,
     [
       { id: CHOICE.YES, label: "Sí, guardar" },
-      { id: CHOICE.NO, label: "Otra frase" },
+      { id: CHOICE.NO, label: "Otro saludo" },
       { id: CHOICE.MENU_BACK, label: "Volver al menú" },
     ],
     caps,
@@ -797,10 +802,14 @@ function waMenuMessage(
     { id: CHOICE.MENU_CONTACT, label: "WhatsApp pedidos" },
   ];
   if (from && isClerkIdentity(from)) {
-    options.push({ id: CHOICE.MENU_LINK_WA, label: "Vincular WhatsApp" });
+    options.push({ id: CHOICE.MENU_LINK_WA, label: "Manejar desde acá" });
   }
   options.push({ id: CHOICE.MENU_BACK, label: "Volver al menú" });
-  return withOptions("WhatsApp — ¿qué necesitás?", options, caps);
+  return withOptions(
+    "WhatsApp — ¿qué necesitás?\n\nTambién podés decirmelo por audio 🎤.",
+    options,
+    caps,
+  );
 }
 
 function groupMenuMessage(
@@ -816,28 +825,15 @@ function groupMenuMessage(
 function helpMessage(): OutboundMessage {
   return {
     kind: "text",
-    text:
-      "Soy alfrebot, tu ayudante para armar la tienda. Podés mandarme fotos de tus productos y te voy guiando. También podés mandarme audios (nombre, precio, stock).\n\n" +
-      "El menú tiene grupos: Productos, Tienda, WhatsApp y Ayuda.\n" +
-      "Stock: menú → Productos → Stock / pausa, o pedime el listado, pausar, reactivar o cambiar cantidad (por texto o audio).\n" +
-      "Precio: menú → Productos → Cambiar precio, o pedime cambiar el precio y te listo los productos (ej. «cambiar el precio de la lámpara»).\n" +
-      "Foto de un PRODUCTO: menú → Productos → Cambiar foto, o pedime cambiar la foto y te listo los productos; después mandás la foto nueva y confirmamos.\n" +
-      "Icono de la TIENDA (no es la foto de un producto): menú → Tienda → Icono de la tienda. Pedime por texto o audio «armar icono» / «icono de la tienda», o «subir icono» y mandá tu imagen.\n" +
-      "Color de la vitrina: menú → Tienda → Personalizar → Color, o pedime «quiero verde» / «color azul».\n" +
-      "Estilo / fondo: menú → Tienda → Personalizar → Estilo, o pedime «tema oscuro» / «estilo crema».\n" +
-      "Rubro (marco en las fotos): menú → Tienda → Personalizar → Rubro, o pedime «vendo cerámica» / «tienda de comida» / «ropa».\n" +
-      "Frase de bienvenida: menú → Tienda → Personalizar → Frase de bienvenida, o pedime «decí que retiro en el local».\n" +
-      "Abierto ahora (banner Comidas): menú → Tienda → Personalizar → Abierto ahora.\n" +
-      "WhatsApp de pedidos: menú → WhatsApp → WhatsApp pedidos (el número donde te escriben los clientes).\n" +
-      "Si armaste la tienda en la web y querés gestionarla por WhatsApp: menú → WhatsApp → Vincular WhatsApp, después desde el celular escribí «ya tengo cuenta» y el código.\n" +
-      "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
+    text: helpGeneralMessage(),
   };
 }
 
 function askLinkCodePrompt(caps: ChannelCapabilities): OutboundMessage {
   return withCancelEscape(
-    "Dale. En la web (alfrebot → Armá en la web /asistente) abrí el menú y tocá Vincular WhatsApp: te doy un código de 6 dígitos.\n\n" +
-      "Después mandame ese código acá (por ejemplo 482915). Vale 30 minutos.",
+    '¿Ya armaste tu tienda en la computadora y querés manejarla desde acá? ¡Re fácil!\n\n' +
+      'Escribime "Ya tengo cuenta" seguido del código de 6 dígitos que te apareció en la pantalla, y las conecto al instante.\n\n' +
+      "El código vale 30 minutos. Si no lo tenés, en la web abrí el menú de WhatsApp y tocá Manejar desde acá.",
     caps,
   );
 }
@@ -857,21 +853,21 @@ function askContactPhonePrompt(
 function linkFailureMessage(detail: string): string {
   switch (detail) {
     case "invalid_code":
-      return "Ese código no existe o ya se usó. Generá uno nuevo en el chat web (Vincular WhatsApp).";
+      return "Ese código no existe o ya se usó. Generá uno nuevo en el chat web (Manejar desde acá).";
     case "expired":
       return "Ese código venció (valen 30 minutos). Generá uno nuevo en el chat web.";
     case "no_clerk_store":
-      return "No encontré una tienda armada con esa cuenta web. Terminá el alta en /asistente y después vinculá.";
+      return "No encontré una tienda armada con esa cuenta web. Terminá el alta en la web y después pedime el código otra vez.";
     case "conflict_both_have_products":
       return "Ese WhatsApp y esa cuenta web tienen tiendas distintas con productos. Escribime a soporte o usá un solo camino por ahora.";
     case "wa_store_has_other_clerk":
-      return "Ese WhatsApp ya está vinculado a otra cuenta de email.";
+      return "Ese WhatsApp ya está unido a otra cuenta de email.";
     case "wa_not_valid":
-      return "Para vincular tenés que escribirme desde un celular argentino (WhatsApp).";
+      return "Para unir la tienda tenés que escribirme desde un celular argentino (WhatsApp).";
     case "wa_identity_taken":
       return "Ese número ya tiene otra tienda. Si es tuya, escribinos.";
     default:
-      return "No pude vincular ahora. Probá de nuevo o cancelá y pedime el menú.";
+      return "No pude unir la cuenta ahora. Probá de nuevo o cancelá y pedime el menú.";
   }
 }
 
@@ -1299,12 +1295,12 @@ async function handleMessageBody(
         if (isClerkIdentity(msg.from)) {
           replies.push({
             kind: "text",
-            text: "Estás en la web: cuando termines el alta, tocá Vincular WhatsApp en el menú para generar el código. Después lo mandás desde el celular.",
+            text: "Estás en la web: cuando termines el alta, en el menú de WhatsApp tocá Manejar desde acá para generar el código. Después lo mandás desde el celular.",
           });
         } else {
           replies.push({
             kind: "text",
-            text: "Para vincular una cuenta web, escribime desde WhatsApp con tu celular.",
+            text: "Para unir tu cuenta web, escribime desde WhatsApp con tu celular.",
           });
         }
         await setState("ASK_NAME", draft);
@@ -1366,8 +1362,8 @@ async function handleMessageBody(
         replies.push({
           kind: "text",
           text: isClerkIdentity(msg.from)
-            ? "Para vincular WhatsApp, tocá Vincular WhatsApp en el menú cuando tengas la tienda lista."
-            : "Para vincular, escribime desde WhatsApp.",
+            ? "Para manejar la tienda desde el celular, tocá Manejar desde acá en el menú de WhatsApp cuando tengas la tienda lista."
+            : "Para unir la cuenta, escribime desde WhatsApp.",
         });
         replies.push({
           kind: "text",
@@ -2726,20 +2722,20 @@ async function handleMessageBody(
     }
     const previewOpts: Option[] = [
       { id: CHOICE.ICON_REGEN, label: "Generar otro" },
-      { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
+      { id: CHOICE.ICON_UPLOAD, label: "Subir mi imagen" },
       ...(await profileIconOption(msg, store)),
       { id: CHOICE.ICON_DONE, label: "Listo" },
     ];
     replies.push({
       kind: "text",
       text:
-        "Tocá Listo si te gusta. Podés pedir Generar otro, Subir mi icono o Usar mi foto de Google. Escribí cancelar para salir.",
+        "Tocá Listo si te gusta. Podés pedir Generar otro, Subir mi imagen o Usar mi foto de Google. Escribí cancelar para salir.",
     });
     if (store.icon512Url) {
       replies.push({
         kind: "image",
         url: store.icon512Url,
-        caption: "Tu icono actual",
+        caption: "Tu logo actual",
       });
     }
     replies.push(withOptions("¿Qué hacemos?", previewOpts, caps));
@@ -3546,7 +3542,7 @@ async function handleMessageBody(
       draft = { ...draft, product: undefined };
       await setState("IDLE", draft);
       const qtyHint = store.tracksQuantity
-        ? " Quedó con 1 unidad (podés cambiarla en Stock / pausa)."
+        ? " Quedó con 1 unidad (podés cambiarla por audio o desde Productos)."
         : "";
       replies.push({
         kind: "text",
@@ -3841,7 +3837,7 @@ async function profileIconOption(
 async function iconPreviewOptions(
   msg: InboundMessage,
   store: Store,
-  uploadLabel = "Subir mi icono",
+  uploadLabel = "Subir mi imagen",
 ): Promise<Option[]> {
   return [
     { id: CHOICE.ICON_REGEN, label: "Generar otro" },
@@ -3874,26 +3870,29 @@ async function openStoreIconHub(
     {
       kind: "text",
       text:
-        "Icono de la tienda (el cuadrito de la app). No es la foto de un producto.\n\n" +
-        "Podés pedirme que lo arme (texto o audio: «armar icono»), subir una imagen tuya" +
+        "¿Qué imagen querés cambiar?\n\n" +
+        "1️⃣ La foto de un producto que vendés (eso va por Productos).\n\n" +
+        "2️⃣ La foto principal (logo) de tu negocio — el cuadrito de la app.\n\n" +
+        "Acá armamos el logo: podés pedirme que lo dibuje por audio 🎤, subir tu imagen" +
         (profileOpt.length
           ? ", o usar tu foto de Google/cuenta."
-          : "."),
+          : ".") +
+        "\n\nSi te equivocás, decí Cancelar: no se borra tu tienda.",
     },
   ];
   if (store.icon512Url) {
     replies.push({
       kind: "image",
       url: store.icon512Url,
-      caption: "Así se ve ahora",
+      caption: "Así se ve ahora tu logo",
     });
   }
   replies.push(
     withOptions(
-      "¿Qué querés hacer?",
+      "¿Cómo armamos el logo de tu negocio?",
       [
         { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
-        { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
+        { id: CHOICE.ICON_UPLOAD, label: "Subir mi imagen" },
         ...profileOpt,
         { id: CHOICE.MENU_BACK, label: "Volver al menú" },
       ],
@@ -4095,7 +4094,7 @@ async function applyProfileStoreIcon(
         "¿Qué querés hacer?",
         [
           { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
-          { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
+          { id: CHOICE.ICON_UPLOAD, label: "Subir mi imagen" },
           { id: CHOICE.MENU_BACK, label: "Volver al menú" },
         ],
         caps,
@@ -4125,7 +4124,7 @@ async function applyProfileStoreIcon(
         "¿Qué hacemos?",
         [
           { id: CHOICE.ICON_GENERATE, label: "Que lo arme el bot" },
-          { id: CHOICE.ICON_UPLOAD, label: "Subir mi icono" },
+          { id: CHOICE.ICON_UPLOAD, label: "Subir mi imagen" },
           { id: CHOICE.ICON_FROM_PROFILE, label: PROFILE_ICON_LABEL },
           { id: CHOICE.MENU_BACK, label: "Volver al menú" },
         ],

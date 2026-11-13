@@ -52,3 +52,19 @@ export function welcomeBackMessage(ownerName?: string | null): string {
     `¿Qué querés hacer?`
   );
 }
+
+/** Ayuda general: mismo espíritu que §1, sin muro ni rutas con flechas. */
+export function helpGeneralMessage(): string {
+  return (
+    `¿Te trabaste? Sin problema. 👋\n\n` +
+    `Podés hablarme por audio 🎤 o elegir del menú. Yo te voy guiando paso a paso.\n\n` +
+    `📦 Cargar o cambiar productos\n` +
+    `Mandame una foto, o decime nombre y precio por audio.\n\n` +
+    `🎨 Cambiar colores o estilo\n` +
+    `Decime por ejemplo: "Quiero el fondo crema" o "Poné color verde".\n\n` +
+    `💬 Pedidos en tu WhatsApp\n` +
+    `Decime a qué número te escriben tus clientes.\n\n` +
+    `💡 Consejo: decime Menú para ver opciones, o Cancelar para volver atrás (no se borra tu tienda).\n\n` +
+    `¿Empezamos? Mandame un audio o elegí del menú.`
+  );
+}

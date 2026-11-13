@@ -132,7 +132,7 @@ async function main() {
   const productsMenu = await say(undefined, "menu_group_products");
   assert(menuHas(productsMenu, "menu_price", "Cambiar precio"), "Productos tiene Cambiar precio");
   assert(menuHas(productsMenu, "menu_photo", "Cambiar foto"), "Productos tiene Cambiar foto");
-  assert(menuHas(productsMenu, "menu_stock", "Stock / pausa"), "Productos tiene Stock / pausa");
+  assert(menuHas(productsMenu, "menu_stock", "Disponible o agotado"), "Productos tiene Disponible o agotado");
   assert(menuHas(productsMenu, "menu_cancel", "Cancelar"), "Productos tiene Cancelar");
   assert(
     !productsMenu.some(
