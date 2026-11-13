@@ -19,6 +19,7 @@ import { accentStyleVars } from "@/lib/store-accent";
 import {
   businessKindClassName,
   businessKindHeaderLabel,
+  storePatternClassName,
 } from "@/lib/store-business-kind";
 import { storeThemeClassName } from "@/lib/store-theme";
 import { normalizeWelcomeMessage } from "@/lib/store-welcome";
@@ -78,12 +79,13 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
   const kindClass = businessKindClassName(store.businessKind);
   const kindLabel = businessKindHeaderLabel(store.businessKind);
   const themeClass = storeThemeClassName(store.theme);
+  const patternClass = storePatternClassName(store.businessKind);
   const welcome = normalizeWelcomeMessage(store.welcomeMessage);
 
   return (
     <StorePurchaseProvider store={purchase}>
       <div
-        className={`store-theme-shell fade-in ${themeClass}`}
+        className={`store-theme-shell fade-in ${themeClass} ${patternClass}`.trim()}
         style={accentVars as CSSProperties}
       >
       <div

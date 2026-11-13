@@ -61,7 +61,7 @@ npx tsx scripts/smoke-store-voice.ts
 - `channel_link_intents` — códigos de un solo uso para vincular Clerk ↔ WhatsApp
 - `stores.icon_192_url` / `icon_512_url` / `icon_apple_url` / `icon_svg_url` — iconos PWA (PNG/SVG en Blob)
 - `stores.accent_color` — color de acento de la vitrina (`#rrggbb`, null = terracota de marca)
-- `stores.business_kind` — rubro (`artesanal` | `comida` | `ropa`, null = layout default de fichas)
+- `stores.business_kind` — rubro (`artesanal` | `comida` | `ropa`, null = layout default de fichas; con rubro: marco en fotos + trama de iconos en el fondo)
 - `stores.welcome_message` — frase corta debajo del nombre (null = sin frase)
 - `stores.theme` — tema de fondo (`claro` | `crema` | `oscuro`, null = look actual del sitio)
 

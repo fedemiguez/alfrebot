@@ -314,7 +314,7 @@ async function flushPendingSetupPlan(
         workingPlan.businessKindLabel || kindById(kind)?.label || kind;
       replies.push({
         kind: "text",
-        text: `Listo: rubro «${label}». Las fotos de producto en tu vitrina llevan el marco de ese rubro.\n${store.slug ? storeUrl(store.slug) : ""}`.trim(),
+        text: `Listo: rubro «${label}». Las fotos llevan el marco y el fondo de la vitrina una trama de iconos de ese rubro.\n${store.slug ? storeUrl(store.slug) : ""}`.trim(),
       });
     }
     workingPlan = {
@@ -646,14 +646,14 @@ function kindPickMessage(
   const current = resolveBusinessKind(store.businessKind);
   const currentLabel = current
     ? (kindById(current)?.label ?? current)
-    : "Sin rubro (fotos sin marco temático)";
+    : "Sin rubro (sin marco ni trama)";
   const options: Option[] = BUSINESS_KINDS.map((k) => ({
     id: `${CHOICE.KIND_PREFIX}${k.id}`,
     label: k.label,
   }));
   options.push({ id: CHOICE.MENU_BACK, label: "Volver al menú" });
   return withOptions(
-    `¿De qué es tu negocio? Eso pone un marco decorativo en las fotos de producto de la vitrina.\nAhora: ${currentLabel}.`,
+    `¿De qué es tu negocio? Eso pone un marco en las fotos y una trama suave de iconos en el fondo de la vitrina.\nAhora: ${currentLabel}.`,
     options,
     caps,
   );
@@ -666,7 +666,7 @@ function kindConfirmMessage(
 ): OutboundMessage {
   const link = store.slug ? `\nVista: ${storeUrl(store.slug)}` : "";
   return withOptions(
-    `¿Dejamos el rubro «${kind.label}»?\nLas fotos de producto van a llevar el marco ${kind.label.toLowerCase()}.${link}`,
+    `¿Dejamos el rubro «${kind.label}»?\nLas fotos llevan el marco ${kind.label.toLowerCase()} y el fondo de la vitrina una trama de iconos de ese rubro.${link}`,
     [
       { id: CHOICE.YES, label: "Sí, guardar" },
       { id: CHOICE.NO, label: "Otro rubro" },
@@ -2810,7 +2810,7 @@ async function handleMessageBody(
         {
           kind: "text",
           text: updated?.slug
-            ? `Guardé el rubro «${label}». Mirá el marco en las fotos: ${storeUrl(updated.slug)}`
+            ? `Guardé el rubro «${label}». Mirá el marco en las fotos y la trama del fondo: ${storeUrl(updated.slug)}`
             : `Guardé el rubro «${label}».`,
         },
         menuMessage(caps, msg.from),

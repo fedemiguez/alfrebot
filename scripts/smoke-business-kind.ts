@@ -10,6 +10,7 @@ import { getStoreForChannelIdentity } from "../lib/db/repos";
 import {
   BUSINESS_KINDS,
   matchBusinessKindFromText,
+  storePatternClassName,
   wantsBusinessKindText,
 } from "../lib/store-business-kind";
 
@@ -76,6 +77,20 @@ async function main() {
   assert(matchBusinessKindFromText("tienda de comida")?.id === "comida", "comida");
   assert(matchBusinessKindFromText("vendo ropa")?.id === "ropa", "ropa");
   assert(wantsBusinessKindText("vendo cerámica"), "wants ceramica");
+  assert(storePatternClassName(null) === "", "sin rubro sin trama");
+  assert(
+    storePatternClassName("comida") === "store-pattern store-pattern--comida",
+    "trama comida",
+  );
+  assert(
+    storePatternClassName("ropa") === "store-pattern store-pattern--ropa",
+    "trama ropa",
+  );
+  assert(
+    storePatternClassName("artesanal") ===
+      "store-pattern store-pattern--artesanal",
+    "trama artesanal",
+  );
   assert(
     (await interpretFreeText("vendo cerámica")).intent === "set_business_kind",
     "nlu set_business_kind",
@@ -109,6 +124,10 @@ async function main() {
     "all kinds listed",
   );
   assert(hasOption(pick, "menu_cancel"), "Cancelar on pick");
+  assert(
+    pick.some((r) => r.kind === "text" && /trama/i.test(r.text)),
+    "pick menciona trama",
+  );
 
   const confirm = await say(undefined, "kind_artesanal");
   assert(
@@ -116,6 +135,10 @@ async function main() {
       (r) => r.kind === "text" && /Artesanal/i.test(r.text),
     ),
     "confirm preview names Artesanal",
+  );
+  assert(
+    confirm.some((r) => r.kind === "text" && /trama/i.test(r.text)),
+    "confirm menciona trama",
   );
   await say("Sí", "yes");
   store = await getStoreForChannelIdentity(from);
