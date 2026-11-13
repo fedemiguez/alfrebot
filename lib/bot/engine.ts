@@ -287,7 +287,7 @@ async function flushPendingSetupPlan(
         workingPlan.businessKindLabel || kindById(kind)?.label || kind;
       replies.push({
         kind: "text",
-        text: `Listo: rubro «${label}». Las fichas de producto de tu vitrina usan esa plantilla.\n${store.slug ? storeUrl(store.slug) : ""}`.trim(),
+        text: `Listo: rubro «${label}». Las fotos de producto en tu vitrina llevan el marco de ese rubro.\n${store.slug ? storeUrl(store.slug) : ""}`.trim(),
       });
     }
     workingPlan = {
@@ -578,14 +578,14 @@ function kindPickMessage(
   const current = resolveBusinessKind(store.businessKind);
   const currentLabel = current
     ? (kindById(current)?.label ?? current)
-    : "Sin rubro (layout clásico)";
+    : "Sin rubro (fotos sin marco temático)";
   const options: Option[] = BUSINESS_KINDS.map((k) => ({
     id: `${CHOICE.KIND_PREFIX}${k.id}`,
     label: k.label,
   }));
   options.push({ id: CHOICE.MENU_BACK, label: "Volver al menú" });
   return withOptions(
-    `¿De qué es tu negocio? Eso cambia cómo se ven las fichas de producto en la vitrina.\nAhora: ${currentLabel}.`,
+    `¿De qué es tu negocio? Eso pone un marco decorativo en las fotos de producto de la vitrina.\nAhora: ${currentLabel}.`,
     options,
     caps,
   );
@@ -598,7 +598,7 @@ function kindConfirmMessage(
 ): OutboundMessage {
   const link = store.slug ? `\nVista: ${storeUrl(store.slug)}` : "";
   return withOptions(
-    `¿Dejamos el rubro «${kind.label}»?\nLas fichas de producto van a usar la plantilla ${kind.label.toLowerCase()}.${link}`,
+    `¿Dejamos el rubro «${kind.label}»?\nLas fotos de producto van a llevar el marco ${kind.label.toLowerCase()}.${link}`,
     [
       { id: CHOICE.YES, label: "Sí, guardar" },
       { id: CHOICE.NO, label: "Otro rubro" },
@@ -643,7 +643,7 @@ function helpMessage(): OutboundMessage {
       "Foto de un PRODUCTO: menú → Productos → Cambiar foto, o pedime cambiar la foto y te listo los productos; después mandás la foto nueva y confirmamos.\n" +
       "Icono de la TIENDA (no es la foto de un producto): menú → Tienda → Icono de la tienda. Pedime por texto o audio «armar icono» / «icono de la tienda», o «subir icono» y mandá tu imagen.\n" +
       "Color de la vitrina: menú → Tienda → Personalizar → Color, o pedime «quiero verde» / «color azul».\n" +
-      "Rubro (plantilla de fichas): menú → Tienda → Personalizar → Rubro, o pedime «vendo cerámica» / «tienda de comida» / «ropa».\n" +
+      "Rubro (marco en las fotos): menú → Tienda → Personalizar → Rubro, o pedime «vendo cerámica» / «tienda de comida» / «ropa».\n" +
       "WhatsApp de pedidos: menú → WhatsApp → WhatsApp pedidos (el número donde te escriben los clientes).\n" +
       "Si armaste la tienda en la web y querés gestionarla por WhatsApp: menú → WhatsApp → Vincular WhatsApp, después desde el celular escribí «ya tengo cuenta» y el código.\n" +
       "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
@@ -2573,7 +2573,7 @@ async function handleMessageBody(
         {
           kind: "text",
           text: updated?.slug
-            ? `Guardé el rubro «${label}». Mirá las fichas: ${storeUrl(updated.slug)}`
+            ? `Guardé el rubro «${label}». Mirá el marco en las fotos: ${storeUrl(updated.slug)}`
             : `Guardé el rubro «${label}».`,
         },
         menuMessage(caps, msg.from),

@@ -3,10 +3,10 @@ import Link from "next/link";
 import { formatPriceArs } from "@/lib/format";
 import type { Product } from "@/lib/db/schema";
 import { ProductBuyActions } from "@/components/store-purchase";
+import { ProductImageFrame } from "@/components/product-image-frame";
 import type { StorePurchaseInfo } from "@/lib/store-purchase";
 import {
   resolveBusinessKind,
-  type BusinessKind,
 } from "@/lib/store-business-kind";
 
 export function ProductCard({
@@ -17,7 +17,7 @@ export function ProductCard({
 }: {
   product: Product;
   store: StorePurchaseInfo;
-  /** Rubro de la tienda; null/undefined = layout default. */
+  /** Rubro de la tienda; null/undefined = layout default (sin marco). */
   businessKind?: string | null;
   priority?: boolean;
 }) {
@@ -31,7 +31,11 @@ export function ProductCard({
         href={href}
         className="product-card__link block focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
       >
-        <div className="product-card__media relative overflow-hidden border border-[var(--border)] bg-white">
+        <div
+          className={`product-card__media relative overflow-hidden bg-white${
+            kind ? " product-card__media--framed" : " border border-[var(--border)]"
+          }`}
+        >
           {product.imageUrl ? (
             <Image
               src={product.imageUrl}
@@ -50,14 +54,16 @@ export function ProductCard({
               Sin foto
             </div>
           )}
+          {kind ? (
+            <ProductImageFrame kind={kind} frameId={product.id} />
+          ) : null}
           {kind === "comida" && product.priceCents != null && (
             <span className="product-card__price-badge" aria-hidden="true">
               {price}
             </span>
           )}
-          {kindBadge(kind)}
           {!product.inStock && (
-            <span className="absolute bottom-3 left-3 z-[1] bg-[var(--soldout-bg)] px-3 py-1 text-[15px] font-medium text-[var(--soldout)]">
+            <span className="absolute bottom-3 left-3 z-[3] bg-[var(--soldout-bg)] px-3 py-1 text-[15px] font-medium text-[var(--soldout)]">
               Agotado
             </span>
           )}
@@ -91,29 +97,4 @@ export function ProductCard({
       />
     </article>
   );
-}
-
-function kindBadge(kind: BusinessKind | null) {
-  if (kind === "artesanal") {
-    return (
-      <span className="product-card__kind-badge product-card__kind-badge--artesanal">
-        Hecho a mano
-      </span>
-    );
-  }
-  if (kind === "comida") {
-    return (
-      <span className="product-card__kind-badge product-card__kind-badge--comida">
-        Porción
-      </span>
-    );
-  }
-  if (kind === "ropa") {
-    return (
-      <span className="product-card__kind-badge product-card__kind-badge--ropa">
-        Ver detalle
-      </span>
-    );
-  }
-  return null;
 }
