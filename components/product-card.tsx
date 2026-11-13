@@ -32,25 +32,31 @@ export function ProductCard({
         className="product-card__link block focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
       >
         <div
-          className={`product-card__media relative overflow-hidden bg-white${
+          className={`product-card__media relative overflow-hidden${
             kind ? " product-card__media--framed" : " border border-[var(--border)]"
           }`}
         >
           {product.imageUrl ? (
-            <Image
-              src={product.imageUrl}
-              alt={product.title}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover"
-              priority={priority}
-              unoptimized={
-                product.imageUrl.startsWith("/") ||
-                product.imageUrl.startsWith("data:")
-              }
-            />
+            <div
+              className={`product-card__photo-wrap${
+                kind ? " product-card__photo-wrap--framed" : ""
+              }`}
+            >
+              <Image
+                src={product.imageUrl}
+                alt={product.title}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className="product-card__photo object-cover"
+                priority={priority}
+                unoptimized={
+                  product.imageUrl.startsWith("/") ||
+                  product.imageUrl.startsWith("data:")
+                }
+              />
+            </div>
           ) : (
-            <div className="flex h-full items-center justify-center bg-[var(--paper)] text-[var(--muted)]">
+            <div className="product-card__photo-empty flex h-full items-center justify-center text-[var(--muted)]">
               Sin foto
             </div>
           )}
