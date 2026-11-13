@@ -10,6 +10,7 @@ import {
 } from "@/components/store-purchase";
 import { StoreContactLine } from "@/components/store-contact";
 import { StoreInstallCta } from "@/components/store-install-cta";
+import { StoreArtesaniasCatalog } from "@/components/store-artesanias-catalog";
 import { StoreComidasCatalog } from "@/components/store-comidas-catalog";
 import { StoreRopaCatalog } from "@/components/store-ropa-catalog";
 import { StoreVoiceAssistant } from "@/components/store-voice-assistant";
@@ -93,14 +94,17 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
   const kind = resolveBusinessKind(store.businessKind);
   const isRopaIkt = kind === "ropa";
   const isComidaIkt = kind === "comida";
-  const ropaEyebrow = iktHeaderEyebrow(store.businessKind);
+  const isArtesaniaIkt = kind === "artesanal";
+  const headerEyebrow = iktHeaderEyebrow(store.businessKind);
   // Con rubro Ikt: theme claro/crema/oscuro ignorado (decisión Federico).
   const themeClass = iktShell.ikt
     ? (iktShell.themeClassName ?? "")
     : storeThemeClassName(store.theme);
-  // Ropa/Comidas Ikt: trama off. Artesanal conserva trama hasta PR5.
+  // Con rubro Ikt (ropa/comida/artesanal): trama off.
   const patternClass =
-    isRopaIkt || isComidaIkt ? "" : storePatternClassName(store.businessKind);
+    isRopaIkt || isComidaIkt || isArtesaniaIkt
+      ? ""
+      : storePatternClassName(store.businessKind);
   const welcome = normalizeWelcomeMessage(store.welcomeMessage);
   const monogram = storeMonogramInitials(store.name);
   const showOpenBanner = isComidaIkt && Boolean(store.openNow);
@@ -127,9 +131,9 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
         {isRopaIkt ? (
           <header className="store-header-ropa flex items-center justify-between gap-4 border-b-2 border-[color-mix(in_srgb,var(--ink)_12%,transparent)] pb-3">
             <div className="min-w-0">
-              {ropaEyebrow ? (
+              {headerEyebrow ? (
                 <p className="store-header-ropa__eyebrow text-xs font-bold uppercase tracking-wider text-[var(--ink)] opacity-80">
-                  {ropaEyebrow}
+                  {headerEyebrow}
                 </p>
               ) : null}
               <h1 className="store-header-ropa__name font-[family-name:var(--font-display)] text-2xl font-extrabold tracking-tight text-[var(--ink)] sm:text-3xl">
@@ -163,6 +167,22 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
                 {monogram}
               </div>
             )}
+          </header>
+        ) : isArtesaniaIkt ? (
+          <header className="store-header-artesanias text-center">
+            {headerEyebrow ? (
+              <p className="store-header-artesanias__eyebrow text-xs font-bold uppercase tracking-wider text-[var(--ink)] opacity-80">
+                {headerEyebrow}
+              </p>
+            ) : null}
+            <h1 className="store-header-artesanias__name text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
+              {store.name}
+            </h1>
+            {welcome ? (
+              <p className="store-welcome mt-0.5 text-xs font-medium opacity-90">
+                {welcome}
+              </p>
+            ) : null}
           </header>
         ) : isComidaIkt ? (
           <header className="store-header-comidas flex items-center gap-3">
@@ -275,6 +295,10 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
         ) : isComidaIkt ? (
           <div className="mt-8">
             <StoreComidasCatalog products={products} store={purchase} />
+          </div>
+        ) : isArtesaniaIkt ? (
+          <div className="mt-8">
+            <StoreArtesaniasCatalog products={products} store={purchase} />
           </div>
         ) : (
           <div className="mt-10 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">

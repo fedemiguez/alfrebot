@@ -19,18 +19,19 @@ export function iktWantCtaLabel(
 ): string | null {
   const rubro = businessKindToIktRubro(businessKind);
   if (!rubro) return null;
-  // Fase 2–3: Ropa + Comidas; Artesanías en PR5.
   if (rubro === "ropa") return IKT_WANT_CTA.ropa;
   if (rubro === "comidas") return IKT_WANT_CTA.comidas;
+  if (rubro === "artesanias") return IKT_WANT_CTA.artesanias;
   return null;
 }
 
-/** Eyebrow del header de vitrina Ikt (solo Ropa en preview). */
+/** Eyebrow del header de vitrina Ikt (Ropa / Artesanías en preview). */
 export function iktHeaderEyebrow(
   businessKind: string | null | undefined,
 ): string | null {
   const rubro = businessKindToIktRubro(businessKind);
   if (rubro === "ropa") return "Tienda de Ropa";
+  if (rubro === "artesanias") return "Taller Artesanal";
   return null;
 }
 
