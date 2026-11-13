@@ -3,7 +3,14 @@
  * Solo strings; sin lógica de FSM.
  */
 
+import { appBaseUrl } from "@/lib/env";
+
 export type WelcomeClosing = "owner" | "guest" | "onboarding";
+
+/** URL pública de la página de ayuda (web + WhatsApp). */
+export function helpPageUrl(): string {
+  return `${appBaseUrl()}/ayuda`;
+}
 
 /** Mensaje principal tipo guía §1 (escaneable, voice-first, 3 opciones). */
 export function welcomeMainMessage(opts?: {
@@ -64,6 +71,9 @@ export function helpGeneralMessage(): string {
     `Decime por ejemplo: "Quiero el fondo crema" o "Poné color verde".\n\n` +
     `💬 Pedidos en tu WhatsApp\n` +
     `Decime a qué número te escriben tus clientes.\n\n` +
+    `👨‍👩‍👧 ¿Le armás la tienda a alguien de la familia?\n` +
+    `En la web, menú WhatsApp → Manejar desde acá: te doy un código para unir el celular de quien vende. Es la misma tienda (mismo email + su WhatsApp).\n\n` +
+    `📖 Guía completa (pasos y preguntas): ${helpPageUrl()}\n\n` +
     `💡 Consejo: decime Menú para ver opciones, o Cancelar para volver atrás (no se borra tu tienda).\n\n` +
     `¿Empezamos? Mandame un audio o elegí del menú.`
   );
