@@ -281,6 +281,80 @@ export function extractPersonName(raw: string): PersonNameExtraction {
   return { name, confidence: usedPrefix || rest.split(/\s+/).length <= 3 ? "high" : "low" };
 }
 
+function normalizeIntentText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Mensaje con nombre explícito («la tienda se llama X»), no solo intención. */
+export function hasExplicitStoreNamePhrase(text: string): boolean {
+  return (
+    /(?:la\s+)?tienda\s+se\s+llama\b/i.test(text) ||
+    /(?:mi\s+)?tienda\s+se\s+llama\b/i.test(text) ||
+    /\bse\s+llama\s+(?:la\s+)?tienda\b/i.test(text) ||
+    // «mi tienda es Cerámicas…» — no «mi tienda es de ropa»
+    /(?:mi\s+)?tienda\s+es\s+(?!de\b)/i.test(text)
+  );
+}
+
+/**
+ * Saludo o intención de armar/crear tienda (sin nombre explícito).
+ * Nunca debe usarse como nombre ni slug de la tienda.
+ */
+export function isStoreCreateIntentPhrase(text: string): boolean {
+  const raw = text.replace(/\s+/g, " ").trim();
+  if (!raw || raw.length < 3) return false;
+  if (hasExplicitStoreNamePhrase(raw)) return false;
+
+  const t = normalizeIntentText(raw)
+    .replace(/\bcodigo\s+\d{3,6}\b/g, "")
+    .replace(/\b\d{4,6}\b/g, "")
+    .replace(/[.!,]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (/^(hola|buenas)(?:\s+(?:dias|tardes|noches))?$/.test(t)) return true;
+
+  const createVerb =
+    /\b(?:armar|crear|hacer|abrir|montar|poner)\s+(?:mi\s+)?tienda\b/;
+  const wantsCreate =
+    /^(?:hola|buenas)?(?:\s+(?:dias|tardes|noches))?\s*(?:quiero|necesito|me gustaria|vamos a)?\s*(?:armar|crear|hacer|abrir|montar|poner)\s+(?:mi\s+)?tienda\b/;
+
+  if (wantsCreate.test(t) || (/^(?:hola|buenas)\b/.test(t) && createVerb.test(t))) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Candidato usable como nombre de tienda (no saludo / frase de intención).
+ */
+export function isUsableStoreName(
+  candidate: string | undefined | null,
+): boolean {
+  if (!candidate?.trim()) return false;
+  const raw = candidate.replace(/\s+/g, " ").trim();
+  if (raw.length < 2 || raw.length > 80) return false;
+  if (isStoreCreateIntentPhrase(raw)) return false;
+
+  const t = normalizeIntentText(raw);
+  // «quiero crear/armar mi tienda…» aunque venga con cola de productos
+  if (
+    /\b(quiero|necesito|me gustaria|vamos a)\b/.test(t) &&
+    /\b(armar|crear|hacer|abrir|montar|poner)\b/.test(t) &&
+    /\btienda\b/.test(t)
+  ) {
+    return false;
+  }
+  if (/^hola\b/.test(t) && /\btienda\b/.test(t)) return false;
+  return true;
+}
+
 export function parseCaptionHints(text: string): {
   title?: string;
   priceCents?: number;
@@ -347,7 +421,11 @@ export function parseSetupPlan(text: string): PendingSetupPlan | null {
     );
   if (storeMatch?.[1]) {
     const name = cleanPlanFragment(storeMatch[1]);
-    if (name.length >= 2 && !/\b(logo|icono|producto)/i.test(name)) {
+    if (
+      name.length >= 2 &&
+      !/\b(logo|icono|producto)/i.test(name) &&
+      isUsableStoreName(name)
+    ) {
       plan.storeName = name;
     }
   }

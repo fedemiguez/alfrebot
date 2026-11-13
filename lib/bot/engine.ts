@@ -20,6 +20,8 @@ import {
   isAffirmative,
   isLogoutIntent,
   isNegative,
+  isStoreCreateIntentPhrase,
+  isUsableStoreName,
   mergeSetupPlan,
   parseCaptionHints,
   parsePriceToCents,
@@ -235,12 +237,41 @@ function absorbSetupPlan(
   if (!text?.trim()) return draft;
   const parsed = parseSetupPlan(text);
   if (!parsed) return draft;
+  const parsedStoreName =
+    parsed.storeName && isUsableStoreName(parsed.storeName)
+      ? parsed.storeName
+      : undefined;
+  const pending = mergeSetupPlan(draft.pendingSetupPlan, {
+    ...parsed,
+    storeName: parsedStoreName,
+  });
   return {
     ...draft,
-    pendingSetupPlan: mergeSetupPlan(draft.pendingSetupPlan, parsed),
+    pendingSetupPlan: pending,
     ownerName: draft.ownerName ?? parsed.ownerName,
-    storeName: draft.storeName ?? parsed.storeName,
+    storeName: draft.storeName ?? parsedStoreName,
   };
+}
+
+/** Quita nombres de tienda tomados de saludos / frases de intención. */
+function scrubUnusableStoreName(draft: ConversationDraft): ConversationDraft {
+  let next = draft;
+  if (next.storeName && !isUsableStoreName(next.storeName)) {
+    next = { ...next, storeName: undefined, slug: undefined };
+  }
+  if (
+    next.pendingSetupPlan?.storeName &&
+    !isUsableStoreName(next.pendingSetupPlan.storeName)
+  ) {
+    next = {
+      ...next,
+      pendingSetupPlan: {
+        ...next.pendingSetupPlan,
+        storeName: undefined,
+      },
+    };
+  }
+  return next;
 }
 
 function takeNextQueuedProductTitle(
@@ -1395,10 +1426,10 @@ async function handleMessageBody(
       replies.push({ kind: "text", text: "Decime tu nombre, así te hablo de vos." });
       return replies;
     }
-    // Re-entrada desde el chat v2 («Seguir en este chat») u hola suelto.
+    // Re-entrada desde el chat v2 («Seguir en este chat») u hola / intención suelta.
     if (
       /^(hola|buenas)[\s!.]*$/i.test(raw) ||
-      /quiero armar mi tienda/i.test(raw)
+      isStoreCreateIntentPhrase(raw)
     ) {
       replies.push({
         kind: "text",
@@ -1466,8 +1497,9 @@ async function handleMessageBody(
       return replies;
     }
     if (choice === CHOICE.YES || isAffirmative(text)) {
+      draft = scrubUnusableStoreName(draft);
       const plannedStore = draft.pendingSetupPlan?.storeName ?? draft.storeName;
-      if (plannedStore) {
+      if (plannedStore && isUsableStoreName(plannedStore)) {
         const slug = await uniqueSlug(plannedStore, slugExists);
         draft = { ...draft, storeName: plannedStore, slug };
         return replyWithChoices(
@@ -1524,22 +1556,40 @@ async function handleMessageBody(
   }
 
   if (state === "ASK_STORE") {
-    draft = absorbSetupPlan(draft, msg.text);
-    const storeName =
-      draft.pendingSetupPlan?.storeName ??
-      draft.storeName ??
-      msg.text?.trim();
-    if (!storeName) {
-      replies.push({ kind: "text", text: "¿Cómo se va a llamar tu tienda?" });
+    draft = scrubUnusableStoreName(absorbSetupPlan(draft, msg.text));
+    const text = msg.text?.trim() ?? "";
+    // Si el mensaje era un plan largo con «se llama X», usar solo ese nombre.
+    const fromPlan =
+      draft.pendingSetupPlan?.storeName &&
+      isUsableStoreName(draft.pendingSetupPlan.storeName)
+        ? draft.pendingSetupPlan.storeName
+        : undefined;
+    const fromDraft =
+      draft.storeName && isUsableStoreName(draft.storeName)
+        ? draft.storeName
+        : undefined;
+    // Nunca usar saludos / «quiero crear mi tienda…» como nombre.
+    const fromText =
+      text &&
+      !isStoreCreateIntentPhrase(text) &&
+      isUsableStoreName(text) &&
+      // Plan multi-intent sin nombre explícito: no tomar el blob entero.
+      !(msg.text && parseSetupPlan(msg.text) && !fromPlan)
+        ? text
+        : undefined;
+    const resolvedName = fromPlan ?? fromDraft ?? fromText;
+    if (!resolvedName) {
+      const planNote =
+        draft.pendingSetupPlan && describeSetupPlan(draft.pendingSetupPlan)
+          ? `\n\nAnoté: ${describeSetupPlan(draft.pendingSetupPlan)}.`
+          : "";
+      await setState("ASK_STORE", draft);
+      replies.push({
+        kind: "text",
+        text: `¿Cómo querés que se llame tu tienda?${planNote} Decime solo el nombre (ej. Cerámicas de Norma).`,
+      });
       return replies;
     }
-    // Si el mensaje era un plan largo, no usar el texto entero como nombre.
-    const fromPlanOnly =
-      Boolean(draft.pendingSetupPlan?.storeName) &&
-      Boolean(msg.text && parseSetupPlan(msg.text));
-    const resolvedName = fromPlanOnly
-      ? draft.pendingSetupPlan!.storeName!
-      : storeName;
     const slug = await uniqueSlug(resolvedName, slugExists);
     draft = { ...draft, storeName: resolvedName, slug };
     const planNote =
@@ -2138,6 +2188,7 @@ async function handleMessageBody(
     }
 
     // Multi-intent en IDLE: logo + color + rubro + tema + frase + productos.
+    // No renombrar una tienda ya creada desde frases de chat / intención.
     if (msg.text && store) {
       const idlePlan = parseSetupPlan(msg.text);
       if (
@@ -2149,9 +2200,13 @@ async function handleMessageBody(
           idlePlan.welcomeMessage !== undefined ||
           (idlePlan.productTitles?.length ?? 0) > 0)
       ) {
+        const idleWithoutRename = { ...idlePlan, storeName: undefined };
         draft = {
           ...draft,
-          pendingSetupPlan: mergeSetupPlan(draft.pendingSetupPlan, idlePlan),
+          pendingSetupPlan: mergeSetupPlan(
+            draft.pendingSetupPlan,
+            idleWithoutRename,
+          ),
         };
         return flushPendingSetupPlan(store, draft, setState, caps, msg, []);
       }
