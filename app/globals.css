@@ -166,9 +166,19 @@ body {
 
 .product-card--comida .product-card__photo-wrap--framed {
   /* Aro interno ~7.5 + franja de acento. */
-  inset: 12%;
-  /* Solo comida: el marco SVG ya es redondeado (rx≈11); la foto sigue esa curva. */
-  border-radius: 12%;
+  inset: 13%;
+  /*
+   * Solo comida: marco SVG tipo plato (rx≈11–14).
+   * Radius en wrap + img: Next/Image fill es position:absolute y a veces
+   * no se recorta solo con overflow+radius en el padre.
+   */
+  border-radius: 1.75rem;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.product-card--comida .product-card__photo-wrap--framed .product-card__photo {
+  border-radius: inherit;
 }
 
 .product-card--ropa .product-card__photo-wrap--framed {
