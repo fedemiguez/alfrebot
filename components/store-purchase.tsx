@@ -422,10 +422,7 @@ export function HowToOrderNote({
         ? "Sumalo al pedido. Cuando termines, abrí Pedido y mandalo por WhatsApp."
         : "Tocá Lo quiero y te abre WhatsApp para pedirlo.";
     return (
-      <p
-        className="mt-4 text-[1.1rem] leading-relaxed text-[var(--ink)]"
-        role="note"
-      >
+      <p className="store-howto-compact mt-4" role="note">
         {text}
       </p>
     );

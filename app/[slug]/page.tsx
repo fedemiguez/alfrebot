@@ -141,16 +141,6 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
           </p>
         )}
 
-        <HowToOrderNote checkoutMode={purchase.checkoutMode} />
-
-        <StoreInstallCta storeName={store.name} />
-
-        <NoPublicPhoneNote
-          showPhone={store.showPhone}
-          checkoutMode={purchase.checkoutMode}
-          ownerName={store.ownerName}
-        />
-
         <StoreVoiceAssistant
           store={purchase}
           products={products.map((p) => ({
@@ -162,6 +152,17 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
             inStock: p.inStock,
           }))}
           cloudSttAvailable={hasTranscriptionConfigured()}
+        />
+
+        <div className="store-secondary-notes">
+          <HowToOrderNote checkoutMode={purchase.checkoutMode} compact />
+          <StoreInstallCta storeName={store.name} compact />
+        </div>
+
+        <NoPublicPhoneNote
+          showPhone={store.showPhone}
+          checkoutMode={purchase.checkoutMode}
+          ownerName={store.ownerName}
         />
 
         <div className="mt-10 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">

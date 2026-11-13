@@ -576,3 +576,196 @@ body {
   --ikt-primary-text: #ffffff;
   --ikt-border: #c5d6c8;
 }
+
+/* ——— Voice chrome sticky (Fase 1) ——— */
+.store-voice {
+  margin-top: 1rem;
+}
+
+.store-voice-sticky {
+  position: sticky;
+  top: max(0px, env(safe-area-inset-top, 0px));
+  z-index: 40;
+  padding: 0.75rem;
+  border-radius: var(--ikt-radius-card);
+  border: 2px solid var(--ikt-primary);
+  background: var(--ikt-surface);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+}
+
+.store-voice-btn {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 0.75rem 0.75rem;
+  border: none;
+  border-radius: var(--ikt-radius-btn);
+  background: var(--ikt-primary);
+  color: var(--ikt-primary-text);
+  font-family: var(--ikt-font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+  touch-action: manipulation;
+  transition: transform 0.12s ease;
+}
+
+.store-voice-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.store-voice-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.store-voice-btn.is-listening {
+  outline: 2px solid var(--ikt-primary);
+  outline-offset: 2px;
+}
+
+.store-voice-type {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--ikt-radius-btn);
+  border: 1px solid color-mix(in srgb, var(--ikt-text-main) 20%, transparent);
+  background: color-mix(in srgb, var(--ikt-bg) 80%, white);
+}
+
+.store-voice-type-icon {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.store-voice-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--ikt-text-main);
+  font-family: var(--ikt-font-body);
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.35;
+  outline: none;
+}
+
+.store-voice-input::placeholder {
+  color: var(--ikt-text-muted);
+  opacity: 0.85;
+}
+
+.store-voice-status {
+  margin-top: 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ikt-primary);
+}
+
+.store-voice-status.is-muted {
+  font-weight: 500;
+  color: var(--ikt-text-muted);
+}
+
+.store-voice-transcript {
+  margin-top: 1rem;
+  font-family: var(--ikt-font-heading);
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ikt-text-main);
+}
+
+.store-voice-spoken {
+  margin-top: 0.35rem;
+  font-size: 1.1rem;
+  line-height: 1.45;
+  color: var(--ikt-text-muted);
+}
+
+.store-voice-error {
+  margin-top: 0.75rem;
+  font-size: 1.05rem;
+  color: var(--ikt-primary);
+}
+
+.store-voice-hits {
+  margin-top: 1rem;
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.store-voice-hit {
+  border: 1px solid var(--ikt-border);
+  background: var(--ikt-surface);
+  border-radius: var(--ikt-radius-card);
+  padding: 1rem;
+}
+
+.store-voice-hit.is-selected {
+  box-shadow: 0 0 0 2px var(--ikt-primary);
+}
+
+/* Notas secundarias: no compiten con el voice chrome */
+.store-secondary-notes {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.store-secondary-notes .store-howto-compact {
+  margin-top: 0;
+}
+
+.store-howto-compact,
+.store-install-compact {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--ikt-radius-btn);
+  border: 1px solid var(--ikt-border);
+  background: transparent;
+  color: var(--ikt-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.store-install-compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.store-install-compact .store-install-compact-btn {
+  min-height: 40px;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--ikt-radius-btn);
+  border: 1px solid var(--ikt-border);
+  background: var(--ikt-surface);
+  color: var(--ikt-text-main);
+  font-size: 0.9rem;
+  font-weight: 600;
+  touch-action: manipulation;
+}
+
+.store-install-compact-help {
+  width: 100%;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--ikt-text-muted);
+}
