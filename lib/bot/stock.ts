@@ -103,11 +103,11 @@ export function confirmStockMessage(
       : "¿Pasamos a solo marcar Agotado o Disponible, sin números?";
   } else if (product) {
     if (action === "pause") {
-      text = `¿Querés pausar "${product.title}"? (queda Agotado)`;
+      text = `¿Avisamos que no queda "${product.title}"? (queda Agotado)`;
     } else if (action === "resume") {
       text = store.tracksQuantity
-        ? `¿Querés reactivar "${product.title}"? Después te pido la cantidad.`
-        : `¿Querés reactivar "${product.title}"?`;
+        ? `¿Volvemos a vender "${product.title}"? Después te pido cuántas unidades quedan.`
+        : `¿Volvemos a vender "${product.title}"?`;
     } else if (action === "set_qty") {
       text = `¿Dejamos "${product.title}" con ${draft.stockQtyPending ?? 0} unidades?`;
     } else if (action === "hide") {

@@ -196,7 +196,9 @@ async function main() {
     pauseReplies.some(
       (r) =>
         r.kind === "text" &&
-        /Querés pausar "Lata de cerveza"|Marcamos "Lata de cerveza"/.test(r.text),
+        /Avisamos que no queda "Lata de cerveza"|no queda "Lata de cerveza"/.test(
+          r.text,
+        ),
     ),
     "confirmación pausa por audio",
   );
