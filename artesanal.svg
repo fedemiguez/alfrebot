@@ -1,75 +1,115 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
   <defs>
-    <g id="pincel" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M-3 -16 L-3 4 L3 4 L3 -16"/>
-      <path d="M-4 4 L-6 16 Q0 20 6 16 L4 4"/>
-      <line x1="-3" y1="-8" x2="3" y2="-8"/>
+    <g id="pincel" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+      <g transform="scale(1.42)">
+        <path d="M-2.2 -14 L-2.2 2 L2.2 2 L2.2 -14 Z"/>
+        <path d="M-2.2 -5 L2.2 -5"/>
+        <path d="M-3 2 L-5.5 13 Q0 16.5 5.5 13 L3 2"/>
+      </g>
     </g>
-    <g id="ovillo" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="0" cy="0" r="12"/>
-      <path d="M-6 -6 Q0 -2 6 -6"/>
-      <path d="M-8 2 Q0 6 8 2"/>
-      <path d="M12 0 Q16 4 20 2"/>
+    <g id="ovillo" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+      <g transform="scale(1.42)">
+        <circle cx="0" cy="0" r="10"/>
+        <path d="M-6.5 -4.5 Q0 -1 6.5 -5"/>
+        <path d="M-7 3 Q0 6.5 7 2"/>
+        <path d="M-2 -8 Q2 -2 3 6"/>
+        <path d="M10 1 Q15 4 14 8"/>
+      </g>
     </g>
-    <g id="tijera" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="-6" cy="10" r="4"/>
-      <circle cx="6" cy="10" r="4"/>
-      <path d="M-4 6 L4 -12"/>
-      <path d="M4 6 L-4 -12"/>
+    <g id="tijera" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+      <g transform="scale(1.42)">
+        <circle cx="-4.5" cy="8" r="3.6"/>
+        <circle cx="4.5" cy="8" r="3.6"/>
+        <path d="M-1.8 5.2 L2.6 -14"/>
+        <path d="M1.8 5.2 L-2.6 -14"/>
+      </g>
     </g>
-    <g id="maceta" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M-10 0 L-8 14 L8 14 L10 0 Z"/>
-      <line x1="-12" y1="0" x2="12" y2="0"/>
-      <path d="M0 0 L0 -6 Q-6 -10 -4 -16"/>
-      <path d="M0 -6 Q6 -10 4 -16"/>
-      <path d="M0 -4 L0 -8 Q0 -14 2 -18"/>
+    <g id="maceta" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+      <g transform="scale(1.42)">
+        <path d="M-10 3 L-7.5 13 L7.5 13 L10 3 Z"/>
+        <path d="M-12 3 L12 3"/>
+        <path d="M0 3 L0 -3"/>
+        <path d="M0 -1 Q-6.5 -5 -4.5 -13"/>
+        <path d="M0 -2 Q6.5 -7 4.5 -14"/>
+        <path d="M-0.5 0 Q-1 -7 2 -11"/>
+      </g>
     </g>
-    <g id="ceramica" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M-8 10 L-10 -4 Q-10 -12 0 -12 Q10 -12 10 -4 L8 10 Z"/>
-      <path d="M10 -4 Q16 -4 16 2 Q16 6 10 6"/>
-      <ellipse cx="0" cy="-12" rx="8" ry="3"/>
+    <g id="ceramica" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+      <g transform="scale(1.42)">
+        <path d="M-6.5 12 L-8.5 -1 Q-8.5 -11 0 -11 Q8.5 -11 8.5 -1 L6.5 12 Z"/>
+        <path d="M8.5 -1 Q14.5 -1 14.5 4.5 Q14.5 8 8.5 6.5"/>
+        <ellipse cx="0" cy="-11" rx="6.5" ry="2"/>
+      </g>
     </g>
-    <g id="martillo" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="-12" y="-14" width="16" height="8" rx="1"/>
-      <line x1="-2" y1="-6" x2="-2" y2="16"/>
-      <path d="M-12 -14 L-14 -16 L-14 -10 L-12 -12"/>
+    <g id="martillo" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+      <g transform="scale(1.42)">
+        <path d="M-13 -11 L3 -11 L3 -4.5 L-13 -4.5 Z"/>
+        <path d="M-13 -11 L-15.5 -13 L-15.5 -4.5 L-13 -4.5"/>
+        <path d="M-5 -4.5 L-5 14"/>
+      </g>
     </g>
   </defs>
-  <use href="#pincel" transform="translate(70, 60) rotate(-18) scale(1.05)"/>
-  <use href="#ovillo" transform="translate(195, 75) rotate(10) scale(0.9)"/>
-  <use href="#tijera" transform="translate(330, 55) rotate(-25) scale(1.15)"/>
-  <use href="#maceta" transform="translate(465, 70) rotate(15) scale(0.95)"/>
-  <use href="#ceramica" transform="translate(575, 85) rotate(-8) scale(1.0)"/>
-  <use href="#martillo" transform="translate(115, 155) rotate(28) scale(0.85)"/>
-  <use href="#pincel" transform="translate(255, 140) rotate(-12) scale(1.1)"/>
-  <use href="#ovillo" transform="translate(395, 170) rotate(20) scale(1.0)"/>
-  <use href="#tijera" transform="translate(535, 150) rotate(-30) scale(0.9)"/>
-  <use href="#maceta" transform="translate(60, 240) rotate(8) scale(1.2)"/>
-  <use href="#ceramica" transform="translate(200, 225) rotate(-22) scale(0.95)"/>
-  <use href="#martillo" transform="translate(340, 255) rotate(32) scale(1.05)"/>
-  <use href="#pincel" transform="translate(480, 235) rotate(-5) scale(0.85)"/>
-  <use href="#ovillo" transform="translate(590, 220) rotate(18) scale(1.1)"/>
-  <use href="#tijera" transform="translate(125, 325) rotate(-15) scale(1.0)"/>
-  <use href="#maceta" transform="translate(265, 340) rotate(25) scale(0.9)"/>
-  <use href="#ceramica" transform="translate(405, 315) rotate(-35) scale(1.15)"/>
-  <use href="#martillo" transform="translate(545, 350) rotate(5) scale(0.8)"/>
-  <use href="#pincel" transform="translate(75, 420) rotate(22) scale(0.95)"/>
-  <use href="#ovillo" transform="translate(215, 405) rotate(-10) scale(1.2)"/>
-  <use href="#tijera" transform="translate(355, 430) rotate(30) scale(1.0)"/>
-  <use href="#maceta" transform="translate(495, 410) rotate(-18) scale(0.9)"/>
-  <use href="#ceramica" transform="translate(590, 440) rotate(12) scale(1.05)"/>
-  <use href="#martillo" transform="translate(140, 505) rotate(-28) scale(1.1)"/>
-  <use href="#pincel" transform="translate(280, 520) rotate(8) scale(0.85)"/>
-  <use href="#ovillo" transform="translate(420, 495) rotate(-20) scale(1.0)"/>
-  <use href="#tijera" transform="translate(560, 515) rotate(25) scale(0.95)"/>
-  <use href="#maceta" transform="translate(85, 590) rotate(-8) scale(1.15)"/>
-  <use href="#ceramica" transform="translate(225, 575) rotate(35) scale(0.9)"/>
-  <use href="#martillo" transform="translate(365, 600) rotate(-12) scale(1.0)"/>
-  <use href="#pincel" transform="translate(505, 580) rotate(18) scale(0.85)"/>
-  <use href="#ovillo" transform="translate(590, 560) rotate(-25) scale(1.1)"/>
-  <use href="#tijera" transform="translate(165, 80) rotate(15) scale(0.8)"/>
-  <use href="#maceta" transform="translate(430, 65) rotate(-32) scale(1.0)"/>
-  <use href="#ceramica" transform="translate(55, 330) rotate(22) scale(0.95)"/>
-  <use href="#martillo" transform="translate(590, 410) rotate(-15) scale(1.05)"/>
-  <use href="#ovillo" transform="translate(300, 580) rotate(10) scale(1.2)"/>
+  <use href="#ovillo" transform="translate(299.6 498.7) rotate(-26.9) scale(1.04)"/>
+  <use href="#martillo" transform="translate(257.0 443.2) rotate(12.5) scale(1.13)"/>
+  <use href="#tijera" transform="translate(556.4 240.4) rotate(31.6) scale(1.11)"/>
+  <use href="#martillo" transform="translate(375.3 538.0) rotate(25.0) scale(1.06)"/>
+  <use href="#ceramica" transform="translate(507.8 208.4) rotate(10.8) scale(1.07)"/>
+  <use href="#tijera" transform="translate(348.2 463.4) rotate(-5.1) scale(0.89)"/>
+  <use href="#ceramica" transform="translate(204.4 475.6) rotate(26.0) scale(0.98)"/>
+  <use href="#martillo" transform="translate(339.9 405.8) rotate(-4.6) scale(0.92)"/>
+  <use href="#ovillo" transform="translate(401.1 429.5) rotate(7.3) scale(1.14)"/>
+  <use href="#martillo" transform="translate(444.5 214.7) rotate(-31.0) scale(0.96)"/>
+  <use href="#ovillo" transform="translate(419.9 158.8) rotate(22.0) scale(0.97)"/>
+  <use href="#martillo" transform="translate(148.3 495.1) rotate(25.4) scale(0.97)"/>
+  <use href="#maceta" transform="translate(513.9 146.4) rotate(8.1) scale(0.93)"/>
+  <use href="#ovillo" transform="translate(87.2 499.6) rotate(6.0) scale(1.19)"/>
+  <use href="#martillo" transform="translate(220.5 534.9) rotate(26.2) scale(1.11)"/>
+  <use href="#ceramica" transform="translate(417.3 493.6) rotate(-11.0) scale(1.07)"/>
+  <use href="#tijera" transform="translate(111.5 439.6) rotate(-18.1) scale(0.99)"/>
+  <use href="#maceta" transform="translate(464.8 535.9) rotate(29.9) scale(1.00)"/>
+  <use href="#ovillo" transform="translate(558.1 302.8) rotate(-10.1) scale(1.10)"/>
+  <use href="#martillo" transform="translate(448.8 392.2) rotate(-3.3) scale(0.88)"/>
+  <use href="#tijera" transform="translate(497.8 483.0) rotate(27.7) scale(1.18)"/>
+  <use href="#martillo" transform="translate(360.9 177.2) rotate(-12.6) scale(1.01)"/>
+  <use href="#martillo" transform="translate(561.5 181.8) rotate(19.9) scale(0.94)"/>
+  <use href="#maceta" transform="translate(346.2 346.9) rotate(6.2) scale(1.17)"/>
+  <use href="#maceta" transform="translate(181.0 419.4) rotate(-18.5) scale(1.16)"/>
+  <use href="#maceta" transform="translate(494.9 299.4) rotate(3.2) scale(1.00)"/>
+  <use href="#tijera" transform="translate(254.6 380.1) rotate(-21.9) scale(1.05)"/>
+  <use href="#maceta" transform="translate(350.3 117.2) rotate(13.4) scale(1.08)"/>
+  <use href="#martillo" transform="translate(278.6 553.7) rotate(17.9) scale(0.94)"/>
+  <use href="#ovillo" transform="translate(149.4 558.5) rotate(1.9) scale(1.16)"/>
+  <use href="#pincel" transform="translate(494.7 85.6) rotate(15.8) scale(1.14)"/>
+  <use href="#tijera" transform="translate(408.8 261.6) rotate(22.3) scale(0.93)"/>
+  <use href="#ceramica" transform="translate(87.5 559.0) rotate(-0.3) scale(1.00)"/>
+  <use href="#pincel" transform="translate(214.5 335.4) rotate(12.9) scale(1.05)"/>
+  <use href="#tijera" transform="translate(438.3 317.1) rotate(14.7) scale(1.22)"/>
+  <use href="#maceta" transform="translate(340.5 233.8) rotate(-4.3) scale(0.91)"/>
+  <use href="#martillo" transform="translate(290.6 317.5) rotate(-26.6) scale(0.93)"/>
+  <use href="#martillo" transform="translate(560.6 493.6) rotate(-16.9) scale(1.04)"/>
+  <use href="#martillo" transform="translate(557.1 72.8) rotate(30.0) scale(0.95)"/>
+  <use href="#ovillo" transform="translate(185.3 282.0) rotate(-4.8) scale(1.16)"/>
+  <use href="#martillo" transform="translate(157.2 351.6) rotate(-8.4) scale(0.89)"/>
+  <use href="#maceta" transform="translate(247.0 275.3) rotate(-32.6) scale(1.04)"/>
+  <use href="#tijera" transform="translate(506.1 360.1) rotate(-26.7) scale(1.18)"/>
+  <use href="#ovillo" transform="translate(300.4 85.3) rotate(-9.5) scale(1.18)"/>
+  <use href="#maceta" transform="translate(86.4 386.9) rotate(-15.7) scale(0.94)"/>
+  <use href="#maceta" transform="translate(290.8 148.2) rotate(-23.7) scale(1.17)"/>
+  <use href="#ovillo" transform="translate(497.6 424.0) rotate(-3.5) scale(1.06)"/>
+  <use href="#ovillo" transform="translate(284.4 209.0) rotate(27.5) scale(1.12)"/>
+  <use href="#martillo" transform="translate(567.8 364.2) rotate(-11.2) scale(0.98)"/>
+  <use href="#pincel" transform="translate(218.7 220.6) rotate(20.1) scale(0.93)"/>
+  <use href="#ceramica" transform="translate(216.9 155.7) rotate(16.6) scale(1.06)"/>
+  <use href="#martillo" transform="translate(525.8 548.0) rotate(-31.5) scale(1.18)"/>
+  <use href="#maceta" transform="translate(560.0 426.7) rotate(33.0) scale(0.93)"/>
+  <use href="#tijera" transform="translate(158.8 230.3) rotate(28.5) scale(0.98)"/>
+  <use href="#pincel" transform="translate(238.6 81.7) rotate(28.7) scale(1.12)"/>
+  <use href="#pincel" transform="translate(404.4 91.6) rotate(-31.5) scale(1.09)"/>
+  <use href="#martillo" transform="translate(80.0 328.7) rotate(-33.1) scale(1.17)"/>
+  <use href="#maceta" transform="translate(163.6 131.6) rotate(-12.4) scale(1.12)"/>
+  <use href="#pincel" transform="translate(97.5 245.7) rotate(-30.9) scale(1.15)"/>
+  <use href="#ovillo" transform="translate(80.4 188.6) rotate(14.0) scale(1.11)"/>
+  <use href="#ceramica" transform="translate(178.3 73.0) rotate(-17.9) scale(1.10)"/>
+  <use href="#martillo" transform="translate(117.9 86.4) rotate(-21.5) scale(0.96)"/>
+  <use href="#martillo" transform="translate(77.0 130.1) rotate(-29.0) scale(0.91)"/>
 </svg>
