@@ -21,6 +21,7 @@ import {
   businessKindHeaderLabel,
   storePatternClassName,
 } from "@/lib/store-business-kind";
+import { iktShellPresentation } from "@/lib/store-ikt-theme";
 import { storeThemeClassName } from "@/lib/store-theme";
 import { normalizeWelcomeMessage } from "@/lib/store-welcome";
 import { getCachedStore } from "@/lib/store-data";
@@ -75,10 +76,16 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
 
   const iconSrc = store.icon192Url || monogramIconPath(slug, 192);
 
-  const accentVars = accentStyleVars(store.accentColor);
+  const iktShell = iktShellPresentation(store);
+  const accentVars = iktShell.ikt
+    ? iktShell.styleVars
+    : accentStyleVars(store.accentColor);
   const kindClass = businessKindClassName(store.businessKind);
   const kindLabel = businessKindHeaderLabel(store.businessKind);
-  const themeClass = storeThemeClassName(store.theme);
+  // Con rubro Ikt: theme claro/crema/oscuro ignorado (decisión Federico).
+  const themeClass = iktShell.ikt
+    ? (iktShell.themeClassName ?? "")
+    : storeThemeClassName(store.theme);
   const patternClass = storePatternClassName(store.businessKind);
   const welcome = normalizeWelcomeMessage(store.welcomeMessage);
 
@@ -86,6 +93,8 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
     <StorePurchaseProvider store={purchase}>
       <div
         className={`store-theme-shell fade-in ${themeClass} ${patternClass}`.trim()}
+        data-rubro={iktShell.ikt?.rubro}
+        data-palette={iktShell.ikt?.palette}
         style={accentVars as CSSProperties}
       >
       <div

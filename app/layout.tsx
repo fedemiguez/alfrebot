@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Lexend, Source_Sans_3 } from "next/font/google";
+import { Inter, Lexend, Plus_Jakarta_Sans, Source_Sans_3 } from "next/font/google";
 import { AppClerkProvider } from "@/components/clerk-provider";
 import { isClerkConfigured } from "@/lib/clerk";
 import "./globals.css";
@@ -14,6 +14,19 @@ const body = Source_Sans_3({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["400", "600", "700"],
+});
+
+/** Fuentes preview Ikt — solo se aplican en shell de vitrina con data-rubro. */
+const iktHeading = Plus_Jakarta_Sans({
+  variable: "--font-ikt-heading",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+});
+
+const iktBody = Inter({
+  variable: "--font-ikt-body",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -46,7 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      className={`${display.variable} ${body.variable} h-full antialiased`}
+      className={`${display.variable} ${body.variable} ${iktHeading.variable} ${iktBody.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <AppClerkProvider enabled={isClerkConfigured()}>{children}</AppClerkProvider>
