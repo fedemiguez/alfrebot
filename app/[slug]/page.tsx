@@ -10,8 +10,13 @@ import {
 } from "@/components/store-purchase";
 import { StoreContactLine } from "@/components/store-contact";
 import { StoreInstallCta } from "@/components/store-install-cta";
+import { StoreRopaCatalog } from "@/components/store-ropa-catalog";
 import { StoreVoiceAssistant } from "@/components/store-voice-assistant";
 import { hasTranscriptionConfigured } from "@/lib/bot/transcribe";
+import {
+  iktHeaderEyebrow,
+  storeMonogramInitials,
+} from "@/lib/ikt-cta";
 import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
 import { monogramIconPath } from "@/lib/store-icon";
@@ -19,6 +24,7 @@ import { accentStyleVars } from "@/lib/store-accent";
 import {
   businessKindClassName,
   businessKindHeaderLabel,
+  resolveBusinessKind,
   storePatternClassName,
 } from "@/lib/store-business-kind";
 import { iktShellPresentation } from "@/lib/store-ikt-theme";
@@ -82,12 +88,19 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
     : accentStyleVars(store.accentColor);
   const kindClass = businessKindClassName(store.businessKind);
   const kindLabel = businessKindHeaderLabel(store.businessKind);
+  const kind = resolveBusinessKind(store.businessKind);
+  const isRopaIkt = kind === "ropa";
+  const ropaEyebrow = iktHeaderEyebrow(store.businessKind);
   // Con rubro Ikt: theme claro/crema/oscuro ignorado (decisión Federico).
   const themeClass = iktShell.ikt
     ? (iktShell.themeClassName ?? "")
     : storeThemeClassName(store.theme);
-  const patternClass = storePatternClassName(store.businessKind);
+  // Ropa Ikt: trama off (Fase 2). Otros rubros conservan trama hasta su PR.
+  const patternClass = isRopaIkt
+    ? ""
+    : storePatternClassName(store.businessKind);
   const welcome = normalizeWelcomeMessage(store.welcomeMessage);
+  const monogram = storeMonogramInitials(store.name);
 
   return (
     <StorePurchaseProvider store={purchase}>
@@ -100,40 +113,82 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
       <div
         className={`mx-auto w-full max-w-5xl px-5 py-10 ${kindClass}`}
       >
-        <header className="flex items-start gap-4">
-          <Image
-            src={iconSrc}
-            alt=""
-            width={72}
-            height={72}
-            className="mt-1 size-[4.5rem] shrink-0 rounded-xl border border-[var(--border)] bg-[var(--card)] object-cover ring-2 ring-[var(--primary)]/25"
-            priority
-            unoptimized={
-              iconSrc.startsWith("/") || iconSrc.startsWith("data:")
-            }
-          />
-          <div className="min-w-0">
-            <h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight text-[var(--ink)] sm:text-5xl">
-              <span className="border-b-[3px] border-[var(--primary)] pb-0.5">
+        {isRopaIkt ? (
+          <header className="store-header-ropa flex items-center justify-between gap-4 border-b-2 border-[color-mix(in_srgb,var(--ink)_12%,transparent)] pb-3">
+            <div className="min-w-0">
+              {ropaEyebrow ? (
+                <p className="store-header-ropa__eyebrow text-xs font-bold uppercase tracking-wider text-[var(--ink)] opacity-80">
+                  {ropaEyebrow}
+                </p>
+              ) : null}
+              <h1 className="store-header-ropa__name font-[family-name:var(--font-display)] text-2xl font-extrabold tracking-tight text-[var(--ink)] sm:text-3xl">
                 {store.name}
-              </span>
-            </h1>
-            {welcome ? <p className="store-welcome">{welcome}</p> : null}
-            {(store.ownerName || kindLabel) && (
-              <p className="mt-3 text-[1.1rem] text-[var(--muted)]">
-                {store.ownerName
-                  ? `Productos de ${store.ownerName}`
-                  : null}
-                {store.ownerName && kindLabel ? " · " : null}
-                {kindLabel ? (
-                  <span className="store-kind-label text-[var(--primary)]">
-                    {kindLabel}
-                  </span>
-                ) : null}
-              </p>
+              </h1>
+              {welcome ? (
+                <p className="store-welcome mt-1 text-[0.95rem]">{welcome}</p>
+              ) : null}
+            </div>
+            {store.icon192Url ? (
+              <Image
+                src={iconSrc}
+                alt=""
+                width={44}
+                height={44}
+                className="store-header-ropa__avatar size-11 shrink-0 rounded-full object-cover shadow-sm ring-1 ring-[color-mix(in_srgb,var(--ink)_10%,transparent)]"
+                priority
+                unoptimized={
+                  iconSrc.startsWith("/") || iconSrc.startsWith("data:")
+                }
+              />
+            ) : (
+              <div
+                className="store-header-ropa__avatar flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-extrabold shadow-sm"
+                style={{
+                  backgroundColor: "var(--primary)",
+                  color: "var(--primary-fg)",
+                }}
+                aria-hidden="true"
+              >
+                {monogram}
+              </div>
             )}
-          </div>
-        </header>
+          </header>
+        ) : (
+          <header className="flex items-start gap-4">
+            <Image
+              src={iconSrc}
+              alt=""
+              width={72}
+              height={72}
+              className="mt-1 size-[4.5rem] shrink-0 rounded-xl border border-[var(--border)] bg-[var(--card)] object-cover ring-2 ring-[var(--primary)]/25"
+              priority
+              unoptimized={
+                iconSrc.startsWith("/") || iconSrc.startsWith("data:")
+              }
+            />
+            <div className="min-w-0">
+              <h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight text-[var(--ink)] sm:text-5xl">
+                <span className="border-b-[3px] border-[var(--primary)] pb-0.5">
+                  {store.name}
+                </span>
+              </h1>
+              {welcome ? <p className="store-welcome">{welcome}</p> : null}
+              {(store.ownerName || kindLabel) && (
+                <p className="mt-3 text-[1.1rem] text-[var(--muted)]">
+                  {store.ownerName
+                    ? `Productos de ${store.ownerName}`
+                    : null}
+                  {store.ownerName && kindLabel ? " · " : null}
+                  {kindLabel ? (
+                    <span className="store-kind-label text-[var(--primary)]">
+                      {kindLabel}
+                    </span>
+                  ) : null}
+                </p>
+              )}
+            </div>
+          </header>
+        )}
 
         {store.isDemo && (
           <p className="mt-4 rounded border border-[var(--border)] bg-[var(--paper)] px-4 py-3 text-[1.05rem] text-[var(--muted)]">
@@ -165,17 +220,23 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
           ownerName={store.ownerName}
         />
 
-        <div className="mt-10 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product, i) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              store={purchase}
-              businessKind={store.businessKind}
-              priority={i < 3}
-            />
-          ))}
-        </div>
+        {isRopaIkt ? (
+          <div className="mt-8">
+            <StoreRopaCatalog products={products} store={purchase} />
+          </div>
+        ) : (
+          <div className="mt-10 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+            {products.map((product, i) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                store={purchase}
+                businessKind={store.businessKind}
+                priority={i < 3}
+              />
+            ))}
+          </div>
+        )}
 
         {products.length === 0 && (
           <p className="mt-10 text-[var(--muted)]">Todavía no hay productos publicados.</p>

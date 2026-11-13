@@ -8,6 +8,7 @@ import type { StorePurchaseInfo } from "@/lib/store-purchase";
 import {
   resolveBusinessKind,
 } from "@/lib/store-business-kind";
+import { iktWantCtaLabel } from "@/lib/ikt-cta";
 
 export function ProductCard({
   product,
@@ -24,22 +25,31 @@ export function ProductCard({
   const kind = resolveBusinessKind(businessKind);
   const href = `/${store.storeSlug}/producto/${product.id}`;
   const price = formatPriceArs(product.priceCents);
+  /** Plantilla Ikt Ropa (Fase 2): sin marco, ratio 16/11, CTA microcopy. */
+  const isRopaIkt = kind === "ropa";
+  const ctaLabel = iktWantCtaLabel(businessKind);
 
   return (
-    <article className={`product-card group${kind ? ` product-card--${kind}` : ""}`}>
+    <article
+      className={`product-card group${kind ? ` product-card--${kind}` : ""}${
+        isRopaIkt ? " product-card--ikt-ropa" : ""
+      }`}
+    >
       <Link
         href={href}
         className="product-card__link block focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
       >
         <div
           className={`product-card__media relative overflow-hidden${
-            kind ? " product-card__media--framed" : " border border-[var(--border)]"
+            kind && !isRopaIkt
+              ? " product-card__media--framed"
+              : " border border-[var(--border)]"
           }`}
         >
           {product.imageUrl ? (
             <div
               className={`product-card__photo-wrap${
-                kind ? " product-card__photo-wrap--framed" : ""
+                kind && !isRopaIkt ? " product-card__photo-wrap--framed" : ""
               }`}
             >
               <Image
@@ -60,7 +70,7 @@ export function ProductCard({
               Sin foto
             </div>
           )}
-          {kind ? (
+          {kind && !isRopaIkt ? (
             <ProductImageFrame kind={kind} frameId={product.id} />
           ) : null}
           {kind === "comida" && product.priceCents != null && (
@@ -74,21 +84,37 @@ export function ProductCard({
             </span>
           )}
         </div>
-        <div className="product-card__body">
-          <h2 className="product-card__title font-[family-name:var(--font-display)] font-semibold leading-snug text-[var(--ink)]">
-            {product.title}
-          </h2>
-          {kind !== "comida" && (
-            <p className="product-card__price font-[family-name:var(--font-display)] font-bold text-[var(--primary)]">
-              {price}
-            </p>
-          )}
-          {kind === "comida" && (
-            <p className="product-card__price product-card__price--echo sr-only">
-              {price}
-            </p>
-          )}
-        </div>
+        {isRopaIkt ? (
+          <div className="product-card__body product-card__body--ikt-ropa">
+            <div className="product-card__title-row">
+              <h2 className="product-card__title font-[family-name:var(--font-display)] font-extrabold leading-snug text-[var(--ink)]">
+                {product.title}
+              </h2>
+              <span className="product-card__price font-[family-name:var(--font-display)] font-extrabold whitespace-nowrap text-[var(--ink)]">
+                {price}
+              </span>
+            </div>
+            {product.description ? (
+              <p className="product-card__desc">{product.description}</p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="product-card__body">
+            <h2 className="product-card__title font-[family-name:var(--font-display)] font-semibold leading-snug text-[var(--ink)]">
+              {product.title}
+            </h2>
+            {kind !== "comida" && (
+              <p className="product-card__price font-[family-name:var(--font-display)] font-bold text-[var(--primary)]">
+                {price}
+              </p>
+            )}
+            {kind === "comida" && (
+              <p className="product-card__price product-card__price--echo sr-only">
+                {price}
+              </p>
+            )}
+          </div>
+        )}
       </Link>
       <ProductBuyActions
         store={store}
@@ -100,6 +126,7 @@ export function ProductCard({
           inStock: product.inStock,
         }}
         layout="inline"
+        ctaLabel={ctaLabel}
       />
     </article>
   );
