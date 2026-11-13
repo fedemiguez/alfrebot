@@ -21,6 +21,7 @@ export const DEMO_STORE: Store = {
   accentColor: null,
   businessKind: "artesanal",
   welcomeMessage: "Retiro en taller · Envíos a todo el país",
+  openNow: false,
   theme: null,
   isDemo: false,
   status: "active",

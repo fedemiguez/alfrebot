@@ -22,6 +22,8 @@ export const CHOICE = {
   PERSONALIZE_KIND: "personalize_kind",
   /** Personalizar → Frase de bienvenida. */
   PERSONALIZE_WELCOME: "personalize_welcome",
+  /** Personalizar → Abierto ahora (banner Comidas). */
+  PERSONALIZE_OPEN_NOW: "personalize_open_now",
   /** Prefijo al elegir swatch: accent_<id> (ej. accent_verde). */
   ACCENT_PREFIX: "accent_",
   /** Prefijo al elegir tema: theme_<id> (ej. theme_claro). */
@@ -30,6 +32,10 @@ export const CHOICE = {
   KIND_PREFIX: "kind_",
   /** Borrar frase de bienvenida. */
   WELCOME_CLEAR: "welcome_clear",
+  /** Marcar tienda abierta (banner). */
+  OPEN_NOW_YES: "open_now_yes",
+  /** Marcar tienda cerrada (ocultar banner). */
+  OPEN_NOW_NO: "open_now_no",
   MENU_CONTACT: "menu_contact",
   /** Generar código para gestionar la misma tienda desde WhatsApp. */
   MENU_LINK_WA: "menu_link_wa",

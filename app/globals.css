@@ -444,10 +444,97 @@ body {
   color: var(--ikt-bg, var(--bg));
 }
 
-/* Con data-rubro=ropa: trama off (cinturón además del page.tsx) */
-.store-theme-shell[data-rubro="ropa"].store-pattern::before {
+/* Con data-rubro=ropa|comidas: trama off (cinturón además del page.tsx) */
+.store-theme-shell[data-rubro="ropa"].store-pattern::before,
+.store-theme-shell[data-rubro="comidas"].store-pattern::before {
   display: none !important;
   content: none !important;
+}
+
+/* Banner «Abierto ahora» (Comidas) */
+.store-open-banner {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  font-family: var(--ikt-font-heading, var(--font-display));
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--ikt-primary, var(--primary));
+  color: var(--ikt-primary-text, var(--primary-fg));
+}
+
+.store-theme-shell[data-rubro="comidas"] .store-category-chip.is-active {
+  background: var(--ikt-primary, var(--primary));
+  color: var(--ikt-primary-text, var(--primary-fg));
+  border-color: transparent;
+}
+
+/* ——— Plantilla Ikt Comidas (Fase 3) ——— */
+.product-card--ikt-comida {
+  padding: 0.875rem;
+  border-radius: 1rem;
+  border: 2px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  background: var(--ikt-surface, #ffffff);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
+}
+
+.product-card--ikt-comida .product-card__media {
+  aspect-ratio: 16 / 10;
+  margin-bottom: 0.75rem;
+  border-radius: 0.75rem;
+  border: none;
+  background: color-mix(in srgb, var(--muted) 18%, var(--card));
+}
+
+.product-card--ikt-comida .product-card__photo-wrap {
+  inset: 0;
+}
+
+.product-card--ikt-comida .product-card__photo {
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Sin price-badge overlay en Ikt Comidas */
+.product-card--ikt-comida .product-card__price-badge {
+  display: none !important;
+}
+
+.product-card--ikt-comida .product-card__body--ikt-comida {
+  padding: 0;
+}
+
+.product-card--ikt-comida .product-card__title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.product-card--ikt-comida .product-card__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  line-height: 1.3;
+}
+
+.product-card--ikt-comida .product-card__price--primary {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--ikt-primary, var(--primary));
+}
+
+.product-card--ikt-comida .product-card__desc {
+  margin: 0 0 0.875rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--ink) 72%, transparent);
 }
 
 .store-kind-label {

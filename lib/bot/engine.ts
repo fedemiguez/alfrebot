@@ -79,6 +79,7 @@ import {
   updateStoreAccentColor,
   updateStoreBusinessKind,
   updateStoreIcons,
+  updateStoreOpenNow,
   updateStoreTheme,
   updateStoreWelcomeMessage,
   upsertStore,
@@ -165,7 +166,8 @@ export type BotState =
   | "KIND_PICK"
   | "KIND_CONFIRM"
   | "WELCOME_INPUT"
-  | "WELCOME_CONFIRM";
+  | "WELCOME_CONFIRM"
+  | "OPEN_NOW_PICK";
 
 const DEFAULT_CAPS: ChannelCapabilities = {
   buttons: true,
@@ -602,6 +604,25 @@ function personalizeHubMessage(caps: ChannelCapabilities): OutboundMessage {
       { id: CHOICE.PERSONALIZE_THEME, label: "Estilo" },
       { id: CHOICE.PERSONALIZE_KIND, label: "Rubro" },
       { id: CHOICE.PERSONALIZE_WELCOME, label: "Frase de bienvenida" },
+      { id: CHOICE.PERSONALIZE_OPEN_NOW, label: "Abierto ahora" },
+      { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+    ],
+    caps,
+  );
+}
+
+function openNowPickMessage(
+  store: Store,
+  caps: ChannelCapabilities,
+): OutboundMessage {
+  const nowLine = store.openNow
+    ? "Ahora: Abierto (banner visible en Comidas)."
+    : "Ahora: Cerrado (sin banner).";
+  return withOptions(
+    `¿Mostramos «Abierto ahora» en tu vitrina?\nSolo presentacional (sin horarios).\n${nowLine}`,
+    [
+      { id: CHOICE.OPEN_NOW_YES, label: "Abierto" },
+      { id: CHOICE.OPEN_NOW_NO, label: "Cerrado" },
       { id: CHOICE.MENU_BACK, label: "Volver al menú" },
     ],
     caps,
@@ -796,6 +817,7 @@ function helpMessage(): OutboundMessage {
       "Estilo / fondo: menú → Tienda → Personalizar → Estilo, o pedime «tema oscuro» / «estilo crema».\n" +
       "Rubro (marco en las fotos): menú → Tienda → Personalizar → Rubro, o pedime «vendo cerámica» / «tienda de comida» / «ropa».\n" +
       "Frase de bienvenida: menú → Tienda → Personalizar → Frase de bienvenida, o pedime «decí que retiro en el local».\n" +
+      "Abierto ahora (banner Comidas): menú → Tienda → Personalizar → Abierto ahora.\n" +
       "WhatsApp de pedidos: menú → WhatsApp → WhatsApp pedidos (el número donde te escriben los clientes).\n" +
       "Si armaste la tienda en la web y querés gestionarla por WhatsApp: menú → WhatsApp → Vincular WhatsApp, después desde el celular escribí «ya tengo cuenta» y el código.\n" +
       "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
@@ -1196,6 +1218,7 @@ async function handleMessageBody(
       state === "KIND_CONFIRM" ||
       state === "WELCOME_INPUT" ||
       state === "WELCOME_CONFIRM" ||
+      state === "OPEN_NOW_PICK" ||
       state.startsWith("STOCK_") ||
       state.startsWith("PRODUCT_"))
   ) {
@@ -1982,6 +2005,16 @@ async function handleMessageBody(
       return openWelcomeAsk(store, draft, setState, caps);
     }
     if (
+      choice === CHOICE.PERSONALIZE_OPEN_NOW ||
+      msg.choiceId === CHOICE.PERSONALIZE_OPEN_NOW
+    ) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      return openOpenNowPick(store, draft, setState, caps);
+    }
+    if (
       (choice?.startsWith(CHOICE.ACCENT_PREFIX) ||
         msg.choiceId?.startsWith(CHOICE.ACCENT_PREFIX)) &&
       store
@@ -2762,6 +2795,14 @@ async function handleMessageBody(
       }
       return openWelcomeAsk(store, draft, setState, caps);
     }
+    if (
+      choice === CHOICE.PERSONALIZE_OPEN_NOW ||
+      /abierto ahora|estamos abiertos|marcar abierto|marcar cerrado/.test(
+        normalizeLoose(msg.text ?? ""),
+      )
+    ) {
+      return openOpenNowPick(store, draft, setState, caps);
+    }
     return openPersonalizeHub(draft, setState, caps);
   }
 
@@ -3046,6 +3087,42 @@ async function handleMessageBody(
         caps,
       ),
     ];
+  }
+
+  if (state === "OPEN_NOW_PICK" && store) {
+    const text = normalizeLoose(msg.text ?? "");
+    if (choice === CHOICE.MENU_BACK) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [menuMessage(caps, msg.from)];
+    }
+    const wantOpen =
+      choice === CHOICE.OPEN_NOW_YES ||
+      /^(abierto|abrir|si|sí)$/.test(text) ||
+      /estamos abiertos|marcar abierto/.test(text);
+    const wantClosed =
+      choice === CHOICE.OPEN_NOW_NO ||
+      /^(cerrado|cerrar|no)$/.test(text) ||
+      /marcar cerrado|estamos cerrados/.test(text);
+    if (wantOpen || wantClosed) {
+      const openNow = wantOpen;
+      const updated = await updateStoreOpenNow(store.id, openNow);
+      revalidateStore(store.slug);
+      await setState("IDLE", clearStockDraft(draft));
+      return [
+        {
+          kind: "text",
+          text: openNow
+            ? updated?.slug
+              ? `Listo: banner «Abierto ahora» activo. Mirá tu vitrina: ${storeUrl(updated.slug)}`
+              : "Listo: banner «Abierto ahora» activo."
+            : updated?.slug
+              ? `Listo: sin banner de abierto. Mirá tu vitrina: ${storeUrl(updated.slug)}`
+              : "Listo: sin banner de abierto.",
+        },
+        menuMessage(caps, msg.from),
+      ];
+    }
+    return [openNowPickMessage(store, caps)];
   }
 
   if (state === "PHOTO_INPUT" && store) {
@@ -3475,6 +3552,16 @@ async function openWelcomeAsk(
 ): Promise<OutboundMessage[]> {
   await setState("WELCOME_INPUT", clearStockDraft(draft));
   return [welcomeAskMessage(store, caps)];
+}
+
+async function openOpenNowPick(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+): Promise<OutboundMessage[]> {
+  await setState("OPEN_NOW_PICK", clearStockDraft(draft));
+  return [openNowPickMessage(store, caps)];
 }
 
 async function startWelcomeConfirm(

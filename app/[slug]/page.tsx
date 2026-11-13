@@ -10,10 +10,12 @@ import {
 } from "@/components/store-purchase";
 import { StoreContactLine } from "@/components/store-contact";
 import { StoreInstallCta } from "@/components/store-install-cta";
+import { StoreComidasCatalog } from "@/components/store-comidas-catalog";
 import { StoreRopaCatalog } from "@/components/store-ropa-catalog";
 import { StoreVoiceAssistant } from "@/components/store-voice-assistant";
 import { hasTranscriptionConfigured } from "@/lib/bot/transcribe";
 import {
+  IKT_COMIDAS_OPEN_BANNER,
   iktHeaderEyebrow,
   storeMonogramInitials,
 } from "@/lib/ikt-cta";
@@ -90,17 +92,18 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
   const kindLabel = businessKindHeaderLabel(store.businessKind);
   const kind = resolveBusinessKind(store.businessKind);
   const isRopaIkt = kind === "ropa";
+  const isComidaIkt = kind === "comida";
   const ropaEyebrow = iktHeaderEyebrow(store.businessKind);
   // Con rubro Ikt: theme claro/crema/oscuro ignorado (decisión Federico).
   const themeClass = iktShell.ikt
     ? (iktShell.themeClassName ?? "")
     : storeThemeClassName(store.theme);
-  // Ropa Ikt: trama off (Fase 2). Otros rubros conservan trama hasta su PR.
-  const patternClass = isRopaIkt
-    ? ""
-    : storePatternClassName(store.businessKind);
+  // Ropa/Comidas Ikt: trama off. Artesanal conserva trama hasta PR5.
+  const patternClass =
+    isRopaIkt || isComidaIkt ? "" : storePatternClassName(store.businessKind);
   const welcome = normalizeWelcomeMessage(store.welcomeMessage);
   const monogram = storeMonogramInitials(store.name);
+  const showOpenBanner = isComidaIkt && Boolean(store.openNow);
 
   return (
     <StorePurchaseProvider store={purchase}>
@@ -110,8 +113,16 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
         data-palette={iktShell.ikt?.palette}
         style={accentVars as CSSProperties}
       >
+      {showOpenBanner ? (
+        <div
+          className="store-open-banner"
+          role="status"
+        >
+          {IKT_COMIDAS_OPEN_BANNER}
+        </div>
+      ) : null}
       <div
-        className={`mx-auto w-full max-w-5xl px-5 py-10 ${kindClass}`}
+        className={`mx-auto w-full max-w-5xl px-5 ${isComidaIkt ? "py-6" : "py-10"} ${kindClass}`}
       >
         {isRopaIkt ? (
           <header className="store-header-ropa flex items-center justify-between gap-4 border-b-2 border-[color-mix(in_srgb,var(--ink)_12%,transparent)] pb-3">
@@ -152,6 +163,43 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
                 {monogram}
               </div>
             )}
+          </header>
+        ) : isComidaIkt ? (
+          <header className="store-header-comidas flex items-center gap-3">
+            {store.icon192Url ? (
+              <Image
+                src={iconSrc}
+                alt=""
+                width={48}
+                height={48}
+                className="store-header-comidas__logo size-12 shrink-0 rounded-2xl object-cover shadow-sm ring-1 ring-[color-mix(in_srgb,var(--ink)_10%,transparent)]"
+                priority
+                unoptimized={
+                  iconSrc.startsWith("/") || iconSrc.startsWith("data:")
+                }
+              />
+            ) : (
+              <div
+                className="store-header-comidas__logo flex size-12 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold shadow-sm"
+                style={{
+                  backgroundColor: "var(--primary)",
+                  color: "var(--primary-fg)",
+                }}
+                aria-hidden="true"
+              >
+                {monogram}
+              </div>
+            )}
+            <div className="min-w-0">
+              <h1 className="store-header-comidas__name font-[family-name:var(--font-display)] text-xl font-extrabold leading-tight tracking-tight text-[var(--ink)] sm:text-2xl">
+                {store.name}
+              </h1>
+              {welcome ? (
+                <p className="store-welcome mt-0.5 text-xs font-bold opacity-80">
+                  {welcome}
+                </p>
+              ) : null}
+            </div>
           </header>
         ) : (
           <header className="flex items-start gap-4">
@@ -223,6 +271,10 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
         {isRopaIkt ? (
           <div className="mt-8">
             <StoreRopaCatalog products={products} store={purchase} />
+          </div>
+        ) : isComidaIkt ? (
+          <div className="mt-8">
+            <StoreComidasCatalog products={products} store={purchase} />
           </div>
         ) : (
           <div className="mt-10 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">

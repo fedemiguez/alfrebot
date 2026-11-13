@@ -62,6 +62,11 @@ export const stores = pgTable("stores", {
    */
   welcomeMessage: text("welcome_message"),
   /**
+   * Banner presentacional «Abierto ahora» (vitrina Comidas).
+   * Sin horarios reales: solo flag del menú Tienda. Migrar con `npm run db:push`.
+   */
+  openNow: boolean("open_now").default(false).notNull(),
+  /**
    * Tema de fondo de la vitrina (`claro` | `crema` | `oscuro`).
    * Null = look actual del sitio. Migrar con `npm run db:push` si hay DATABASE_URL.
    */
