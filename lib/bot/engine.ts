@@ -18,6 +18,7 @@ import {
   formatPriceArs,
   interpretFreeText,
   isAffirmative,
+  isLogoutIntent,
   isNegative,
   mergeSetupPlan,
   parseCaptionHints,
@@ -138,6 +139,8 @@ export type BotState =
   | "ASK_LINK_CODE"
   | "ASK_STOCK_MODE"
   | "ASK_CHECKOUT_MODE"
+  /** Solo chat web (simulator + Clerk): confirmar cerrar sesión. */
+  | "ASK_LOGOUT"
   | "IDLE"
   | "PRODUCT_PHOTO"
   | "PRODUCT_TITLE"
@@ -453,6 +456,7 @@ function globalCommands(text?: string, choiceId?: string): "menu" | "help" | "ca
     return "menu";
   }
   if (t === "ayuda" || t === "help") return "help";
+  // "salir" cancela flujos en WhatsApp; en chat web se maneja como logout antes.
   if (t === "cancelar" || t === "salir") return "cancel";
   return null;
 }
@@ -1073,6 +1077,18 @@ export async function handleMessage(
   return handleMessageBody(msg, caps);
 }
 
+function logoutConfirmMessage(caps: ChannelCapabilities): OutboundMessage {
+  return withOptions(
+    "¿Querés cerrar la sesión de este chat?",
+    [
+      { id: CHOICE.YES, label: "Sí, cerrar sesión" },
+      { id: CHOICE.NO, label: "No, seguir" },
+    ],
+    caps,
+    { includeCancel: false },
+  );
+}
+
 async function handleMessageBody(
   msg: InboundMessage,
   caps: ChannelCapabilities,
@@ -1080,6 +1096,70 @@ async function handleMessageBody(
   const existing = await getConversation(msg.from);
   let state = (existing?.state as BotState) || "NEW";
   let draft = draftOf(existing?.draft as Record<string, unknown>);
+
+  const setState: SetState = async (next, nextDraft) => {
+    state = next;
+    if (nextDraft) draft = nextDraft;
+    await saveConversation({
+      channelIdentity: msg.from,
+      channel: msg.channel,
+      state: next,
+      draft,
+    });
+  };
+
+  // Cerrar sesión: solo chat web con identidad Clerk. Meta/WhatsApp: no-op de logout.
+  const webClerkLogout =
+    msg.channel === "simulator" && isClerkIdentity(msg.from);
+
+  if (webClerkLogout && state === "ASK_LOGOUT") {
+    const choice = resolveChoiceId(msg.choiceId, msg.text, draft.pendingChoices);
+    const text = msg.text?.trim() ?? "";
+    if (
+      choice === CHOICE.YES ||
+      isAffirmative(text) ||
+      /^si[,!.\s]+cerrar/.test(normalizeLoose(text))
+    ) {
+      draft = clearStockDraft({ ...draft, product: undefined });
+      await setState("IDLE", draft);
+      return [
+        {
+          kind: "sign_out",
+          text: "Listo. Cerré tu sesión. Cuando quieras, volvé a entrar al chat.",
+        },
+      ];
+    }
+    if (
+      choice === CHOICE.NO ||
+      choice === CHOICE.MENU_CANCEL ||
+      isNegative(text)
+    ) {
+      draft = clearStockDraft(draft);
+      await setState("IDLE", draft);
+      return [
+        {
+          kind: "text",
+          text: "Dale, seguimos. No cerré la sesión.",
+        },
+        menuMessage(caps, msg.from),
+      ];
+    }
+    return replyWithChoices(
+      draft,
+      setState,
+      "ASK_LOGOUT",
+      logoutConfirmMessage(caps),
+    );
+  }
+
+  if (webClerkLogout && isLogoutIntent(msg.text)) {
+    return replyWithChoices(
+      draft,
+      setState,
+      "ASK_LOGOUT",
+      logoutConfirmMessage(caps),
+    );
+  }
 
   const cmd = globalCommands(msg.text, msg.choiceId);
   if (cmd === "help") {
@@ -1139,17 +1219,6 @@ async function handleMessageBody(
   }
 
   const replies: OutboundMessage[] = [];
-
-  const setState: SetState = async (next, nextDraft) => {
-    state = next;
-    if (nextDraft) draft = nextDraft;
-    await saveConversation({
-      channelIdentity: msg.from,
-      channel: msg.channel,
-      state: next,
-      draft,
-    });
-  };
 
   const choice = resolveChoiceId(msg.choiceId, msg.text, draft.pendingChoices);
 

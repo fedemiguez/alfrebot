@@ -15,8 +15,14 @@ import {
 import { AlfrebotRobotAvatar } from "@/components/alfrebot-robot-avatar";
 import { ChatAuthOverlay } from "@/components/chat-auth-overlay";
 import { OwnerChatAvatar } from "@/components/owner-chat-avatar";
+import { WebChatSignOut } from "@/components/web-chat-sign-out";
 import type { OutboundMessage } from "@/lib/channels/types";
 import { CHOICE, segmentUrls } from "@/lib/bot/render";
+
+function outboundDisplayText(m: OutboundMessage): string | undefined {
+  if (m.kind === "text" || m.kind === "sign_out") return m.text;
+  return m.caption;
+}
 
 type ChatItem =
   | { id: string; role: "user"; text?: string; imageUrl?: string }
@@ -212,6 +218,7 @@ export function SimulatorChat({
   const [iconPickOpen, setIconPickOpen] = useState(false);
   const [channelPicked, setChannelPicked] = useState(showOwnerHub);
   const [authOpen, setAuthOpen] = useState(false);
+  const [signOutRequestId, setSignOutRequestId] = useState(0);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -358,6 +365,7 @@ export function SimulatorChat({
         }
         const replies = data.replies ?? [];
         extractSlug(replies);
+        const wantsSignOut = replies.some((r) => r.kind === "sign_out");
         setItems((prev) => [
           ...prev,
           {
@@ -368,6 +376,10 @@ export function SimulatorChat({
               : [{ kind: "text", text: "No recibí respuesta. Probá de nuevo." }],
           },
         ]);
+        if (wantsSignOut && identityMode === "clerk") {
+          clearPendingWebOnboarding();
+          setSignOutRequestId((n) => n + 1);
+        }
       } catch (err) {
         const aborted =
           (err instanceof DOMException && err.name === "AbortError") ||
@@ -951,9 +963,9 @@ export function SimulatorChat({
                         />
                       )}
                       <p className="whitespace-pre-wrap">
-                        {linkifyMessageText(m.kind === "text" ? m.text : m.caption)}
+                        {linkifyMessageText(outboundDisplayText(m))}
                       </p>
-                      {m.options && m.options.length > 0 && (
+                      {m.kind !== "sign_out" && m.options && m.options.length > 0 && (
                         <div className="mt-3 flex flex-col gap-2">
                           {m.options.map((o) => {
                             const introLocked =
@@ -1165,6 +1177,9 @@ export function SimulatorChat({
         </form>
 
         {needsClerkGate && (
+          {identityMode === "clerk" && (
+            <WebChatSignOut requestId={signOutRequestId} />
+          )}
           <ChatAuthOverlay open={authOpen} onClose={dismissAuthOverlay} />
         )}
 
