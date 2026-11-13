@@ -47,7 +47,22 @@ export default function Home() {
       </div>
 
       <footer className="relative z-10 px-5 py-5 text-center text-[14px] text-[#075E54]/70">
-        alfrebot · alfrebot.com.ar
+        <p>alfrebot · alfrebot.com.ar</p>
+        <p className="mt-2">
+          <Link
+            href="/ayuda"
+            className="underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54]"
+          >
+            Ayuda
+          </Link>
+          {" · "}
+          <Link
+            href="/privacidad"
+            className="underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54]"
+          >
+            Privacidad
+          </Link>
+        </p>
       </footer>
     </main>
   );

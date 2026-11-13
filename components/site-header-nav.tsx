@@ -7,6 +7,12 @@ function GuestLinks() {
   return (
     <>
       <Link
+        href="/ayuda"
+        className="inline-flex min-h-11 items-center px-1 text-[var(--ink)] hover:text-[var(--primary)]"
+      >
+        Ayuda
+      </Link>
+      <Link
         href="/registro"
         className="inline-flex min-h-11 items-center px-1 text-[var(--ink)] hover:text-[var(--primary)]"
       >
@@ -39,6 +45,12 @@ function ClerkNav() {
     return (
       <>
         <Link
+          href="/ayuda"
+          className="inline-flex min-h-11 items-center px-1 text-[var(--ink)] hover:text-[var(--primary)]"
+        >
+          Ayuda
+        </Link>
+        <Link
           href="/asistente"
           className="inline-flex min-h-11 items-center px-1 text-[var(--ink)] hover:text-[var(--primary)]"
         >
@@ -60,7 +72,7 @@ function ClerkNav() {
 
 export function SiteHeaderNav({ clerkEnabled }: { clerkEnabled: boolean }) {
   return (
-    <nav className="flex items-center gap-3 text-[18px] sm:gap-4">
+    <nav className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-[18px] sm:gap-x-4">
       {clerkEnabled ? <ClerkNav /> : <GuestLinks />}
     </nav>
   );
