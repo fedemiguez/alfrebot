@@ -1,125 +1,77 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" fill="none">
-  <!-- Trama ropa v2: tile único denso (40 iconos), sin grilla -->
-  <g stroke="#000" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <g transform="translate(96.3 434.5) rotate(-24.6) scale(0.94)">
-      <circle cx="0" cy="-10" r="2.4"/><path d="M0 -7.5 V-4"/><path d="M-12 4 C-7 -4 7 -4 12 4"/><path d="M-12 4 H12"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+  <defs>
+    <g id="remera" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-7 -7 Q0 -2 7 -7 L16 -4 L13 3 L7 1 V15 H-7 V1 L-13 3 L-16 -4 Z"/>
     </g>
-    <g transform="translate(591.1 317.0) rotate(28.1) scale(1.23)">
-      <path d="M-8 -10 L-14 -5 L-11 0 L-8 -3 V12 H8 V-3 L11 0 L14 -5 L8 -10 C6.5 -6.5 3.5 -5 0 -5 C-3.5 -5 -6.5 -6.5 -8 -10 Z"/>
+    <g id="percha" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="0" cy="-15" r="2.6"/>
+      <path d="M0 -12.4 V-8"/>
+      <path d="M-17 8 L0 -8 L17 8"/>
+      <path d="M-17 8 H17"/>
+      <path d="M-17 8 V11 H17 V8"/>
     </g>
-    <g transform="translate(512.0 528.0) rotate(4.5) scale(1.23)">
-      <path d="M-12 4 H10"/><path d="M-10 4 C-10 -4 -5 -10 0 -10 C5 -10 10 -4 10 4"/><path d="M10 4 H15 C13.5 7.5 10.5 9 7 9 H-2"/>
+    <g id="pantalon" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-10 -16 H10 V-12.5 H-10 Z"/>
+      <path d="M-10 -12.5 L-12 16 H-3.2 L0 -1 L3.2 16 H12 L10 -12.5"/>
     </g>
-    <g transform="translate(293.0 50.5) rotate(-10.6) scale(0.73)">
-      <circle cx="0" cy="-10" r="2.4"/><path d="M0 -7.5 V-4"/><path d="M-12 4 C-7 -4 7 -4 12 4"/><path d="M-12 4 H12"/>
+    <g id="zapato" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+      <g transform="scale(1.28) translate(-8 -11)" vector-effect="non-scaling-stroke">
+        <path d="M2 16c-4 0-6-2-6-5 0-2 2-3 4-4l1-6h6l2 4h6c3 0 5 2 5 5v6H2z"/>
+        <path d="M6 10 l3 -4"/>
+        <path d="M10 10 l3 -3"/>
+      </g>
     </g>
-    <g transform="translate(490.6 587.4) rotate(-13.3) scale(1.19)">
-      <circle cx="0" cy="-10" r="2.4"/><path d="M0 -7.5 V-4"/><path d="M-12 4 C-7 -4 7 -4 12 4"/><path d="M-12 4 H12"/>
+    <g id="bolsa" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-12 -2 H12 V15 Q12 17 10 17 H-10 Q-12 17 -12 15 Z"/>
+      <path d="M-6 -2 V-8 Q0 -16 6 -8 V-2"/>
     </g>
-    <g transform="translate(396.6 232.0) rotate(11.0) scale(0.75)">
-      <path d="M-8 -12 H8 V-2 L11 14 H3 L0 0 L-3 14 H-11 L-8 -2 Z"/>
+    <g id="gorra" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-12 3 Q-13 -8 0 -12 Q13 -8 12 3"/>
+      <path d="M0 -12 V3"/>
+      <path d="M-18 6 Q-2 12 14 6 L12 3 H-12 Z"/>
+      <circle cx="0" cy="-13.4" r="1.6"/>
     </g>
-    <g transform="translate(474.1 459.7) rotate(32.6) scale(0.89)">
-      <path d="M-8 -12 H8 V-2 L11 14 H3 L0 0 L-3 14 H-11 L-8 -2 Z"/>
-    </g>
-    <g transform="translate(224.3 165.8) rotate(-5.0) scale(0.72)">
-      <path d="M-8 -10 L-14 -5 L-11 0 L-8 -3 V12 H8 V-3 L11 0 L14 -5 L8 -10 C6.5 -6.5 3.5 -5 0 -5 C-3.5 -5 -6.5 -6.5 -8 -10 Z"/>
-    </g>
-    <g transform="translate(542.8 437.3) rotate(-10.2) scale(0.95)">
-      <path d="M-12 4 H10"/><path d="M-10 4 C-10 -4 -5 -10 0 -10 C5 -10 10 -4 10 4"/><path d="M10 4 H15 C13.5 7.5 10.5 9 7 9 H-2"/>
-    </g>
-    <g transform="translate(233.0 244.3) rotate(-33.5) scale(0.77)">
-      <path d="M-9 -4 H9 V12 H-9 Z"/><path d="M-4 -4 V-7.5 C-4 -10.5 -1.5 -12 0 -12 C1.5 -12 4 -10.5 4 -7.5 V-4"/>
-    </g>
-    <g transform="translate(422.9 555.7) rotate(24.9) scale(1.28)">
-      <path d="M-12 4 C-9 -1 -4 -3 3 -3 H10 C13 -3 14.5 0.5 13 4 C11.5 7.5 6.5 9 1.5 9 H-9 C-12 9 -13.5 7.5 -12 4 Z"/><path d="M-6 -3 C-4.5 -8 0.5 -9.5 3.5 -8"/>
-    </g>
-    <g transform="translate(479.1 347.6) rotate(18.0) scale(1.13)">
-      <path d="M-12 4 H10"/><path d="M-10 4 C-10 -4 -5 -10 0 -10 C5 -10 10 -4 10 4"/><path d="M10 4 H15 C13.5 7.5 10.5 9 7 9 H-2"/>
-    </g>
-    <g transform="translate(289.5 314.3) rotate(-12.8) scale(1.25)">
-      <path d="M-12 4 C-9 -1 -4 -3 3 -3 H10 C13 -3 14.5 0.5 13 4 C11.5 7.5 6.5 9 1.5 9 H-9 C-12 9 -13.5 7.5 -12 4 Z"/><path d="M-6 -3 C-4.5 -8 0.5 -9.5 3.5 -8"/>
-    </g>
-    <g transform="translate(288.3 229.6) rotate(13.0) scale(1.29)">
-      <path d="M-12 4 C-9 -1 -4 -3 3 -3 H10 C13 -3 14.5 0.5 13 4 C11.5 7.5 6.5 9 1.5 9 H-9 C-12 9 -13.5 7.5 -12 4 Z"/><path d="M-6 -3 C-4.5 -8 0.5 -9.5 3.5 -8"/>
-    </g>
-    <g transform="translate(531.9 252.7) rotate(27.6) scale(0.85)">
-      <path d="M-8 -10 L-14 -5 L-11 0 L-8 -3 V12 H8 V-3 L11 0 L14 -5 L8 -10 C6.5 -6.5 3.5 -5 0 -5 C-3.5 -5 -6.5 -6.5 -8 -10 Z"/>
-    </g>
-    <g transform="translate(465.2 179.7) rotate(-11.5) scale(1.25)">
-      <path d="M-8 -12 H8 V-2 L11 14 H3 L0 0 L-3 14 H-11 L-8 -2 Z"/>
-    </g>
-    <g transform="translate(321.3 267.6) rotate(-13.4) scale(1.28)">
-      <circle cx="0" cy="-10" r="2.4"/><path d="M0 -7.5 V-4"/><path d="M-12 4 C-7 -4 7 -4 12 4"/><path d="M-12 4 H12"/>
-    </g>
-    <g transform="translate(429.9 507.4) rotate(10.9) scale(1.07)">
-      <path d="M-9 -4 H9 V12 H-9 Z"/><path d="M-4 -4 V-7.5 C-4 -10.5 -1.5 -12 0 -12 C1.5 -12 4 -10.5 4 -7.5 V-4"/>
-    </g>
-    <g transform="translate(55.4 591.6) rotate(-25.7) scale(0.85)">
-      <path d="M-8 -10 L-14 -5 L-11 0 L-8 -3 V12 H8 V-3 L11 0 L14 -5 L8 -10 C6.5 -6.5 3.5 -5 0 -5 C-3.5 -5 -6.5 -6.5 -8 -10 Z"/>
-    </g>
-    <g transform="translate(222.9 80.4) rotate(8.8) scale(1.00)">
-      <path d="M-12 4 H10"/><path d="M-10 4 C-10 -4 -5 -10 0 -10 C5 -10 10 -4 10 4"/><path d="M10 4 H15 C13.5 7.5 10.5 9 7 9 H-2"/>
-    </g>
-    <g transform="translate(186.3 380.2) rotate(20.5) scale(1.35)">
-      <path d="M-8 -12 H8 V-2 L11 14 H3 L0 0 L-3 14 H-11 L-8 -2 Z"/>
-    </g>
-    <g transform="translate(602.2 99.0) rotate(-10.1) scale(0.99)">
-      <path d="M-8 -10 L-14 -5 L-11 0 L-8 -3 V12 H8 V-3 L11 0 L14 -5 L8 -10 C6.5 -6.5 3.5 -5 0 -5 C-3.5 -5 -6.5 -6.5 -8 -10 Z"/>
-    </g>
-    <g transform="translate(184.1 251.0) rotate(-32.1) scale(1.24)">
-      <path d="M-9 -4 H9 V12 H-9 Z"/><path d="M-4 -4 V-7.5 C-4 -10.5 -1.5 -12 0 -12 C1.5 -12 4 -10.5 4 -7.5 V-4"/>
-    </g>
-    <g transform="translate(169.1 204.0) rotate(-20.5) scale(0.94)">
-      <path d="M-9 -4 H9 V12 H-9 Z"/><path d="M-4 -4 V-7.5 C-4 -10.5 -1.5 -12 0 -12 C1.5 -12 4 -10.5 4 -7.5 V-4"/>
-    </g>
-    <g transform="translate(89.5 139.2) rotate(30.8) scale(1.15)">
-      <path d="M-8 -10 L-14 -5 L-11 0 L-8 -3 V12 H8 V-3 L11 0 L14 -5 L8 -10 C6.5 -6.5 3.5 -5 0 -5 C-3.5 -5 -6.5 -6.5 -8 -10 Z"/>
-    </g>
-    <g transform="translate(438.7 376.0) rotate(26.8) scale(1.09)">
-      <path d="M-8 -12 H8 V-2 L11 14 H3 L0 0 L-3 14 H-11 L-8 -2 Z"/>
-    </g>
-    <g transform="translate(85.4 316.8) rotate(-15.0) scale(1.07)">
-      <path d="M-8 -12 H8 V-2 L11 14 H3 L0 0 L-3 14 H-11 L-8 -2 Z"/>
-    </g>
-    <g transform="translate(378.0 471.9) rotate(24.8) scale(0.77)">
-      <circle cx="0" cy="-10" r="2.4"/><path d="M0 -7.5 V-4"/><path d="M-12 4 C-7 -4 7 -4 12 4"/><path d="M-12 4 H12"/>
-    </g>
-    <g transform="translate(598.8 231.3) rotate(-22.3) scale(0.97)">
-      <path d="M-12 4 C-9 -1 -4 -3 3 -3 H10 C13 -3 14.5 0.5 13 4 C11.5 7.5 6.5 9 1.5 9 H-9 C-12 9 -13.5 7.5 -12 4 Z"/><path d="M-6 -3 C-4.5 -8 0.5 -9.5 3.5 -8"/>
-    </g>
-    <g transform="translate(339.7 575.3) rotate(-7.3) scale(0.66)">
-      <path d="M-9 -4 H9 V12 H-9 Z"/><path d="M-4 -4 V-7.5 C-4 -10.5 -1.5 -12 0 -12 C1.5 -12 4 -10.5 4 -7.5 V-4"/>
-    </g>
-    <g transform="translate(592.9 583.0) rotate(22.1) scale(0.98)">
-      <circle cx="0" cy="-10" r="2.4"/><path d="M0 -7.5 V-4"/><path d="M-12 4 C-7 -4 7 -4 12 4"/><path d="M-12 4 H12"/>
-    </g>
-    <g transform="translate(451.9 289.4) rotate(-25.7) scale(1.22)">
-      <path d="M-12 4 C-9 -1 -4 -3 3 -3 H10 C13 -3 14.5 0.5 13 4 C11.5 7.5 6.5 9 1.5 9 H-9 C-12 9 -13.5 7.5 -12 4 Z"/><path d="M-6 -3 C-4.5 -8 0.5 -9.5 3.5 -8"/>
-    </g>
-    <g transform="translate(314.1 506.1) rotate(0.6) scale(1.08)">
-      <path d="M-12 4 C-9 -1 -4 -3 3 -3 H10 C13 -3 14.5 0.5 13 4 C11.5 7.5 6.5 9 1.5 9 H-9 C-12 9 -13.5 7.5 -12 4 Z"/><path d="M-6 -3 C-4.5 -8 0.5 -9.5 3.5 -8"/>
-    </g>
-    <g transform="translate(586.4 26.9) rotate(33.5) scale(1.13)">
-      <path d="M-12 4 H10"/><path d="M-10 4 C-10 -4 -5 -10 0 -10 C5 -10 10 -4 10 4"/><path d="M10 4 H15 C13.5 7.5 10.5 9 7 9 H-2"/>
-    </g>
-    <g transform="translate(394.2 103.2) rotate(-10.3) scale(1.01)">
-      <path d="M-8 -12 H8 V-2 L11 14 H3 L0 0 L-3 14 H-11 L-8 -2 Z"/>
-    </g>
-    <g transform="translate(371.9 46.8) rotate(1.9) scale(1.09)">
-      <circle cx="0" cy="-10" r="2.4"/><path d="M0 -7.5 V-4"/><path d="M-12 4 C-7 -4 7 -4 12 4"/><path d="M-12 4 H12"/>
-    </g>
-    <g transform="translate(163.4 437.0) rotate(-21.8) scale(0.69)">
-      <path d="M-12 4 H10"/><path d="M-10 4 C-10 -4 -5 -10 0 -10 C5 -10 10 -4 10 4"/><path d="M10 4 H15 C13.5 7.5 10.5 9 7 9 H-2"/>
-    </g>
-    <g transform="translate(254.3 378.6) rotate(15.3) scale(1.11)">
-      <path d="M-9 -4 H9 V12 H-9 Z"/><path d="M-4 -4 V-7.5 C-4 -10.5 -1.5 -12 0 -12 C1.5 -12 4 -10.5 4 -7.5 V-4"/>
-    </g>
-    <g transform="translate(367.3 354.2) rotate(-13.3) scale(0.84)">
-      <path d="M-12 4 C-9 -1 -4 -3 3 -3 H10 C13 -3 14.5 0.5 13 4 C11.5 7.5 6.5 9 1.5 9 H-9 C-12 9 -13.5 7.5 -12 4 Z"/><path d="M-6 -3 C-4.5 -8 0.5 -9.5 3.5 -8"/>
-    </g>
-    <g transform="translate(125.1 81.7) rotate(5.3) scale(0.71)">
-      <path d="M-8 -10 L-14 -5 L-11 0 L-8 -3 V12 H8 V-3 L11 0 L14 -5 L8 -10 C6.5 -6.5 3.5 -5 0 -5 C-3.5 -5 -6.5 -6.5 -8 -10 Z"/>
-    </g>
-  </g>
+  </defs>
+  <use href="#remera" transform="translate(64.5 60.6) rotate(4.0) scale(0.96)"/>
+  <use href="#pantalon" transform="translate(151.6 64.1) rotate(12.0) scale(1.00)"/>
+  <use href="#bolsa" transform="translate(239.9 60.6) rotate(-16.0) scale(1.03)"/>
+  <use href="#remera" transform="translate(321.2 62.3) rotate(7.0) scale(1.07)"/>
+  <use href="#pantalon" transform="translate(404.2 64.6) rotate(-3.0) scale(1.10)"/>
+  <use href="#bolsa" transform="translate(484.9 61.9) rotate(18.0) scale(0.96)"/>
+  <use href="#remera" transform="translate(572.6 61.2) rotate(-9.0) scale(1.00)"/>
+  <use href="#percha" transform="translate(90.6 158.7) rotate(5.0) scale(1.07)"/>
+  <use href="#zapato" transform="translate(170.8 162.0) rotate(-13.0) scale(1.10)"/>
+  <use href="#gorra" transform="translate(259.7 164.7) rotate(-14.0) scale(0.96)"/>
+  <use href="#percha" transform="translate(341.7 159.6) rotate(8.0) scale(1.00)"/>
+  <use href="#zapato" transform="translate(422.6 159.1) rotate(-6.0) scale(1.03)"/>
+  <use href="#gorra" transform="translate(510.9 160.3) rotate(16.0) scale(1.07)"/>
+  <use href="#percha" transform="translate(507.3 165.1) rotate(-11.0) scale(1.10)"/>
+  <use href="#pantalon" transform="translate(66.2 265.7) rotate(4.0) scale(1.00)"/>
+  <use href="#bolsa" transform="translate(155.5 261.8) rotate(12.0) scale(1.03)"/>
+  <use href="#remera" transform="translate(233.2 260.1) rotate(-16.0) scale(1.07)"/>
+  <use href="#pantalon" transform="translate(323.3 264.9) rotate(7.0) scale(1.10)"/>
+  <use href="#bolsa" transform="translate(400.0 260.5) rotate(-3.0) scale(0.96)"/>
+  <use href="#remera" transform="translate(491.5 265.5) rotate(18.0) scale(1.00)"/>
+  <use href="#pantalon" transform="translate(571.9 261.1) rotate(-9.0) scale(1.03)"/>
+  <use href="#zapato" transform="translate(87.6 360.3) rotate(5.0) scale(1.10)"/>
+  <use href="#gorra" transform="translate(176.8 358.5) rotate(-13.0) scale(0.96)"/>
+  <use href="#percha" transform="translate(257.0 362.1) rotate(-14.0) scale(1.00)"/>
+  <use href="#zapato" transform="translate(342.2 365.4) rotate(8.0) scale(1.03)"/>
+  <use href="#gorra" transform="translate(426.0 359.8) rotate(-6.0) scale(1.07)"/>
+  <use href="#percha" transform="translate(506.8 363.5) rotate(16.0) scale(1.10)"/>
+  <use href="#zapato" transform="translate(510.9 364.1) rotate(-11.0) scale(0.96)"/>
+  <use href="#bolsa" transform="translate(71.1 458.0) rotate(4.0) scale(1.03)"/>
+  <use href="#remera" transform="translate(150.6 461.8) rotate(12.0) scale(1.07)"/>
+  <use href="#pantalon" transform="translate(233.2 460.9) rotate(-16.0) scale(1.10)"/>
+  <use href="#bolsa" transform="translate(322.5 459.5) rotate(7.0) scale(0.96)"/>
+  <use href="#remera" transform="translate(404.5 458.2) rotate(-3.0) scale(1.00)"/>
+  <use href="#pantalon" transform="translate(484.2 460.4) rotate(18.0) scale(1.03)"/>
+  <use href="#bolsa" transform="translate(573.2 464.5) rotate(-9.0) scale(1.07)"/>
+  <use href="#gorra" transform="translate(86.9 562.9) rotate(5.0) scale(0.96)"/>
+  <use href="#percha" transform="translate(175.2 561.4) rotate(-13.0) scale(1.00)"/>
+  <use href="#zapato" transform="translate(258.7 560.1) rotate(-14.0) scale(1.03)"/>
+  <use href="#gorra" transform="translate(338.9 558.1) rotate(8.0) scale(1.07)"/>
+  <use href="#percha" transform="translate(428.7 565.5) rotate(-6.0) scale(1.10)"/>
+  <use href="#zapato" transform="translate(509.6 565.3) rotate(16.0) scale(0.96)"/>
+  <use href="#gorra" transform="translate(507.2 561.1) rotate(-11.0) scale(1.00)"/>
 </svg>
