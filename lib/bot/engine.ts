@@ -78,6 +78,8 @@ import {
   updateStoreAccentColor,
   updateStoreBusinessKind,
   updateStoreIcons,
+  updateStoreTheme,
+  updateStoreWelcomeMessage,
   upsertStore,
   type ConversationDraft,
   type ProductDraft,
@@ -102,6 +104,22 @@ import {
   wantsBusinessKindText,
   type BusinessKindOption,
 } from "@/lib/store-business-kind";
+import {
+  STORE_THEMES,
+  matchThemeFromText,
+  normalizeStoreTheme,
+  resolveStoreTheme,
+  themeById,
+  wantsStoreThemeText,
+  type StoreThemeOption,
+} from "@/lib/store-theme";
+import {
+  WELCOME_MESSAGE_MAX,
+  extractWelcomeFromText,
+  normalizeWelcomeMessage,
+  wantsClearWelcomeText,
+  wantsWelcomeMessageText,
+} from "@/lib/store-welcome";
 import {
   buildAndUploadStoreIcons,
   buildAndUploadStoreIconsFromImage,
@@ -139,8 +157,12 @@ export type BotState =
   | "PERSONALIZE_HUB"
   | "ACCENT_PICK"
   | "ACCENT_CONFIRM"
+  | "THEME_PICK"
+  | "THEME_CONFIRM"
   | "KIND_PICK"
-  | "KIND_CONFIRM";
+  | "KIND_CONFIRM"
+  | "WELCOME_INPUT"
+  | "WELCOME_CONFIRM";
 
 const DEFAULT_CAPS: ChannelCapabilities = {
   buttons: true,
@@ -184,6 +206,9 @@ function clearStockDraft(d: ConversationDraft): ConversationDraft {
     accentLabelPending: undefined,
     businessKindPending: undefined,
     businessKindLabelPending: undefined,
+    themePending: undefined,
+    themeLabelPending: undefined,
+    welcomeMessagePending: undefined,
   };
 }
 
@@ -213,7 +238,9 @@ function takeNextQueuedProductTitle(
     draft.pendingSetupPlan?.iconMode ||
     draft.pendingSetupPlan?.storeName ||
     draft.pendingSetupPlan?.accentColor ||
-    draft.pendingSetupPlan?.businessKind
+    draft.pendingSetupPlan?.businessKind ||
+    draft.pendingSetupPlan?.theme ||
+    draft.pendingSetupPlan?.welcomeMessage !== undefined
       ? {
           ...draft.pendingSetupPlan,
           productTitles: rest.length > 0 ? rest : undefined,
@@ -294,6 +321,45 @@ async function flushPendingSetupPlan(
       ...workingPlan,
       businessKind: undefined,
       businessKindLabel: undefined,
+    };
+    nextDraft = { ...nextDraft, pendingSetupPlan: workingPlan };
+  }
+
+  if (workingPlan.theme) {
+    const theme = normalizeStoreTheme(workingPlan.theme);
+    if (theme) {
+      const updated = await updateStoreTheme(store.id, theme);
+      if (updated) store = updated;
+      revalidateStore(store.slug);
+      const label =
+        workingPlan.themeLabel || themeById(theme)?.label || theme;
+      replies.push({
+        kind: "text",
+        text: `Listo: estilo «${label}».\n${store.slug ? storeUrl(store.slug) : ""}`.trim(),
+      });
+    }
+    workingPlan = {
+      ...workingPlan,
+      theme: undefined,
+      themeLabel: undefined,
+    };
+    nextDraft = { ...nextDraft, pendingSetupPlan: workingPlan };
+  }
+
+  if (workingPlan.welcomeMessage !== undefined) {
+    const welcome = normalizeWelcomeMessage(workingPlan.welcomeMessage);
+    const updated = await updateStoreWelcomeMessage(store.id, welcome);
+    if (updated) store = updated;
+    revalidateStore(store.slug);
+    replies.push({
+      kind: "text",
+      text: welcome
+        ? `Listo: frase «${welcome}».\n${store.slug ? storeUrl(store.slug) : ""}`.trim()
+        : `Listo: saqué la frase de bienvenida.\n${store.slug ? storeUrl(store.slug) : ""}`.trim(),
+    });
+    workingPlan = {
+      ...workingPlan,
+      welcomeMessage: undefined,
     };
     nextDraft = { ...nextDraft, pendingSetupPlan: workingPlan };
   }
@@ -529,7 +595,9 @@ function personalizeHubMessage(caps: ChannelCapabilities): OutboundMessage {
     "Personalizar — ¿qué cambiamos?",
     [
       { id: CHOICE.PERSONALIZE_COLOR, label: "Color" },
+      { id: CHOICE.PERSONALIZE_THEME, label: "Estilo" },
       { id: CHOICE.PERSONALIZE_KIND, label: "Rubro" },
+      { id: CHOICE.PERSONALIZE_WELCOME, label: "Frase de bienvenida" },
       { id: CHOICE.MENU_BACK, label: "Volver al menú" },
     ],
     caps,
@@ -608,6 +676,84 @@ function kindConfirmMessage(
   );
 }
 
+function themePickMessage(
+  store: Store,
+  caps: ChannelCapabilities,
+): OutboundMessage {
+  const current = resolveStoreTheme(store.theme);
+  const currentLabel = current
+    ? (themeById(current)?.label ?? current)
+    : "Por defecto (look actual)";
+  const options: Option[] = STORE_THEMES.map((t) => ({
+    id: `${CHOICE.THEME_PREFIX}${t.id}`,
+    label: t.label,
+  }));
+  options.push({ id: CHOICE.MENU_BACK, label: "Volver al menú" });
+  return withOptions(
+    `Elegí un estilo de fondo para tu vitrina (el color de acento se mantiene).\nAhora: ${currentLabel}.`,
+    options,
+    caps,
+  );
+}
+
+function themeConfirmMessage(
+  theme: Pick<StoreThemeOption, "label" | "id" | "blurb">,
+  store: Store,
+  caps: ChannelCapabilities,
+): OutboundMessage {
+  const link = store.slug ? `\nVista: ${storeUrl(store.slug)}` : "";
+  return withOptions(
+    `¿Dejamos el estilo «${theme.label}»?\n${theme.blurb}.${link}`,
+    [
+      { id: CHOICE.YES, label: "Sí, guardar" },
+      { id: CHOICE.NO, label: "Otro estilo" },
+      { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+    ],
+    caps,
+  );
+}
+
+function welcomeAskMessage(
+  store: Store,
+  caps: ChannelCapabilities,
+): OutboundMessage {
+  const current = normalizeWelcomeMessage(store.welcomeMessage);
+  const nowLine = current
+    ? `Ahora: «${current}».`
+    : "Ahora no tenés frase.";
+  const options: Option[] = [
+    { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+  ];
+  if (current) {
+    options.unshift({ id: CHOICE.WELCOME_CLEAR, label: "Sin frase" });
+  }
+  return withOptions(
+    `Escribí una frase corta debajo del nombre (máx. ${WELCOME_MESSAGE_MAX} caracteres).\nEj.: «Envíos a todo el país» o «Retiro en taller».\n${nowLine}`,
+    options,
+    caps,
+  );
+}
+
+function welcomeConfirmMessage(
+  phrase: string | null,
+  store: Store,
+  caps: ChannelCapabilities,
+): OutboundMessage {
+  const link = store.slug ? `\nVista: ${storeUrl(store.slug)}` : "";
+  const body = phrase
+    ? `¿Dejamos la frase «${phrase}» debajo del nombre?${link}`
+    : `¿Sacamos la frase de bienvenida?${link}`;
+  return withOptions(
+    body,
+    [
+      { id: CHOICE.YES, label: "Sí, guardar" },
+      { id: CHOICE.NO, label: "Otra frase" },
+      { id: CHOICE.MENU_BACK, label: "Volver al menú" },
+    ],
+    caps,
+  );
+}
+
 function waMenuMessage(
   caps: ChannelCapabilities,
   from?: string,
@@ -643,7 +789,9 @@ function helpMessage(): OutboundMessage {
       "Foto de un PRODUCTO: menú → Productos → Cambiar foto, o pedime cambiar la foto y te listo los productos; después mandás la foto nueva y confirmamos.\n" +
       "Icono de la TIENDA (no es la foto de un producto): menú → Tienda → Icono de la tienda. Pedime por texto o audio «armar icono» / «icono de la tienda», o «subir icono» y mandá tu imagen.\n" +
       "Color de la vitrina: menú → Tienda → Personalizar → Color, o pedime «quiero verde» / «color azul».\n" +
+      "Estilo / fondo: menú → Tienda → Personalizar → Estilo, o pedime «tema oscuro» / «estilo crema».\n" +
       "Rubro (marco en las fotos): menú → Tienda → Personalizar → Rubro, o pedime «vendo cerámica» / «tienda de comida» / «ropa».\n" +
+      "Frase de bienvenida: menú → Tienda → Personalizar → Frase de bienvenida, o pedime «decí que retiro en el local».\n" +
       "WhatsApp de pedidos: menú → WhatsApp → WhatsApp pedidos (el número donde te escriben los clientes).\n" +
       "Si armaste la tienda en la web y querés gestionarla por WhatsApp: menú → WhatsApp → Vincular WhatsApp, después desde el celular escribí «ya tengo cuenta» y el código.\n" +
       "Escribí o dictá menú para ver opciones, o cancelar para frenar lo que estemos haciendo.",
@@ -962,8 +1110,12 @@ async function handleMessageBody(
       state === "PERSONALIZE_HUB" ||
       state === "ACCENT_PICK" ||
       state === "ACCENT_CONFIRM" ||
+      state === "THEME_PICK" ||
+      state === "THEME_CONFIRM" ||
       state === "KIND_PICK" ||
       state === "KIND_CONFIRM" ||
+      state === "WELCOME_INPUT" ||
+      state === "WELCOME_CONFIRM" ||
       state.startsWith("STOCK_") ||
       state.startsWith("PRODUCT_"))
   ) {
@@ -1619,7 +1771,9 @@ async function handleMessageBody(
       Boolean(draft.pendingSetupPlan?.iconMode) ||
       Boolean(draft.pendingSetupPlan?.productTitles?.length) ||
       Boolean(draft.pendingSetupPlan?.accentColor) ||
-      Boolean(draft.pendingSetupPlan?.businessKind);
+      Boolean(draft.pendingSetupPlan?.businessKind) ||
+      Boolean(draft.pendingSetupPlan?.theme) ||
+      draft.pendingSetupPlan?.welcomeMessage !== undefined;
     replies.push({
       kind: "text",
       text: hasPlan
@@ -1729,6 +1883,16 @@ async function handleMessageBody(
       return openAccentPick(store, draft, setState, caps);
     }
     if (
+      choice === CHOICE.PERSONALIZE_THEME ||
+      msg.choiceId === CHOICE.PERSONALIZE_THEME
+    ) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      return openThemePick(store, draft, setState, caps);
+    }
+    if (
       choice === CHOICE.PERSONALIZE_KIND ||
       msg.choiceId === CHOICE.PERSONALIZE_KIND
     ) {
@@ -1739,6 +1903,16 @@ async function handleMessageBody(
       return openKindPick(store, draft, setState, caps);
     }
     if (
+      choice === CHOICE.PERSONALIZE_WELCOME ||
+      msg.choiceId === CHOICE.PERSONALIZE_WELCOME
+    ) {
+      if (!store) {
+        replies.push({ kind: "text", text: "Todavía no terminamos de armar tu tienda." });
+        return replies;
+      }
+      return openWelcomeAsk(store, draft, setState, caps);
+    }
+    if (
       (choice?.startsWith(CHOICE.ACCENT_PREFIX) ||
         msg.choiceId?.startsWith(CHOICE.ACCENT_PREFIX)) &&
       store
@@ -1747,6 +1921,17 @@ async function handleMessageBody(
       const swatch = swatchById(id);
       if (swatch) {
         return startAccentConfirm(store, draft, setState, caps, swatch);
+      }
+    }
+    if (
+      (choice?.startsWith(CHOICE.THEME_PREFIX) ||
+        msg.choiceId?.startsWith(CHOICE.THEME_PREFIX)) &&
+      store
+    ) {
+      const id = (choice ?? msg.choiceId ?? "").slice(CHOICE.THEME_PREFIX.length);
+      const theme = themeById(id);
+      if (theme) {
+        return startThemeConfirm(store, draft, setState, caps, theme);
       }
     }
     if (
@@ -1834,7 +2019,7 @@ async function handleMessageBody(
       return startContactEditFlow(store, draft, setState, caps, msg);
     }
 
-    // Multi-intent en IDLE: logo + color + rubro + lista de productos en un solo mensaje.
+    // Multi-intent en IDLE: logo + color + rubro + tema + frase + productos.
     if (msg.text && store) {
       const idlePlan = parseSetupPlan(msg.text);
       if (
@@ -1842,6 +2027,8 @@ async function handleMessageBody(
         (idlePlan.iconMode ||
           idlePlan.accentColor ||
           idlePlan.businessKind ||
+          idlePlan.theme ||
+          idlePlan.welcomeMessage !== undefined ||
           (idlePlan.productTitles?.length ?? 0) > 0)
       ) {
         draft = {
@@ -1968,6 +2155,26 @@ async function handleMessageBody(
         return startKindConfirm(store, draft, setState, caps, kind);
       }
       return openKindPick(store, draft, setState, caps);
+    }
+    if (action.intent === "set_store_theme" && store) {
+      const fromHint = action.themeHint ? themeById(action.themeHint) : null;
+      const theme = fromHint ?? matchThemeFromText(msg.text ?? "");
+      if (theme) {
+        return startThemeConfirm(store, draft, setState, caps, theme);
+      }
+      return openThemePick(store, draft, setState, caps);
+    }
+    if (action.intent === "set_welcome_message" && store) {
+      if (wantsClearWelcomeText(msg.text ?? "") || action.welcomeHint === "") {
+        return startWelcomeConfirm(store, draft, setState, caps, null);
+      }
+      const phrase =
+        normalizeWelcomeMessage(action.welcomeHint) ??
+        extractWelcomeFromText(msg.text ?? "");
+      if (phrase) {
+        return startWelcomeConfirm(store, draft, setState, caps, phrase);
+      }
+      return openWelcomeAsk(store, draft, setState, caps);
     }
     if (action.intent === "mark_out_of_stock" && store) {
       const spoken = await trySpokenStockConfirm(
@@ -2440,6 +2647,21 @@ async function handleMessageBody(
       return openAccentPick(store, draft, setState, caps);
     }
     if (
+      choice === CHOICE.PERSONALIZE_THEME ||
+      /tema|estilo|fondo|oscuro|crema|claro/.test(normalizeLoose(msg.text ?? ""))
+    ) {
+      if (
+        wantsStoreThemeText(msg.text ?? "") ||
+        matchThemeFromText(msg.text ?? "")
+      ) {
+        const theme = matchThemeFromText(msg.text ?? "");
+        if (theme) {
+          return startThemeConfirm(store, draft, setState, caps, theme);
+        }
+      }
+      return openThemePick(store, draft, setState, caps);
+    }
+    if (
       choice === CHOICE.PERSONALIZE_KIND ||
       /rubro|ceramica|cerámica|comida|ropa|artesanal|vendo/.test(
         normalizeLoose(msg.text ?? ""),
@@ -2455,6 +2677,21 @@ async function handleMessageBody(
         }
       }
       return openKindPick(store, draft, setState, caps);
+    }
+    if (
+      choice === CHOICE.PERSONALIZE_WELCOME ||
+      /frase|bienvenida|dec[ií] que|envio|envío|retiro/.test(
+        normalizeLoose(msg.text ?? ""),
+      )
+    ) {
+      if (wantsClearWelcomeText(msg.text ?? "")) {
+        return startWelcomeConfirm(store, draft, setState, caps, null);
+      }
+      const phrase = extractWelcomeFromText(msg.text ?? "");
+      if (phrase) {
+        return startWelcomeConfirm(store, draft, setState, caps, phrase);
+      }
+      return openWelcomeAsk(store, draft, setState, caps);
     }
     return openPersonalizeHub(draft, setState, caps);
   }
@@ -2589,6 +2826,153 @@ async function handleMessageBody(
           id: pendingId,
           label: draft.businessKindLabelPending || kindById(pendingId)?.label || pendingId,
         },
+        store,
+        caps,
+      ),
+    ];
+  }
+
+  if (state === "THEME_PICK" && store) {
+    if (choice === CHOICE.MENU_BACK) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [menuMessage(caps, msg.from)];
+    }
+    if (choice?.startsWith(CHOICE.THEME_PREFIX)) {
+      const theme = themeById(choice.slice(CHOICE.THEME_PREFIX.length));
+      if (theme) {
+        return startThemeConfirm(store, draft, setState, caps, theme);
+      }
+    }
+    const fromText = matchThemeFromText(msg.text ?? "");
+    if (fromText) {
+      return startThemeConfirm(store, draft, setState, caps, fromText);
+    }
+    return [
+      {
+        kind: "text",
+        text: "No reconocí ese estilo. Elegí Claro WA, Crema artesanal u Oscuro suave.",
+      },
+      themePickMessage(store, caps),
+    ];
+  }
+
+  if (state === "THEME_CONFIRM" && store) {
+    const text = msg.text?.trim() ?? "";
+    if (choice === CHOICE.MENU_BACK) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [menuMessage(caps, msg.from)];
+    }
+    if (choice === CHOICE.NO || isNegative(text) || /otro/.test(normalizeLoose(text))) {
+      return openThemePick(store, clearStockDraft(draft), setState, caps);
+    }
+    if (choice === CHOICE.YES || isAffirmative(text)) {
+      const theme = normalizeStoreTheme(draft.themePending);
+      if (!theme) {
+        return openThemePick(store, clearStockDraft(draft), setState, caps);
+      }
+      const updated = await updateStoreTheme(store.id, theme);
+      revalidateStore(store.slug);
+      const label =
+        draft.themeLabelPending || themeById(theme)?.label || theme;
+      await setState("IDLE", clearStockDraft(draft));
+      return [
+        {
+          kind: "text",
+          text: updated?.slug
+            ? `Guardé el estilo «${label}». Mirá tu vitrina: ${storeUrl(updated.slug)}`
+            : `Guardé el estilo «${label}».`,
+        },
+        menuMessage(caps, msg.from),
+      ];
+    }
+    const pendingId = normalizeStoreTheme(draft.themePending);
+    if (!pendingId) {
+      return openThemePick(store, clearStockDraft(draft), setState, caps);
+    }
+    const opt = themeById(pendingId)!;
+    return [
+      themeConfirmMessage(
+        {
+          id: pendingId,
+          label: draft.themeLabelPending || opt.label,
+          blurb: opt.blurb,
+        },
+        store,
+        caps,
+      ),
+    ];
+  }
+
+  if (state === "WELCOME_INPUT" && store) {
+    if (choice === CHOICE.MENU_BACK) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [menuMessage(caps, msg.from)];
+    }
+    if (choice === CHOICE.WELCOME_CLEAR || wantsClearWelcomeText(msg.text ?? "")) {
+      return startWelcomeConfirm(store, draft, setState, caps, null);
+    }
+    const raw = msg.text?.trim() ?? "";
+    if (!raw) {
+      return [
+        {
+          kind: "text",
+          text: "Escribí la frase, o tocá Sin frase / Cancelar.",
+        },
+        welcomeAskMessage(store, caps),
+      ];
+    }
+    const extracted =
+      extractWelcomeFromText(raw) ?? normalizeWelcomeMessage(raw);
+    if (!extracted) {
+      return [
+        {
+          kind: "text",
+          text: "No entendí la frase. Probá algo corto, tipo «Envíos a todo el país».",
+        },
+        welcomeAskMessage(store, caps),
+      ];
+    }
+    return startWelcomeConfirm(store, draft, setState, caps, extracted);
+  }
+
+  if (state === "WELCOME_CONFIRM" && store) {
+    const text = msg.text?.trim() ?? "";
+    if (choice === CHOICE.MENU_BACK) {
+      await setState("IDLE", clearStockDraft(draft));
+      return [menuMessage(caps, msg.from)];
+    }
+    if (choice === CHOICE.NO || isNegative(text) || /otro/.test(normalizeLoose(text))) {
+      return openWelcomeAsk(store, clearStockDraft(draft), setState, caps);
+    }
+    if (choice === CHOICE.YES || isAffirmative(text)) {
+      // string vacío = borrar; texto = guardar.
+      if (typeof draft.welcomeMessagePending !== "string") {
+        return openWelcomeAsk(store, clearStockDraft(draft), setState, caps);
+      }
+      const welcome = normalizeWelcomeMessage(draft.welcomeMessagePending);
+      const updated = await updateStoreWelcomeMessage(store.id, welcome);
+      revalidateStore(store.slug);
+      await setState("IDLE", clearStockDraft(draft));
+      return [
+        {
+          kind: "text",
+          text: welcome
+            ? updated?.slug
+              ? `Guardé la frase. Mirá tu vitrina: ${storeUrl(updated.slug)}`
+              : "Guardé la frase."
+            : updated?.slug
+              ? `Saqué la frase. Mirá tu vitrina: ${storeUrl(updated.slug)}`
+              : "Saqué la frase de bienvenida.",
+        },
+        menuMessage(caps, msg.from),
+      ];
+    }
+    if (typeof draft.welcomeMessagePending !== "string") {
+      return openWelcomeAsk(store, clearStockDraft(draft), setState, caps);
+    }
+    return [
+      welcomeConfirmMessage(
+        normalizeWelcomeMessage(draft.welcomeMessagePending),
         store,
         caps,
       ),
@@ -2979,6 +3363,64 @@ async function startKindConfirm(
   };
   await setState("KIND_CONFIRM", nextDraft);
   return [kindConfirmMessage({ id: id as BusinessKindOption["id"], label: kind.label }, store, caps)];
+}
+
+async function openThemePick(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+): Promise<OutboundMessage[]> {
+  await setState("THEME_PICK", clearStockDraft(draft));
+  return [themePickMessage(store, caps)];
+}
+
+async function startThemeConfirm(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  theme: StoreThemeOption,
+): Promise<OutboundMessage[]> {
+  const id = normalizeStoreTheme(theme.id) ?? theme.id;
+  const nextDraft: ConversationDraft = {
+    ...clearStockDraft(draft),
+    themePending: id,
+    themeLabelPending: theme.label,
+  };
+  await setState("THEME_CONFIRM", nextDraft);
+  return [
+    themeConfirmMessage(
+      { id: id as StoreThemeOption["id"], label: theme.label, blurb: theme.blurb },
+      store,
+      caps,
+    ),
+  ];
+}
+
+async function openWelcomeAsk(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+): Promise<OutboundMessage[]> {
+  await setState("WELCOME_INPUT", clearStockDraft(draft));
+  return [welcomeAskMessage(store, caps)];
+}
+
+async function startWelcomeConfirm(
+  store: Store,
+  draft: ConversationDraft,
+  setState: SetState,
+  caps: ChannelCapabilities,
+  phrase: string | null,
+): Promise<OutboundMessage[]> {
+  const nextDraft: ConversationDraft = {
+    ...clearStockDraft(draft),
+    welcomeMessagePending: phrase ?? "",
+  };
+  await setState("WELCOME_CONFIRM", nextDraft);
+  return [welcomeConfirmMessage(phrase, store, caps)];
 }
 
 async function ensureStoreIconReady(

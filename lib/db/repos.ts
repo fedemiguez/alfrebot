@@ -43,6 +43,12 @@ export type PendingSetupPlan = {
   businessKind?: string;
   /** Label legible del rubro (ej. Artesanal). */
   businessKindLabel?: string;
+  /** Tema de fondo (`claro` | `crema` | `oscuro`) — Fase C. */
+  theme?: string;
+  /** Label legible del tema (ej. Claro WA). */
+  themeLabel?: string;
+  /** Frase de bienvenida — Fase C. */
+  welcomeMessage?: string;
   productTitles?: string[];
   deferPhotos?: boolean;
 };
@@ -94,6 +100,12 @@ export type ConversationDraft = {
   businessKindPending?: string;
   /** Label del rubro pendiente. */
   businessKindLabelPending?: string;
+  /** Tema pendiente de confirmar (flujo Estilo). */
+  themePending?: string;
+  /** Label del tema pendiente. */
+  themeLabelPending?: string;
+  /** Frase de bienvenida pendiente de confirmar. */
+  welcomeMessagePending?: string;
   [key: string]: unknown;
 };
 
@@ -293,6 +305,8 @@ export async function upsertStore(input: {
       iconSvgUrl: null,
       accentColor: null,
       businessKind: null,
+      welcomeMessage: null,
+      theme: null,
       isDemo: input.isDemo ?? false,
       status: input.status ?? "onboarding",
       createdAt: now(),
@@ -715,6 +729,48 @@ export async function updateStoreBusinessKind(
   const rows = await db
     .update(stores)
     .set({ businessKind, updatedAt: now() })
+    .where(eq(stores.id, storeId))
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function updateStoreTheme(
+  storeId: string,
+  theme: string | null,
+): Promise<Store | null> {
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    const current = mem.stores.get(storeId);
+    if (!current) return null;
+    const updated = touchStore({ ...current, theme });
+    mem.stores.set(storeId, updated);
+    return updated;
+  }
+  const db = getDb();
+  const rows = await db
+    .update(stores)
+    .set({ theme, updatedAt: now() })
+    .where(eq(stores.id, storeId))
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function updateStoreWelcomeMessage(
+  storeId: string,
+  welcomeMessage: string | null,
+): Promise<Store | null> {
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    const current = mem.stores.get(storeId);
+    if (!current) return null;
+    const updated = touchStore({ ...current, welcomeMessage });
+    mem.stores.set(storeId, updated);
+    return updated;
+  }
+  const db = getDb();
+  const rows = await db
+    .update(stores)
+    .set({ welcomeMessage, updatedAt: now() })
     .where(eq(stores.id, storeId))
     .returning();
   return rows[0] ?? null;

@@ -20,6 +20,8 @@ export const DEMO_STORE: Store = {
   iconSvgUrl: null,
   accentColor: null,
   businessKind: "artesanal",
+  welcomeMessage: "Retiro en taller · Envíos a todo el país",
+  theme: null,
   isDemo: false,
   status: "active",
   createdAt: new Date("2026-11-01T12:00:00.000Z"),

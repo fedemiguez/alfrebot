@@ -419,8 +419,8 @@ export function HowToOrderNote({
   if (compact) {
     const text =
       checkoutMode === "cart"
-        ? "Agregá lo que quieras. Después abrí Pedido y mandalo por WhatsApp."
-        : "Tocá Lo quiero para pedirlo por WhatsApp.";
+        ? "Sumalo al pedido. Cuando termines, abrí Pedido y mandalo por WhatsApp."
+        : "Tocá Lo quiero y te abre WhatsApp para pedirlo.";
     return (
       <p
         className="mt-4 text-[1.1rem] leading-relaxed text-[var(--ink)]"
@@ -434,14 +434,14 @@ export function HowToOrderNote({
   const steps =
     checkoutMode === "cart"
       ? [
-          "Buscá el producto",
+          "Elegí lo que querés",
           "Tocá Agregar al pedido",
           "Abrí Pedido y mandalo por WhatsApp",
         ]
       : [
-          "Buscá el producto",
+          "Elegí el producto",
           "Tocá Lo quiero",
-          "Escribile por WhatsApp",
+          "Confirmá el pedido por WhatsApp",
         ];
 
   return (

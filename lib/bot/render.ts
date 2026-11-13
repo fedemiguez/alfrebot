@@ -16,12 +16,20 @@ export const CHOICE = {
   MENU_PERSONALIZE: "menu_personalize",
   /** Personalizar → Color de acento. */
   PERSONALIZE_COLOR: "personalize_color",
+  /** Personalizar → Estilo / tema de fondo. */
+  PERSONALIZE_THEME: "personalize_theme",
   /** Personalizar → Rubro del negocio. */
   PERSONALIZE_KIND: "personalize_kind",
+  /** Personalizar → Frase de bienvenida. */
+  PERSONALIZE_WELCOME: "personalize_welcome",
   /** Prefijo al elegir swatch: accent_<id> (ej. accent_verde). */
   ACCENT_PREFIX: "accent_",
+  /** Prefijo al elegir tema: theme_<id> (ej. theme_claro). */
+  THEME_PREFIX: "theme_",
   /** Prefijo al elegir rubro: kind_<id> (ej. kind_artesanal). */
   KIND_PREFIX: "kind_",
+  /** Borrar frase de bienvenida. */
+  WELCOME_CLEAR: "welcome_clear",
   MENU_CONTACT: "menu_contact",
   /** Generar código para gestionar la misma tienda desde WhatsApp. */
   MENU_LINK_WA: "menu_link_wa",

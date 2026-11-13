@@ -288,3 +288,60 @@ body {
   font-family: var(--font-display), Lexend, sans-serif;
   font-weight: 600;
 }
+
+/* Temas de fondo (Fase C). Preservan --primary del accent_color. */
+.store-theme-shell {
+  min-height: 100%;
+  background:
+    radial-gradient(
+      ellipse at top left,
+      color-mix(in srgb, var(--primary) 8%, transparent),
+      transparent 45%
+    ),
+    radial-gradient(
+      ellipse at bottom right,
+      color-mix(in srgb, var(--accent, #059669) 6%, transparent),
+      transparent 40%
+    ),
+    var(--bg);
+  color: var(--ink);
+}
+
+.store-theme-claro {
+  --bg: #eef3f1;
+  --paper: #e4ebe8;
+  --card: #ffffff;
+  --border: #d0dbd6;
+  --ink: #0f172a;
+  --muted: #334155;
+  --soldout-bg: #e4ebe8;
+}
+
+.store-theme-crema {
+  --bg: #f3ebe0;
+  --paper: #ebe1d2;
+  --card: #fffcf7;
+  --border: #ddd0bc;
+  --ink: #1c1917;
+  --muted: #57534e;
+  --soldout-bg: #ebe1d2;
+}
+
+.store-theme-oscuro {
+  --bg: #1c1917;
+  --paper: #292524;
+  --card: #292524;
+  --border: #44403c;
+  --ink: #fafaf9;
+  --muted: #a8a29e;
+  --soldout: #d6d3d1;
+  --soldout-bg: #44403c;
+  --primary-fg: #ffffff;
+}
+
+.store-welcome {
+  margin-top: 0.65rem;
+  font-size: 1.15rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
