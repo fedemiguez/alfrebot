@@ -1,125 +1,67 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" fill="none">
-  <!-- Trama artesanal v2: tile único denso (40 iconos), sin grilla -->
-  <g stroke="#000" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <g transform="translate(437.5 23.0) rotate(-20.6) scale(0.91)">
-      <path d="M-8 0 H8 L6.5 14 H-6.5 Z"/><path d="M-9.5 0 H9.5"/><path d="M0 0 V-9"/><path d="M0 -5 C-3 -8.5 -6 -7 -4.5 -3.5"/><path d="M0 -7 C3 -10.5 6 -9 4.5 -4"/>
-    </g>
-    <g transform="translate(207.1 92.7) rotate(33.3) scale(0.77)">
-      <path d="M-8 0 H8 L6.5 14 H-6.5 Z"/><path d="M-9.5 0 H9.5"/><path d="M0 0 V-9"/><path d="M0 -5 C-3 -8.5 -6 -7 -4.5 -3.5"/><path d="M0 -7 C3 -10.5 6 -9 4.5 -4"/>
-    </g>
-    <g transform="translate(591.7 331.2) rotate(32.4) scale(1.33)">
-      <path d="M-8 0 H8 L6.5 14 H-6.5 Z"/><path d="M-9.5 0 H9.5"/><path d="M0 0 V-9"/><path d="M0 -5 C-3 -8.5 -6 -7 -4.5 -3.5"/><path d="M0 -7 C3 -10.5 6 -9 4.5 -4"/>
-    </g>
-    <g transform="translate(246.9 252.3) rotate(5.8) scale(1.14)">
-      <circle cx="0" cy="0" r="11"/><path d="M-9 -4 C-4 -7 4 -7 9 -4"/><path d="M-9 0 C-4 -3 4 -3 9 0"/><path d="M-9 4 C-4 1 4 1 9 4"/><path d="M10 -6 C13 -9 14.5 -10.5 16 -12"/>
-    </g>
-    <g transform="translate(128.5 397.1) rotate(31.2) scale(1.06)">
-      <circle cx="0" cy="0" r="11"/><path d="M-9 -4 C-4 -7 4 -7 9 -4"/><path d="M-9 0 C-4 -3 4 -3 9 0"/><path d="M-9 4 C-4 1 4 1 9 4"/><path d="M10 -6 C13 -9 14.5 -10.5 16 -12"/>
-    </g>
-    <g transform="translate(346.7 347.5) rotate(32.4) scale(0.73)">
-      <path d="M4 -12 L11 -5 L-2 10 L-9 3 Z"/><path d="M-9 3 L-13 13 L-2 10"/><path d="M0 -7 L6 -1"/>
-    </g>
-    <g transform="translate(495.5 522.7) rotate(15.0) scale(0.88)">
-      <circle cx="0" cy="0" r="11"/><path d="M-9 -4 C-4 -7 4 -7 9 -4"/><path d="M-9 0 C-4 -3 4 -3 9 0"/><path d="M-9 4 C-4 1 4 1 9 4"/><path d="M10 -6 C13 -9 14.5 -10.5 16 -12"/>
-    </g>
-    <g transform="translate(312.1 299.2) rotate(-31.0) scale(0.95)">
-      <circle cx="-6" cy="-8" r="4"/><circle cx="-6" cy="8" r="4"/><path d="M-3 -6 L12 -10"/><path d="M-3 6 L12 10"/><path d="M-3 -6 L-3 6"/>
-    </g>
-    <g transform="translate(139.1 206.0) rotate(-7.5) scale(0.98)">
-      <circle cx="-6" cy="-8" r="4"/><circle cx="-6" cy="8" r="4"/><path d="M-3 -6 L12 -10"/><path d="M-3 6 L12 10"/><path d="M-3 -6 L-3 6"/>
-    </g>
-    <g transform="translate(266.8 33.4) rotate(12.6) scale(1.25)">
-      <circle cx="-6" cy="-8" r="4"/><circle cx="-6" cy="8" r="4"/><path d="M-3 -6 L12 -10"/><path d="M-3 6 L12 10"/><path d="M-3 -6 L-3 6"/>
-    </g>
-    <g transform="translate(549.6 63.3) rotate(-34.0) scale(1.33)">
-      <path d="M-8 0 H8 L6.5 14 H-6.5 Z"/><path d="M-9.5 0 H9.5"/><path d="M0 0 V-9"/><path d="M0 -5 C-3 -8.5 -6 -7 -4.5 -3.5"/><path d="M0 -7 C3 -10.5 6 -9 4.5 -4"/>
-    </g>
-    <g transform="translate(363.6 438.8) rotate(-4.0) scale(0.69)">
-      <circle cx="-6" cy="-8" r="4"/><circle cx="-6" cy="8" r="4"/><path d="M-3 -6 L12 -10"/><path d="M-3 6 L12 10"/><path d="M-3 -6 L-3 6"/>
-    </g>
-    <g transform="translate(604.7 102.3) rotate(-9.4) scale(0.83)">
-      <path d="M-7 -8 H5 C6.5 -8 8 -5 8 -2 V5 C8 8.5 5 12 0 12 C-5 12 -8 8.5 -8 5 V-2 C-8 -5 -6.5 -8 -7 -8 Z"/><path d="M5 -5 H8.5 C10.5 -5 12 -3 12 -0.5 C12 2 10.5 4 8.5 4 H8"/><path d="M-4 -8 C-4 -11 -1.5 -12.5 0 -12.5 C1.5 -12.5 4 -11 4 -8"/>
-    </g>
-    <g transform="translate(490.9 344.7) rotate(-15.1) scale(0.66)">
-      <path d="M-10 -6 H4 V1 H-10 Z"/><path d="M4 -4 H10 V-1 H4"/><path d="M-5 1 V14"/>
-    </g>
-    <g transform="translate(149.2 279.7) rotate(28.7) scale(0.92)">
-      <path d="M-7 -8 H5 C6.5 -8 8 -5 8 -2 V5 C8 8.5 5 12 0 12 C-5 12 -8 8.5 -8 5 V-2 C-8 -5 -6.5 -8 -7 -8 Z"/><path d="M5 -5 H8.5 C10.5 -5 12 -3 12 -0.5 C12 2 10.5 4 8.5 4 H8"/><path d="M-4 -8 C-4 -11 -1.5 -12.5 0 -12.5 C1.5 -12.5 4 -11 4 -8"/>
-    </g>
-    <g transform="translate(545.1 482.3) rotate(13.3) scale(1.20)">
-      <path d="M-10 -6 H4 V1 H-10 Z"/><path d="M4 -4 H10 V-1 H4"/><path d="M-5 1 V14"/>
-    </g>
-    <g transform="translate(275.8 461.1) rotate(18.0) scale(1.28)">
-      <path d="M-8 0 H8 L6.5 14 H-6.5 Z"/><path d="M-9.5 0 H9.5"/><path d="M0 0 V-9"/><path d="M0 -5 C-3 -8.5 -6 -7 -4.5 -3.5"/><path d="M0 -7 C3 -10.5 6 -9 4.5 -4"/>
-    </g>
-    <g transform="translate(297.1 615.5) rotate(12.8) scale(0.67)">
-      <path d="M-10 -6 H4 V1 H-10 Z"/><path d="M4 -4 H10 V-1 H4"/><path d="M-5 1 V14"/>
-    </g>
-    <g transform="translate(364.8 77.8) rotate(14.5) scale(1.15)">
-      <path d="M-7 -8 H5 C6.5 -8 8 -5 8 -2 V5 C8 8.5 5 12 0 12 C-5 12 -8 8.5 -8 5 V-2 C-8 -5 -6.5 -8 -7 -8 Z"/><path d="M5 -5 H8.5 C10.5 -5 12 -3 12 -0.5 C12 2 10.5 4 8.5 4 H8"/><path d="M-4 -8 C-4 -11 -1.5 -12.5 0 -12.5 C1.5 -12.5 4 -11 4 -8"/>
-    </g>
-    <g transform="translate(485.3 238.4) rotate(-9.6) scale(0.92)">
-      <circle cx="0" cy="0" r="11"/><path d="M-9 -4 C-4 -7 4 -7 9 -4"/><path d="M-9 0 C-4 -3 4 -3 9 0"/><path d="M-9 4 C-4 1 4 1 9 4"/><path d="M10 -6 C13 -9 14.5 -10.5 16 -12"/>
-    </g>
-    <g transform="translate(219.7 313.4) rotate(-3.2) scale(1.00)">
-      <path d="M-7 -8 H5 C6.5 -8 8 -5 8 -2 V5 C8 8.5 5 12 0 12 C-5 12 -8 8.5 -8 5 V-2 C-8 -5 -6.5 -8 -7 -8 Z"/><path d="M5 -5 H8.5 C10.5 -5 12 -3 12 -0.5 C12 2 10.5 4 8.5 4 H8"/><path d="M-4 -8 C-4 -11 -1.5 -12.5 0 -12.5 C1.5 -12.5 4 -11 4 -8"/>
-    </g>
-    <g transform="translate(577.1 585.6) rotate(32.5) scale(1.11)">
-      <path d="M-8 0 H8 L6.5 14 H-6.5 Z"/><path d="M-9.5 0 H9.5"/><path d="M0 0 V-9"/><path d="M0 -5 C-3 -8.5 -6 -7 -4.5 -3.5"/><path d="M0 -7 C3 -10.5 6 -9 4.5 -4"/>
-    </g>
-    <g transform="translate(440.1 186.6) rotate(34.2) scale(1.34)">
-      <circle cx="-6" cy="-8" r="4"/><circle cx="-6" cy="8" r="4"/><path d="M-3 -6 L12 -10"/><path d="M-3 6 L12 10"/><path d="M-3 -6 L-3 6"/>
-    </g>
-    <g transform="translate(449.4 498.5) rotate(10.6) scale(0.83)">
-      <circle cx="-6" cy="-8" r="4"/><circle cx="-6" cy="8" r="4"/><path d="M-3 -6 L12 -10"/><path d="M-3 6 L12 10"/><path d="M-3 -6 L-3 6"/>
-    </g>
-    <g transform="translate(454.5 290.7) rotate(-19.1) scale(1.08)">
-      <path d="M4 -12 L11 -5 L-2 10 L-9 3 Z"/><path d="M-9 3 L-13 13 L-2 10"/><path d="M0 -7 L6 -1"/>
-    </g>
-    <g transform="translate(134.8 450.0) rotate(-6.7) scale(1.16)">
-      <path d="M4 -12 L11 -5 L-2 10 L-9 3 Z"/><path d="M-9 3 L-13 13 L-2 10"/><path d="M0 -7 L6 -1"/>
-    </g>
-    <g transform="translate(56.2 50.1) rotate(-8.2) scale(1.00)">
-      <path d="M4 -12 L11 -5 L-2 10 L-9 3 Z"/><path d="M-9 3 L-13 13 L-2 10"/><path d="M0 -7 L6 -1"/>
-    </g>
-    <g transform="translate(313.0 394.9) rotate(2.8) scale(0.86)">
-      <path d="M-10 -6 H4 V1 H-10 Z"/><path d="M4 -4 H10 V-1 H4"/><path d="M-5 1 V14"/>
-    </g>
-    <g transform="translate(497.8 43.9) rotate(34.7) scale(0.87)">
-      <circle cx="0" cy="0" r="11"/><path d="M-9 -4 C-4 -7 4 -7 9 -4"/><path d="M-9 0 C-4 -3 4 -3 9 0"/><path d="M-9 4 C-4 1 4 1 9 4"/><path d="M10 -6 C13 -9 14.5 -10.5 16 -12"/>
-    </g>
-    <g transform="translate(295.0 512.8) rotate(34.3) scale(0.73)">
-      <path d="M-10 -6 H4 V1 H-10 Z"/><path d="M4 -4 H10 V-1 H4"/><path d="M-5 1 V14"/>
-    </g>
-    <g transform="translate(377.7 296.8) rotate(27.5) scale(0.80)">
-      <circle cx="0" cy="0" r="11"/><path d="M-9 -4 C-4 -7 4 -7 9 -4"/><path d="M-9 0 C-4 -3 4 -3 9 0"/><path d="M-9 4 C-4 1 4 1 9 4"/><path d="M10 -6 C13 -9 14.5 -10.5 16 -12"/>
-    </g>
-    <g transform="translate(299.2 225.6) rotate(-23.3) scale(1.14)">
-      <path d="M4 -12 L11 -5 L-2 10 L-9 3 Z"/><path d="M-9 3 L-13 13 L-2 10"/><path d="M0 -7 L6 -1"/>
-    </g>
-    <g transform="translate(284.0 111.3) rotate(20.7) scale(0.75)">
-      <path d="M-7 -8 H5 C6.5 -8 8 -5 8 -2 V5 C8 8.5 5 12 0 12 C-5 12 -8 8.5 -8 5 V-2 C-8 -5 -6.5 -8 -7 -8 Z"/><path d="M5 -5 H8.5 C10.5 -5 12 -3 12 -0.5 C12 2 10.5 4 8.5 4 H8"/><path d="M-4 -8 C-4 -11 -1.5 -12.5 0 -12.5 C1.5 -12.5 4 -11 4 -8"/>
-    </g>
-    <g transform="translate(409.1 405.5) rotate(-6.2) scale(0.92)">
-      <path d="M-7 -8 H5 C6.5 -8 8 -5 8 -2 V5 C8 8.5 5 12 0 12 C-5 12 -8 8.5 -8 5 V-2 C-8 -5 -6.5 -8 -7 -8 Z"/><path d="M5 -5 H8.5 C10.5 -5 12 -3 12 -0.5 C12 2 10.5 4 8.5 4 H8"/><path d="M-4 -8 C-4 -11 -1.5 -12.5 0 -12.5 C1.5 -12.5 4 -11 4 -8"/>
-    </g>
-    <g transform="translate(142.3 554.9) rotate(-16.6) scale(0.74)">
-      <circle cx="-6" cy="-8" r="4"/><circle cx="-6" cy="8" r="4"/><path d="M-3 -6 L12 -10"/><path d="M-3 6 L12 10"/><path d="M-3 -6 L-3 6"/>
-    </g>
-    <g transform="translate(190.4 172.6) rotate(-22.7) scale(1.19)">
-      <path d="M-8 0 H8 L6.5 14 H-6.5 Z"/><path d="M-9.5 0 H9.5"/><path d="M0 0 V-9"/><path d="M0 -5 C-3 -8.5 -6 -7 -4.5 -3.5"/><path d="M0 -7 C3 -10.5 6 -9 4.5 -4"/>
-    </g>
-    <g transform="translate(104.7 313.7) rotate(28.2) scale(1.13)">
-      <path d="M-10 -6 H4 V1 H-10 Z"/><path d="M4 -4 H10 V-1 H4"/><path d="M-5 1 V14"/>
-    </g>
-    <g transform="translate(387.1 587.0) rotate(-30.9) scale(1.30)">
-      <path d="M4 -12 L11 -5 L-2 10 L-9 3 Z"/><path d="M-9 3 L-13 13 L-2 10"/><path d="M0 -7 L6 -1"/>
-    </g>
-    <g transform="translate(82.2 453.8) rotate(-33.2) scale(1.28)">
-      <circle cx="0" cy="0" r="11"/><path d="M-9 -4 C-4 -7 4 -7 9 -4"/><path d="M-9 0 C-4 -3 4 -3 9 0"/><path d="M-9 4 C-4 1 4 1 9 4"/><path d="M10 -6 C13 -9 14.5 -10.5 16 -12"/>
-    </g>
-    <g transform="translate(63.7 233.5) rotate(2.9) scale(0.93)">
-      <path d="M4 -12 L11 -5 L-2 10 L-9 3 Z"/><path d="M-9 3 L-13 13 L-2 10"/><path d="M0 -7 L6 -1"/>
-    </g>
-  </g>
+  <!-- Trama artesanal: defs Gemini + scatter (36 iconos) -->
+  <defs>
+<g id="brush" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+<path d="M6 18 L18 6 M14 5 L19 10"/>
+<path d="M5 19 C5 21 3 21 3 19 C3 17 5 17 5 19 Z"/>
+</g>
+<g id="yarn" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 4 C7 4 4 7 4 12 C4 17 7 20 12 20 C17 20 20 17 20 12 C20 7 17 4 12 4 Z"/>
+<path d="M7 9 C9 11 15 11 17 9 M8 15 C10 13 14 13 16 15 M5 12 H19"/>
+</g>
+<g id="scissors" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="6" cy="8" r="2"/>
+<path d="M6 10 L18 20 M6 14 L18 4"/>
+<circle cx="18" cy="16" r="2"/>
+</g>
+<g id="pot" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+<path d="M5 8 H19 L17 20 H7 Z"/>
+<path d="M4 6 H20 V8 H4 Z"/>
+<path d="M12 6 V3 M10 4 C9 2.5 8 3 9 4.5 M14 4 C15 2.5 16 3 15 4.5"/>
+</g>
+<g id="ceramic" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+<path d="M7 8 C7 5 9 4 12 4 C15 4 17 5 17 8 C19 10 20 13 20 16 C20 20 17 21 12 21 C7 21 4 20 4 16 C4 13 5 10 7 8 Z"/>
+</g>
+<g id="hammer" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+<path d="M4 8 H14 V14 H4 Z"/>
+<path d="M14 10 H18 V12 H14"/>
+<path d="M8 14 V22"/>
+</g>
+  </defs>
+  <use href="#hammer" transform="translate(374.2 429.4) rotate(-15.0) scale(0.90) translate(-12 -12)" />
+  <use href="#scissors" transform="translate(576.4 219.9) rotate(-19.0) scale(0.86) translate(-12 -12)" />
+  <use href="#ceramic" transform="translate(383.1 359.8) rotate(-2.1) scale(0.94) translate(-12 -12)" />
+  <use href="#hammer" transform="translate(451.8 174.3) rotate(6.4) scale(0.85) translate(-12 -12)" />
+  <use href="#pot" transform="translate(488.1 80.2) rotate(-6.5) scale(1.03) translate(-12 -12)" />
+  <use href="#hammer" transform="translate(253.9 158.2) rotate(-5.6) scale(0.93) translate(-12 -12)" />
+  <use href="#brush" transform="translate(320.2 51.2) rotate(-28.0) scale(0.87) translate(-12 -12)" />
+  <use href="#scissors" transform="translate(181.6 398.7) rotate(-26.5) scale(1.14) translate(-12 -12)" />
+  <use href="#pot" transform="translate(383.8 72.3) rotate(-10.7) scale(1.07) translate(-12 -12)" />
+  <use href="#brush" transform="translate(171.7 339.6) rotate(19.4) scale(1.24) translate(-12 -12)" />
+  <use href="#pot" transform="translate(407.4 470.1) rotate(20.0) scale(1.09) translate(-12 -12)" />
+  <use href="#pot" transform="translate(574.0 540.1) rotate(23.7) scale(0.82) translate(-12 -12)" />
+  <use href="#yarn" transform="translate(508.9 167.2) rotate(-22.1) scale(1.04) translate(-12 -12)" />
+  <use href="#scissors" transform="translate(450.8 360.7) rotate(8.5) scale(0.95) translate(-12 -12)" />
+  <use href="#scissors" transform="translate(309.8 268.4) rotate(-25.6) scale(1.24) translate(-12 -12)" />
+  <use href="#hammer" transform="translate(378.5 148.2) rotate(-11.4) scale(1.02) translate(-12 -12)" />
+  <use href="#hammer" transform="translate(240.9 44.1) rotate(1.9) scale(1.30) translate(-12 -12)" />
+  <use href="#scissors" transform="translate(154.6 158.8) rotate(-15.8) scale(0.94) translate(-12 -12)" />
+  <use href="#yarn" transform="translate(478.6 562.7) rotate(8.0) scale(0.94) translate(-12 -12)" />
+  <use href="#brush" transform="translate(448.4 254.5) rotate(-15.4) scale(0.94) translate(-12 -12)" />
+  <use href="#yarn" transform="translate(112.4 343.0) rotate(-34.0) scale(0.90) translate(-12 -12)" />
+  <use href="#brush" transform="translate(580.9 152.5) rotate(22.2) scale(0.95) translate(-12 -12)" />
+  <use href="#ceramic" transform="translate(164.8 284.6) rotate(-3.2) scale(1.09) translate(-12 -12)" />
+  <use href="#hammer" transform="translate(294.4 417.5) rotate(24.0) scale(1.26) translate(-12 -12)" />
+  <use href="#ceramic" transform="translate(95.5 406.1) rotate(-8.1) scale(1.07) translate(-12 -12)" />
+  <use href="#ceramic" transform="translate(224.6 215.8) rotate(-16.2) scale(1.14) translate(-12 -12)" />
+  <use href="#brush" transform="translate(373.6 600.2) rotate(-32.6) scale(1.01) translate(-12 -12)" />
+  <use href="#ceramic" transform="translate(97.7 210.9) rotate(-21.3) scale(1.24) translate(-12 -12)" />
+  <use href="#pot" transform="translate(257.7 103.2) rotate(29.0) scale(0.95) translate(-12 -12)" />
+  <use href="#scissors" transform="translate(274.0 487.0) rotate(-24.6) scale(0.94) translate(-12 -12)" />
+  <use href="#pot" transform="translate(322.7 366.8) rotate(-14.4) scale(0.73) translate(-12 -12)" />
+  <use href="#brush" transform="translate(40.5 322.3) rotate(4.6) scale(0.82) translate(-12 -12)" />
+  <use href="#yarn" transform="translate(258.8 359.9) rotate(-21.1) scale(0.82) translate(-12 -12)" />
+  <use href="#yarn" transform="translate(234.1 526.9) rotate(16.4) scale(0.98) translate(-12 -12)" />
+  <use href="#ceramic" transform="translate(504.1 446.8) rotate(-28.4) scale(1.07) translate(-12 -12)" />
+  <use href="#yarn" transform="translate(572.4 319.6) rotate(10.3) scale(1.10) translate(-12 -12)" />
 </svg>
