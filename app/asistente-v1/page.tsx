@@ -27,12 +27,12 @@ export default function AsistenteV1Page() {
         </p>
         <p className="mt-4 max-w-2xl rounded-lg border border-[var(--border)] bg-white/80 px-4 py-3 text-[1.15rem] leading-relaxed text-[var(--ink)]">
           <span className="font-semibold text-[var(--primary)]">
-            Icono de la tienda
+            Foto o logo del negocio
           </span>
           {" — "}
-          pedí por texto o audio «armar icono», o en el menú tocá{" "}
-          <span className="font-semibold">Tienda → Icono de la tienda</span>{" "}
-          para armarlo o subir tu imagen.
+          pedí por audio o texto que arme el logo, o en el menú tocá{" "}
+          <span className="font-semibold">Tienda</span> y después{" "}
+          <span className="font-semibold">Foto o logo</span>.
         </p>
         <div className="mt-8">
           <Suspense

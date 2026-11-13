@@ -94,7 +94,7 @@ function menuHasIcon(replies: OutboundMessage[]): boolean {
     (r) =>
       r.kind === "text" &&
       r.options?.some(
-        (o) => o.id === "menu_icon" && o.label === "Icono de la tienda",
+        (o) => o.id === "menu_icon" && o.label === "Foto o logo",
       ),
   );
 }
@@ -241,11 +241,11 @@ async function main() {
   const menu = await say("menú");
   assert(menuHasStoreGroup(menu), "menu includes grupo Tienda");
   const storeGroup = await say(undefined, "menu_group_store");
-  assert(menuHasIcon(storeGroup), "Tienda includes Icono de la tienda");
+  assert(menuHasIcon(storeGroup), "Tienda includes Foto o logo");
 
   const hub = await say(undefined, "menu_icon");
   assert(hasOption(hub, "icon_generate"), "hub has Que lo arme el bot");
-  assert(hasOption(hub, "icon_upload"), "hub has Subir mi icono");
+  assert(hasOption(hub, "icon_upload"), "hub has Subir mi imagen");
   assert(
     !hasOption(hub, "icon_from_profile"),
     "hub hides Google photo without imageUrl",
@@ -255,7 +255,7 @@ async function main() {
     hub.some(
       (r) =>
         r.kind === "text" &&
-        /icono de la tienda|no es la foto de un producto/i.test(r.text),
+        /foto de un producto|foto principal|logo/i.test(r.text),
     ),
     "hub copy distinguishes product vs store icon",
   );
@@ -298,7 +298,7 @@ async function main() {
     `pedido caption acknowledges request, got: ${pedidoCap}`,
   );
   assert(!/iniciales/i.test(pedidoCap), "pedido copy must not mention iniciales");
-  assert(hasOption(pedido, "icon_upload"), "pedido preview keeps Subir mi icono");
+  assert(hasOption(pedido, "icon_upload"), "pedido preview keeps Subir mi imagen");
   await say(undefined, "icon_done");
 
   // Productos → composición

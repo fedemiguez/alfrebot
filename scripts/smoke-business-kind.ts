@@ -125,8 +125,8 @@ async function main() {
   );
   assert(hasOption(pick, "menu_cancel"), "Cancelar on pick");
   assert(
-    pick.some((r) => r.kind === "text" && /trama/i.test(r.text)),
-    "pick menciona trama",
+    pick.some((r) => r.kind === "text" && /dibujitos|marco/i.test(r.text)),
+    "pick menciona marco/dibujitos",
   );
 
   const confirm = await say(undefined, "kind_artesanal");
@@ -137,8 +137,8 @@ async function main() {
     "confirm preview names Artesanal",
   );
   assert(
-    confirm.some((r) => r.kind === "text" && /trama/i.test(r.text)),
-    "confirm menciona trama",
+    confirm.some((r) => r.kind === "text" && /dibujitos|marco/i.test(r.text)),
+    "confirm menciona marco/dibujitos",
   );
   await say("Sí", "yes");
   store = await getStoreForChannelIdentity(from);

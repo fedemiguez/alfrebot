@@ -778,7 +778,7 @@ export function SimulatorChat({
       sendPayload(
         {
           choiceId: "icon_upload",
-          text: "Subir mi icono",
+          text: "Subir mi imagen",
           media: {
             kind: "image",
             mime: prepared.type || "image/jpeg",
@@ -788,13 +788,13 @@ export function SimulatorChat({
         {
           id: `u_${Date.now()}`,
           role: "user",
-          text: "Subir icono de la tienda",
+          text: "Subir logo del negocio",
           imageUrl: json.url,
         },
       );
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "No se pudo subir el icono";
+        err instanceof Error ? err.message : "No se pudo subir el logo";
       setError(message);
       setItems((prev) => [
         ...prev,
@@ -1352,8 +1352,8 @@ export function SimulatorChat({
                 Foto de un producto
               </h2>
               <p className="mt-1 text-[16px] text-[var(--muted)]">
-                Para cargar o cambiar la foto de un producto. El icono de la
-                tienda va por el menú → Tienda → Icono de la tienda.
+                Para cargar o cambiar la foto de un producto. El logo del
+                negocio va por el menú Tienda, opción Foto o logo.
               </p>
               <div className="mt-5 flex flex-col gap-3">
                 <button
@@ -1400,7 +1400,7 @@ export function SimulatorChat({
                 id="icon-source-title"
                 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--ink)]"
               >
-                Icono de la tienda
+                Foto o logo del negocio
               </h2>
               <p className="mt-1 text-[16px] text-[var(--muted)]">
                 Elegí una imagen cuadrada si podés. No reemplaza la foto de un
@@ -1477,10 +1477,10 @@ export function SimulatorChat({
         </p>
         <div className="mt-4 rounded border border-[var(--border)] bg-[var(--paper)] p-4">
           <p className="text-[1.05rem] font-semibold text-[var(--ink)]">
-            Icono de la tienda
+            Foto o logo del negocio
           </p>
           <p className="mt-1 text-[16px] leading-relaxed text-[var(--muted)]">
-            Pedí «armar icono» en el chat, o subí tu imagen acá.
+            Pedí por audio que arme el logo, o subí tu imagen acá.
           </p>
           <button
             type="button"
@@ -1488,7 +1488,7 @@ export function SimulatorChat({
             disabled={busy || !phone}
             onClick={() => setIconPickOpen(true)}
           >
-            Subir icono
+            Subir logo
           </button>
         </div>
         {storePreviewUrl ? (
