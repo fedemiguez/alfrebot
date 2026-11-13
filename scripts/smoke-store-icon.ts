@@ -63,7 +63,7 @@ async function say(
   );
   const flat = replies
     .map((r) =>
-      r.kind === "text"
+      r.kind === "text" || r.kind === "sign_out"
         ? r.text
         : `[image] ${(r.caption || "").slice(0, 80)} url=${r.url.slice(0, 48)}…`,
     )

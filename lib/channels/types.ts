@@ -24,7 +24,9 @@ export type Option = { id: string; label: string };
 
 export type OutboundMessage =
   | { kind: "text"; text: string; options?: Option[] }
-  | { kind: "image"; url: string; caption?: string; options?: Option[] };
+  | { kind: "image"; url: string; caption?: string; options?: Option[] }
+  /** Solo chat web (simulator): el cliente debe llamar Clerk signOut. */
+  | { kind: "sign_out"; text: string };
 
 export type ChannelCapabilities = {
   buttons: boolean;

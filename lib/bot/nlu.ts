@@ -169,6 +169,29 @@ export function isNegative(text: string): boolean {
   return /^(no|nop|nah|cancelar|cambiar|otra)$/.test(t);
 }
 
+/**
+ * Pedido de cerrar sesión en el chat web (Clerk).
+ * WhatsApp/Meta no debe usar este intent.
+ */
+export function isLogoutIntent(text: string | undefined): boolean {
+  if (!text?.trim()) return false;
+  const t = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+  return (
+    t === "salir" ||
+    t === "logout" ||
+    t === "log out" ||
+    t === "sign out" ||
+    t === "signout" ||
+    t === "cerrar sesion" ||
+    t === "cerrar la sesion" ||
+    t === "cerrar mi sesion"
+  );
+}
+
 export function extractSignupCode(text: string): string | null {
   const m = text.match(/c[oó]digo\s+(\d{3,6})/i) ?? text.match(/\b(\d{4})\b/);
   return m?.[1] ?? null;
