@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { AsistenteChatBody } from "@/components/asistente-chat-body";
@@ -7,6 +7,14 @@ import { isAlfrebotChatV2 } from "@/lib/env";
 export const metadata: Metadata = {
   title: "Asistente",
   description: "Armá tu tienda en el chat web con el mismo asistente de alfrebot.",
+};
+
+/** Android Chrome: el teclado redimensiona el layout (mejor con shell dvh/visualViewport). */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 function ClassicShell({ children }: { children: React.ReactNode }) {

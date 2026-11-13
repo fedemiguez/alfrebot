@@ -2,12 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { AlfrebotRobotAvatar } from "@/components/alfrebot-robot-avatar";
 import { ChatAuthOverlay } from "@/components/chat-auth-overlay";
 import { OwnerChatAvatar } from "@/components/owner-chat-avatar";
 import type { OutboundMessage } from "@/lib/channels/types";
-import { segmentUrls } from "@/lib/bot/render";
+import { CHOICE, segmentUrls } from "@/lib/bot/render";
 
 type ChatItem =
   | { id: string; role: "user"; text?: string; imageUrl?: string }
@@ -16,25 +25,125 @@ type ChatItem =
 const MAX_EDGE_PX = 1600;
 const JPEG_QUALITY = 0.85;
 const V2_INTRO_ID = "v2_intro";
+const V2_OWNER_INTRO_ID = "v2_owner_intro";
 const V2_CHANNEL_WEB = "v2_channel_web";
 const V2_CHANNEL_WA = "v2_channel_wa";
 /** Tras login Clerk, reanudar onboarding web sin repetir la elección de canal. */
 const PENDING_WEB_ONBOARDING_KEY = "alfrebot_pending_web_onboarding";
 
-const V2_INTRO_ITEM: ChatItem = {
-  id: V2_INTRO_ID,
-  role: "bot",
-  messages: [
-    {
-      kind: "text",
-      text: "¡Hola! Soy alfrebot, tu ayudante para armar la tienda. ¿Cómo preferís seguir?",
-      options: [
-        { id: V2_CHANNEL_WEB, label: "Seguir en este chat" },
-        { id: V2_CHANNEL_WA, label: "Ir a WhatsApp" },
-      ],
-    },
-  ],
-};
+function proactiveHello(firstName?: string | null): string {
+  const name = firstName?.trim();
+  return name
+    ? `Hola ${name}, ¿en qué necesitás que te ayude?`
+    : "Hola, ¿en qué necesitás que te ayude?";
+}
+
+/** Saludo fresco + elección de canal (guest / sin tienda). */
+function buildV2ChannelIntro(firstName?: string | null): ChatItem {
+  return {
+    id: V2_INTRO_ID,
+    role: "bot",
+    messages: [
+      {
+        kind: "text",
+        text: proactiveHello(firstName),
+        options: [
+          { id: V2_CHANNEL_WEB, label: "Seguir en este chat" },
+          { id: V2_CHANNEL_WA, label: "Ir a WhatsApp" },
+        ],
+      },
+    ],
+  };
+}
+
+/** Saludo fresco + menú principal (dueño con tienda activa). Sin hidratar historial. */
+function buildV2OwnerIntro(firstName?: string | null): ChatItem {
+  return {
+    id: V2_OWNER_INTRO_ID,
+    role: "bot",
+    messages: [
+      {
+        kind: "text",
+        text: proactiveHello(firstName),
+        options: [
+          { id: CHOICE.MENU_GROUP_PRODUCTS, label: "Productos" },
+          { id: CHOICE.MENU_GROUP_STORE, label: "Tienda" },
+          { id: CHOICE.MENU_GROUP_WA, label: "WhatsApp" },
+          { id: CHOICE.MENU_HELP, label: "Ayuda" },
+        ],
+      },
+    ],
+  };
+}
+
+/**
+ * Shell tipo WhatsApp: altura = visualViewport (iOS/Android con teclado).
+ * Evita que el layout “salte” o deje el composer a mitad de pantalla.
+ */
+function useChatShellViewport(enabled: boolean): CSSProperties | undefined {
+  const [box, setBox] = useState<{ height: number; top: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!enabled || typeof window === "undefined") return;
+
+    const sync = () => {
+      const vv = window.visualViewport;
+      const height = Math.round(vv?.height ?? window.innerHeight);
+      const top = Math.round(vv?.offsetTop ?? 0);
+      setBox((prev) =>
+        prev && prev.height === height && prev.top === top
+          ? prev
+          : { height, top },
+      );
+    };
+
+    sync();
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", sync);
+    vv?.addEventListener("scroll", sync);
+    window.addEventListener("resize", sync);
+    window.addEventListener("orientationchange", sync);
+
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    const prevBodyOverscroll = body.style.overscrollBehavior;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+
+    return () => {
+      vv?.removeEventListener("resize", sync);
+      vv?.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("orientationchange", sync);
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+      body.style.overscrollBehavior = prevBodyOverscroll;
+    };
+  }, [enabled]);
+
+  if (!enabled) return undefined;
+  if (!box) {
+    return {
+      position: "fixed",
+      inset: 0,
+      height: "100dvh",
+      width: "100%",
+      maxWidth: "100%",
+    };
+  }
+  return {
+    position: "fixed",
+    top: box.top,
+    left: 0,
+    right: 0,
+    height: box.height,
+    width: "100%",
+    maxWidth: "100%",
+  };
+}
 
 function defaultSimPhone(): string {
   if (typeof window === "undefined") return "+01155550001";
@@ -51,31 +160,47 @@ export function SimulatorChat({
   initialCode,
   continueWaLink,
   ownerEmail,
+  ownerFirstName,
   ownerImageUrl,
   identityMode = "phone",
   isAuthenticated = false,
+  hasActiveStore = false,
+  initialStoreSlug,
   variant = "classic",
 }: {
   initialPhone?: string;
   initialCode?: string;
   continueWaLink?: string;
   ownerEmail?: string;
+  /** Nombre de Clerk (firstName). Solo si existe; no inventar. */
+  ownerFirstName?: string | null;
   /** Foto Clerk del dueño; sin valor → silueta genérica en v2. */
   ownerImageUrl?: string | null;
   identityMode?: "phone" | "clerk";
   /** Sesión Clerk activa (server). Guest ve channel choice; API exige auth. */
   isAuthenticated?: boolean;
+  /** Dueño con tienda activa: saludo + menú, sin channel pick. */
+  hasActiveStore?: boolean;
+  initialStoreSlug?: string | null;
   /** classic = shell v1 con aside; v2 = chat WhatsApp-like a pantalla completa. */
   variant?: "classic" | "v2";
 }) {
   const isV2 = variant === "v2";
   const needsClerkGate = identityMode === "clerk";
+  const showOwnerHub = isV2 && isAuthenticated && hasActiveStore;
   const [phone, setPhone] = useState(initialPhone || "");
   const [input, setInput] = useState("");
-  const [items, setItems] = useState<ChatItem[]>(() =>
-    variant === "v2" ? [V2_INTRO_ITEM] : [],
+  const [items, setItems] = useState<ChatItem[]>(() => {
+    if (variant !== "v2") return [];
+    // Nueva visita: UI fresca (no hidratar historial de sesión anterior).
+    if (isAuthenticated && hasActiveStore) {
+      return [buildV2OwnerIntro(ownerFirstName)];
+    }
+    return [buildV2ChannelIntro(ownerFirstName)];
+  });
+  const [storeSlug, setStoreSlug] = useState<string | null>(
+    initialStoreSlug ?? null,
   );
-  const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   /** Busy real del fetch (useTransition no cubre bien async largos). */
   const [sending, setSending] = useState(false);
@@ -85,8 +210,9 @@ export function SimulatorChat({
   const [error, setError] = useState<string | null>(null);
   const [pickSourceOpen, setPickSourceOpen] = useState(false);
   const [iconPickOpen, setIconPickOpen] = useState(false);
-  const [channelPicked, setChannelPicked] = useState(false);
+  const [channelPicked, setChannelPicked] = useState(showOwnerHub);
   const [authOpen, setAuthOpen] = useState(false);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -95,6 +221,7 @@ export function SimulatorChat({
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const resumedWebRef = useRef(false);
+  const shellStyle = useChatShellViewport(isV2);
   const busy = sending || pending || uploading || recording || sendingAudio;
   const signupCode = initialCode?.replace(/\D/g, "").slice(0, 4) || "";
   const displayIdentity =
@@ -112,9 +239,13 @@ export function SimulatorChat({
     });
   }, [initialPhone, identityMode]);
 
+  // Scroll solo dentro del panel de mensajes (no scrollIntoView del documento:
+  // con teclado móvil empuja el shell fuera de vista).
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [items, error]);
+    const el = messagesRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [items, error, sending, pending, uploading, recording, sendingAudio]);
 
   const storePreviewUrl = useMemo(
     () => (storeSlug ? `/${storeSlug}` : null),
@@ -332,9 +463,14 @@ export function SimulatorChat({
   }
 
   // Tras redirect de Clerk: reanudar onboarding web (el reload pierde el historial del chat).
+  // Si ya hay tienda activa, no reanudamos: la UI monta saludo fresco + menú.
   useEffect(() => {
     if (!isV2 || !isAuthenticated || resumedWebRef.current) return;
     if (typeof window === "undefined") return;
+    if (hasActiveStore) {
+      clearPendingWebOnboarding();
+      return;
+    }
     const pending = window.sessionStorage.getItem(PENDING_WEB_ONBOARDING_KEY);
     if (!pending) return;
     resumedWebRef.current = true;
@@ -354,7 +490,7 @@ export function SimulatorChat({
     );
     // Intencional: solo al montar con sesión + pending flag.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, isV2, signupCode]);
+  }, [isAuthenticated, isV2, signupCode, hasActiveStore]);
 
   function dismissAuthOverlay() {
     setAuthOpen(false);
@@ -362,7 +498,7 @@ export function SimulatorChat({
     clearPendingWebOnboarding();
     if (isV2) {
       setChannelPicked(false);
-      setItems([V2_INTRO_ITEM]);
+      setItems([buildV2ChannelIntro(ownerFirstName)]);
     }
   }
 
@@ -644,9 +780,10 @@ export function SimulatorChat({
       <section
         className={
           isV2
-            ? "relative flex h-dvh min-h-0 w-full flex-col overflow-hidden bg-[#ECE5DD]"
+            ? "relative flex min-h-0 w-full flex-col overflow-hidden bg-[#ECE5DD]"
             : "relative flex h-[min(70vh,calc(100dvh-10rem))] min-h-[28rem] flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[#ECE5DD] shadow-sm"
         }
+        style={shellStyle}
       >
         <div className="flex shrink-0 items-center gap-3 bg-[#075E54] px-4 py-3 text-white">
           {isV2 ? (
@@ -709,9 +846,10 @@ export function SimulatorChat({
         )}
 
         <div
+          ref={messagesRef}
           className={
             isV2
-              ? "min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain bg-[#E5DDD5] px-3 py-4"
+              ? "min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain bg-[#E5DDD5] px-3 py-4 [-webkit-overflow-scrolling:touch]"
               : "min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-4"
           }
         >
@@ -900,7 +1038,7 @@ export function SimulatorChat({
 
         <form
           onSubmit={onSendText}
-          className="sticky bottom-0 flex shrink-0 min-w-0 items-end gap-1.5 border-t border-black/5 bg-[#F0F0F0] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:gap-2"
+          className="relative z-10 flex shrink-0 min-w-0 items-end gap-1.5 border-t border-black/5 bg-[#F0F0F0] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:gap-2"
         >
           {/*
             Inputs fuera de display:none: en varios Android/iOS el capture
@@ -1000,11 +1138,20 @@ export function SimulatorChat({
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onFocus={() => {
+              // Tras abrir el teclado, re-sync scroll interno (no el documento).
+              window.requestAnimationFrame(() => {
+                const el = messagesRef.current;
+                if (el) el.scrollTop = el.scrollHeight;
+              });
+            }}
             placeholder={
               canUseBot
                 ? "Escribí o grabá un audio"
                 : "Elegí cómo seguir para empezar"
             }
+            enterKeyHint="send"
+            autoComplete="off"
             className="min-h-12 min-w-0 flex-1 rounded-full border border-[var(--border)] bg-white px-3 text-[17px] outline-none sm:px-4"
             disabled={busy}
           />
