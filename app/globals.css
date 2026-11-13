@@ -316,7 +316,8 @@ body {
 
 /*
  * Trama de iconos por rubro (reusa business_kind).
- * Máscara SVG + paint con --primary ~8–10%; no tapa productos/CTAs.
+ * Look WhatsApp: tile orgánico (rotaciones / spacing irregular) + trazo fino.
+ * Máscara SVG + paint con --primary a baja opacidad; no tapa productos/CTAs.
  */
 .store-pattern::before {
   content: "";
@@ -324,14 +325,15 @@ body {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-color: color-mix(in srgb, var(--primary) 72%, var(--muted));
-  opacity: 0.09;
+  background-color: color-mix(in srgb, var(--primary) 68%, var(--muted));
+  opacity: 0.075;
   -webkit-mask-repeat: repeat;
   mask-repeat: repeat;
-  -webkit-mask-size: 11.5rem 11.5rem;
-  mask-size: 11.5rem 11.5rem;
-  -webkit-mask-position: 0 0;
-  mask-position: 0 0;
+  /* Tile más grande → menos “grilla” visible al repetir */
+  -webkit-mask-size: 17.5rem 17.5rem;
+  mask-size: 17.5rem 17.5rem;
+  -webkit-mask-position: -1.25rem -0.75rem;
+  mask-position: -1.25rem -0.75rem;
 }
 
 .store-pattern--comida::before {
@@ -351,9 +353,9 @@ body {
 
 @media (max-width: 640px) {
   .store-pattern::before {
-    -webkit-mask-size: 9.25rem 9.25rem;
-    mask-size: 9.25rem 9.25rem;
-    opacity: 0.08;
+    -webkit-mask-size: 14rem 14rem;
+    mask-size: 14rem 14rem;
+    opacity: 0.07;
   }
 }
 
@@ -389,10 +391,10 @@ body {
   --primary-fg: #ffffff;
 }
 
-/* En oscuro: trama más clara y suave (no pelear con el acento). */
+/* En oscuro: trama más clara y suave (estilo doodle WhatsApp). */
 .store-theme-oscuro.store-pattern::before {
-  background-color: color-mix(in srgb, var(--primary) 28%, #f5f5f4);
-  opacity: 0.065;
+  background-color: color-mix(in srgb, var(--primary) 22%, #f5f5f4);
+  opacity: 0.055;
 }
 
 .store-welcome {

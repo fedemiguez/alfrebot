@@ -1,36 +1,86 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" fill="none">
-  <!-- Trama ropa: remera, percha, pantalón, zapato, bolsa, gorra -->
-  <g stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" fill="none">
+  <!-- Trama ropa estilo WhatsApp: rotaciones e irregularidad -->
+  <g stroke="#000" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" fill="none">
     <!-- remera -->
-    <g transform="translate(18 16)">
-      <path d="M16 12 L8 18 L12 24 L16 20 V38 H32 V20 L36 24 L40 18 L32 12 C30 16 26 18 24 18 C22 18 18 16 16 12 Z"/>
+    <g transform="translate(52 48) rotate(-22)">
+      <path d="M-8 -10 L-14 -5 L-11 0 L-8 -3 V12 H8 V-3 L11 0 L14 -5 L8 -10 C6.5 -6.5 3.5 -5 0 -5 C-3.5 -5 -6.5 -6.5 -8 -10 Z"/>
+    </g>
+    <g transform="translate(248 118) rotate(47)">
+      <path d="M-8 -10 L-14 -5 L-11 0 L-8 -3 V12 H8 V-3 L11 0 L14 -5 L8 -10 C6.5 -6.5 3.5 -5 0 -5 C-3.5 -5 -6.5 -6.5 -8 -10 Z"/>
+    </g>
+    <g transform="translate(128 308) rotate(-58)">
+      <path d="M-8 -10 L-14 -5 L-11 0 L-8 -3 V12 H8 V-3 L11 0 L14 -5 L8 -10 C6.5 -6.5 3.5 -5 0 -5 C-3.5 -5 -6.5 -6.5 -8 -10 Z"/>
     </g>
     <!-- percha -->
-    <g transform="translate(104 22)">
-      <circle cx="24" cy="10" r="3"/>
-      <path d="M24 13 V18"/>
-      <path d="M8 28 C14 18 34 18 40 28"/>
-      <path d="M8 28 H40"/>
+    <g transform="translate(158 42) rotate(14)">
+      <circle cx="0" cy="-10" r="2.4"/>
+      <path d="M0 -7.5 V-4"/>
+      <path d="M-12 4 C-7 -4 7 -4 12 4"/>
+      <path d="M-12 4 H12"/>
+    </g>
+    <g transform="translate(338 168) rotate(-41)">
+      <circle cx="0" cy="-10" r="2.4"/>
+      <path d="M0 -7.5 V-4"/>
+      <path d="M-12 4 C-7 -4 7 -4 12 4"/>
+      <path d="M-12 4 H12"/>
+    </g>
+    <g transform="translate(68 218) rotate(72)">
+      <circle cx="0" cy="-10" r="2.4"/>
+      <path d="M0 -7.5 V-4"/>
+      <path d="M-12 4 C-7 -4 7 -4 12 4"/>
+      <path d="M-12 4 H12"/>
     </g>
     <!-- pantalón -->
-    <g transform="translate(184 16)">
-      <path d="M14 10 H34 V22 L38 40 H28 L24 24 L20 40 H10 L14 22 Z"/>
+    <g transform="translate(318 48) rotate(28)">
+      <path d="M-8 -12 H8 V-2 L11 14 H3 L0 0 L-3 14 H-11 L-8 -2 Z"/>
+    </g>
+    <g transform="translate(178 168) rotate(-36)">
+      <path d="M-8 -12 H8 V-2 L11 14 H3 L0 0 L-3 14 H-11 L-8 -2 Z"/>
+    </g>
+    <g transform="translate(288 318) rotate(9)">
+      <path d="M-8 -12 H8 V-2 L11 14 H3 L0 0 L-3 14 H-11 L-8 -2 Z"/>
     </g>
     <!-- zapato -->
-    <g transform="translate(24 120)">
-      <path d="M8 28 C12 22 18 20 26 20 H34 C38 20 40 24 38 28 C36 32 30 34 24 34 H12 C8 34 6 32 8 28 Z"/>
-      <path d="M14 20 C16 14 22 12 26 14"/>
+    <g transform="translate(38 148) rotate(19)">
+      <path d="M-12 4 C-9 -1 -4 -3 3 -3 H10 C13 -3 14.5 0.5 13 4 C11.5 7.5 6.5 9 1.5 9 H-9 C-12 9 -13.5 7.5 -12 4 Z"/>
+      <path d="M-6 -3 C-4.5 -8 0.5 -9.5 3.5 -8"/>
+    </g>
+    <g transform="translate(218 248) rotate(-63)">
+      <path d="M-12 4 C-9 -1 -4 -3 3 -3 H10 C13 -3 14.5 0.5 13 4 C11.5 7.5 6.5 9 1.5 9 H-9 C-12 9 -13.5 7.5 -12 4 Z"/>
+      <path d="M-6 -3 C-4.5 -8 0.5 -9.5 3.5 -8"/>
+    </g>
+    <g transform="translate(358 278) rotate(44)">
+      <path d="M-12 4 C-9 -1 -4 -3 3 -3 H10 C13 -3 14.5 0.5 13 4 C11.5 7.5 6.5 9 1.5 9 H-9 C-12 9 -13.5 7.5 -12 4 Z"/>
+      <path d="M-6 -3 C-4.5 -8 0.5 -9.5 3.5 -8"/>
     </g>
     <!-- bolsa -->
-    <g transform="translate(112 118)">
-      <path d="M12 18 H36 V38 H12 Z"/>
-      <path d="M18 18 V14 C18 10 21 8 24 8 C27 8 30 10 30 14 V18"/>
+    <g transform="translate(108 98) rotate(-17)">
+      <path d="M-9 -4 H9 V12 H-9 Z"/>
+      <path d="M-4 -4 V-7.5 C-4 -10.5 -1.5 -12 0 -12 C1.5 -12 4 -10.5 4 -7.5 V-4"/>
+    </g>
+    <g transform="translate(278 208) rotate(51)">
+      <path d="M-9 -4 H9 V12 H-9 Z"/>
+      <path d="M-4 -4 V-7.5 C-4 -10.5 -1.5 -12 0 -12 C1.5 -12 4 -10.5 4 -7.5 V-4"/>
+    </g>
+    <g transform="translate(48 338) rotate(-48)">
+      <path d="M-9 -4 H9 V12 H-9 Z"/>
+      <path d="M-4 -4 V-7.5 C-4 -10.5 -1.5 -12 0 -12 C1.5 -12 4 -10.5 4 -7.5 V-4"/>
     </g>
     <!-- gorra -->
-    <g transform="translate(188 116)">
-      <path d="M10 28 H38"/>
-      <path d="M12 28 C12 18 18 12 24 12 C30 12 36 18 36 28"/>
-      <path d="M36 28 H42 C40 32 36 34 32 34 H20"/>
+    <g transform="translate(198 88) rotate(33)">
+      <path d="M-12 4 H10"/>
+      <path d="M-10 4 C-10 -4 -5 -10 0 -10 C5 -10 10 -4 10 4"/>
+      <path d="M10 4 H15 C13.5 7.5 10.5 9 7 9 H-2"/>
+    </g>
+    <g transform="translate(148 228) rotate(-27)">
+      <path d="M-12 4 H10"/>
+      <path d="M-10 4 C-10 -4 -5 -10 0 -10 C5 -10 10 -4 10 4"/>
+      <path d="M10 4 H15 C13.5 7.5 10.5 9 7 9 H-2"/>
+    </g>
+    <g transform="translate(328 348) rotate(61)">
+      <path d="M-12 4 H10"/>
+      <path d="M-10 4 C-10 -4 -5 -10 0 -10 C5 -10 10 -4 10 4"/>
+      <path d="M10 4 H15 C13.5 7.5 10.5 9 7 9 H-2"/>
     </g>
   </g>
 </svg>

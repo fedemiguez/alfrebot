@@ -1,47 +1,119 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" fill="none">
-  <!-- Trama artesanal: pincel, ovillo, tijera, maceta, cerámica, herramienta -->
-  <g stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" fill="none">
+  <!-- Trama artesanal estilo WhatsApp: rotaciones e irregularidad -->
+  <g stroke="#000" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" fill="none">
     <!-- pincel -->
-    <g transform="translate(20 16)">
-      <path d="M28 8 L36 16 L20 32 L12 24 Z"/>
-      <path d="M12 24 L8 36 L20 32"/>
-      <path d="M22 14 L30 22"/>
+    <g transform="translate(48 52) rotate(-31)">
+      <path d="M4 -12 L11 -5 L-2 10 L-9 3 Z"/>
+      <path d="M-9 3 L-13 13 L-2 10"/>
+      <path d="M0 -7 L6 -1"/>
+    </g>
+    <g transform="translate(268 128) rotate(48)">
+      <path d="M4 -12 L11 -5 L-2 10 L-9 3 Z"/>
+      <path d="M-9 3 L-13 13 L-2 10"/>
+      <path d="M0 -7 L6 -1"/>
+    </g>
+    <g transform="translate(138 318) rotate(-12)">
+      <path d="M4 -12 L11 -5 L-2 10 L-9 3 Z"/>
+      <path d="M-9 3 L-13 13 L-2 10"/>
+      <path d="M0 -7 L6 -1"/>
     </g>
     <!-- ovillo -->
-    <g transform="translate(104 20)">
-      <circle cx="24" cy="24" r="14"/>
-      <path d="M12 18 C18 14 30 14 36 18"/>
-      <path d="M12 24 C18 20 30 20 36 24"/>
-      <path d="M12 30 C18 26 30 26 36 30"/>
-      <path d="M38 16 C42 12 44 10 46 8"/>
+    <g transform="translate(158 38) rotate(17)">
+      <circle cx="0" cy="0" r="11"/>
+      <path d="M-9 -4 C-4 -7 4 -7 9 -4"/>
+      <path d="M-9 0 C-4 -3 4 -3 9 0"/>
+      <path d="M-9 4 C-4 1 4 1 9 4"/>
+      <path d="M10 -6 C13 -9 14.5 -10.5 16 -12"/>
+    </g>
+    <g transform="translate(348 188) rotate(-54)">
+      <circle cx="0" cy="0" r="11"/>
+      <path d="M-9 -4 C-4 -7 4 -7 9 -4"/>
+      <path d="M-9 0 C-4 -3 4 -3 9 0"/>
+      <path d="M-9 4 C-4 1 4 1 9 4"/>
+      <path d="M10 -6 C13 -9 14.5 -10.5 16 -12"/>
+    </g>
+    <g transform="translate(58 228) rotate(69)">
+      <circle cx="0" cy="0" r="11"/>
+      <path d="M-9 -4 C-4 -7 4 -7 9 -4"/>
+      <path d="M-9 0 C-4 -3 4 -3 9 0"/>
+      <path d="M-9 4 C-4 1 4 1 9 4"/>
+      <path d="M10 -6 C13 -9 14.5 -10.5 16 -12"/>
     </g>
     <!-- tijera -->
-    <g transform="translate(184 18)">
-      <circle cx="14" cy="14" r="5"/>
-      <circle cx="14" cy="34" r="5"/>
-      <path d="M18 16 L38 10"/>
-      <path d="M18 32 L38 38"/>
-      <path d="M18 16 L18 32"/>
+    <g transform="translate(318 42) rotate(26)">
+      <circle cx="-6" cy="-8" r="4"/>
+      <circle cx="-6" cy="8" r="4"/>
+      <path d="M-3 -6 L12 -10"/>
+      <path d="M-3 6 L12 10"/>
+      <path d="M-3 -6 L-3 6"/>
+    </g>
+    <g transform="translate(178 168) rotate(-39)">
+      <circle cx="-6" cy="-8" r="4"/>
+      <circle cx="-6" cy="8" r="4"/>
+      <path d="M-3 -6 L12 -10"/>
+      <path d="M-3 6 L12 10"/>
+      <path d="M-3 -6 L-3 6"/>
+    </g>
+    <g transform="translate(298 318) rotate(11)">
+      <circle cx="-6" cy="-8" r="4"/>
+      <circle cx="-6" cy="8" r="4"/>
+      <path d="M-3 -6 L12 -10"/>
+      <path d="M-3 6 L12 10"/>
+      <path d="M-3 -6 L-3 6"/>
     </g>
     <!-- maceta -->
-    <g transform="translate(24 116)">
-      <path d="M14 20 H34 L32 38 H16 Z"/>
-      <path d="M12 20 H36"/>
-      <path d="M24 20 V10"/>
-      <path d="M24 14 C20 10 16 12 18 16"/>
-      <path d="M24 12 C28 8 32 10 30 15"/>
+    <g transform="translate(38 148) rotate(21)">
+      <path d="M-8 0 H8 L6.5 14 H-6.5 Z"/>
+      <path d="M-9.5 0 H9.5"/>
+      <path d="M0 0 V-9"/>
+      <path d="M0 -5 C-3 -8.5 -6 -7 -4.5 -3.5"/>
+      <path d="M0 -7 C3 -10.5 6 -9 4.5 -4"/>
     </g>
-    <!-- cerámica (jarra/cuenco) -->
-    <g transform="translate(112 118)">
-      <path d="M14 16 H30 C32 16 34 20 34 24 V32 C34 36 30 40 24 40 C18 40 14 36 14 32 V24 C14 20 16 16 14 16 Z"/>
-      <path d="M30 20 H35 C38 20 40 23 40 26 C40 29 38 32 35 32 H34"/>
-      <path d="M18 16 C18 12 22 10 24 10 C26 10 30 12 30 16"/>
+    <g transform="translate(228 248) rotate(-61)">
+      <path d="M-8 0 H8 L6.5 14 H-6.5 Z"/>
+      <path d="M-9.5 0 H9.5"/>
+      <path d="M0 0 V-9"/>
+      <path d="M0 -5 C-3 -8.5 -6 -7 -4.5 -3.5"/>
+      <path d="M0 -7 C3 -10.5 6 -9 4.5 -4"/>
     </g>
-    <!-- herramienta de taller (martillo) -->
-    <g transform="translate(188 114)">
-      <path d="M10 14 H28 V22 H10 Z"/>
-      <path d="M28 16 H36 V20 H28"/>
-      <path d="M16 22 V40"/>
+    <g transform="translate(358 268) rotate(43)">
+      <path d="M-8 0 H8 L6.5 14 H-6.5 Z"/>
+      <path d="M-9.5 0 H9.5"/>
+      <path d="M0 0 V-9"/>
+      <path d="M0 -5 C-3 -8.5 -6 -7 -4.5 -3.5"/>
+      <path d="M0 -7 C3 -10.5 6 -9 4.5 -4"/>
+    </g>
+    <!-- cerámica (jarra) -->
+    <g transform="translate(108 98) rotate(-18)">
+      <path d="M-7 -8 H5 C6.5 -8 8 -5 8 -2 V5 C8 8.5 5 12 0 12 C-5 12 -8 8.5 -8 5 V-2 C-8 -5 -6.5 -8 -7 -8 Z"/>
+      <path d="M5 -5 H8.5 C10.5 -5 12 -3 12 -0.5 C12 2 10.5 4 8.5 4 H8"/>
+      <path d="M-4 -8 C-4 -11 -1.5 -12.5 0 -12.5 C1.5 -12.5 4 -11 4 -8"/>
+    </g>
+    <g transform="translate(278 208) rotate(52)">
+      <path d="M-7 -8 H5 C6.5 -8 8 -5 8 -2 V5 C8 8.5 5 12 0 12 C-5 12 -8 8.5 -8 5 V-2 C-8 -5 -6.5 -8 -7 -8 Z"/>
+      <path d="M5 -5 H8.5 C10.5 -5 12 -3 12 -0.5 C12 2 10.5 4 8.5 4 H8"/>
+      <path d="M-4 -8 C-4 -11 -1.5 -12.5 0 -12.5 C1.5 -12.5 4 -11 4 -8"/>
+    </g>
+    <g transform="translate(48 338) rotate(-47)">
+      <path d="M-7 -8 H5 C6.5 -8 8 -5 8 -2 V5 C8 8.5 5 12 0 12 C-5 12 -8 8.5 -8 5 V-2 C-8 -5 -6.5 -8 -7 -8 Z"/>
+      <path d="M5 -5 H8.5 C10.5 -5 12 -3 12 -0.5 C12 2 10.5 4 8.5 4 H8"/>
+      <path d="M-4 -8 C-4 -11 -1.5 -12.5 0 -12.5 C1.5 -12.5 4 -11 4 -8"/>
+    </g>
+    <!-- martillo -->
+    <g transform="translate(198 88) rotate(35)">
+      <path d="M-10 -6 H4 V1 H-10 Z"/>
+      <path d="M4 -4 H10 V-1 H4"/>
+      <path d="M-5 1 V14"/>
+    </g>
+    <g transform="translate(148 228) rotate(-29)">
+      <path d="M-10 -6 H4 V1 H-10 Z"/>
+      <path d="M4 -4 H10 V-1 H4"/>
+      <path d="M-5 1 V14"/>
+    </g>
+    <g transform="translate(328 348) rotate(58)">
+      <path d="M-10 -6 H4 V1 H-10 Z"/>
+      <path d="M4 -4 H10 V-1 H4"/>
+      <path d="M-5 1 V14"/>
     </g>
   </g>
 </svg>
