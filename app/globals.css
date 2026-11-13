@@ -127,6 +127,7 @@ body {
 
 /* ——— Product card templates por rubro (Fase B + marcos Fase D) ——— */
 .product-card__media {
+  /* Siempre cuadrado: crop con cover, nunca estirar (ni por rubro). */
   aspect-ratio: 1 / 1;
   /* Passepartout: tinte suave del acento (no blanco puro) para que el marco se lea. */
   background: color-mix(in srgb, var(--primary) 16%, var(--card));
@@ -144,6 +145,12 @@ body {
   overflow: hidden;
 }
 
+/* Crop centrado; no deformar aunque el contenedor o la fuente no sean 1:1. */
+.product-card__photo {
+  object-fit: cover;
+  object-position: center;
+}
+
 /*
  * Inset bajo el marco: franja de acento + trazo visibles con foto cover.
  * Porcentajes alineados al viewBox 100 de product-image-frame (trazo interno).
@@ -158,8 +165,19 @@ body {
 }
 
 .product-card--comida .product-card__photo-wrap--framed {
-  /* Aro interno ~7.5 + franja de acento. */
-  inset: 12%;
+  /*
+   * Solo comida: clip con máscara SVG redondeada (border-radius/overflow no
+   * recortaba bien el Next/Image fill absolute en las 4 esquinas).
+   * rx≈14 en viewBox 100 ≈ arco del plato (SVG interno rx 11).
+   */
+  inset: 10%;
+  overflow: visible;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' ry='14' fill='%23000'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' ry='14' fill='%23000'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 
 .product-card--ropa .product-card__photo-wrap--framed {
@@ -249,11 +267,7 @@ body {
   border: none;
 }
 
-/* Artesanal: foto más alta, precio chico, tipografía cálida */
-.product-card--artesanal .product-card__media {
-  aspect-ratio: 4 / 5;
-}
-
+/* Artesanal: tipografía cálida (media siempre 1:1) */
 .product-card--artesanal .product-card__title {
   margin-top: 1rem;
   font-size: 1.35rem;
@@ -271,11 +285,7 @@ body {
   color: color-mix(in srgb, var(--primary) 88%, #7c2d12);
 }
 
-/* Comida: énfasis en precio (badge), marco tipo plato */
-.product-card--comida .product-card__media {
-  aspect-ratio: 5 / 4;
-}
-
+/* Comida: énfasis en precio (badge), marco tipo plato (media siempre 1:1) */
 .product-card--comida .product-card__title {
   margin-top: 0.65rem;
   font-size: 1.2rem;
@@ -285,11 +295,7 @@ body {
   color: color-mix(in srgb, var(--primary) 75%, #047857);
 }
 
-/* Ropa: foco en foto, tipografía más liviana, marco editorial */
-.product-card--ropa .product-card__media {
-  aspect-ratio: 3 / 4;
-}
-
+/* Ropa: tipografía más liviana, marco editorial (media siempre 1:1) */
 .product-card--ropa .product-card__title {
   margin-top: 0.65rem;
   font-size: 1.05rem;
