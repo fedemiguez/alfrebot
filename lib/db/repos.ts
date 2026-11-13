@@ -306,6 +306,7 @@ export async function upsertStore(input: {
       accentColor: null,
       businessKind: null,
       welcomeMessage: null,
+      openNow: false,
       theme: null,
       isDemo: input.isDemo ?? false,
       status: input.status ?? "onboarding",
@@ -771,6 +772,28 @@ export async function updateStoreWelcomeMessage(
   const rows = await db
     .update(stores)
     .set({ welcomeMessage, updatedAt: now() })
+    .where(eq(stores.id, storeId))
+    .returning();
+  return rows[0] ?? null;
+}
+
+/** Flag presentacional «Abierto ahora» (banner Comidas). Sin horarios. */
+export async function updateStoreOpenNow(
+  storeId: string,
+  openNow: boolean,
+): Promise<Store | null> {
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    const current = mem.stores.get(storeId);
+    if (!current) return null;
+    const updated = touchStore({ ...current, openNow });
+    mem.stores.set(storeId, updated);
+    return updated;
+  }
+  const db = getDb();
+  const rows = await db
+    .update(stores)
+    .set({ openNow, updatedAt: now() })
     .where(eq(stores.id, storeId))
     .returning();
   return rows[0] ?? null;

@@ -54,15 +54,21 @@ async function ProductBody({
     ? iktShell.styleVars
     : accentStyleVars(store.accentColor);
   const kindClass = businessKindClassName(store.businessKind);
-  const isRopaIkt = resolveBusinessKind(store.businessKind) === "ropa";
+  const kind = resolveBusinessKind(store.businessKind);
+  const isRopaIkt = kind === "ropa";
+  const isComidaIkt = kind === "comida";
   // Con rubro Ikt: theme claro/crema/oscuro ignorado (decisión Federico).
   const themeClass = iktShell.ikt
     ? (iktShell.themeClassName ?? "")
     : storeThemeClassName(store.theme);
-  const patternClass = isRopaIkt
-    ? ""
-    : storePatternClassName(store.businessKind);
+  const patternClass =
+    isRopaIkt || isComidaIkt ? "" : storePatternClassName(store.businessKind);
   const ctaLabel = iktWantCtaLabel(store.businessKind);
+  const mediaAspect = isRopaIkt
+    ? "aspect-[16/11] rounded-lg"
+    : isComidaIkt
+      ? "aspect-[16/10] rounded-xl"
+      : "aspect-square";
 
   return (
     <StorePurchaseProvider store={purchase}>
@@ -78,9 +84,7 @@ async function ProductBody({
         <StoreHomeLink slug={slug} />
 
         <div
-          className={`relative overflow-hidden border border-[var(--border)] bg-white ${
-            isRopaIkt ? "aspect-[16/11] rounded-lg" : "aspect-square"
-          }`}
+          className={`relative overflow-hidden border border-[var(--border)] bg-white ${mediaAspect}`}
         >
           {product.imageUrl ? (
             <Image

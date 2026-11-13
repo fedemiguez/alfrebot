@@ -19,12 +19,13 @@ export function iktWantCtaLabel(
 ): string | null {
   const rubro = businessKindToIktRubro(businessKind);
   if (!rubro) return null;
-  // Fase 2: solo plantilla Ropa; otros rubros mantienen “Lo quiero” hasta su PR.
-  if (rubro !== "ropa") return null;
-  return IKT_WANT_CTA.ropa;
+  // Fase 2–3: Ropa + Comidas; Artesanías en PR5.
+  if (rubro === "ropa") return IKT_WANT_CTA.ropa;
+  if (rubro === "comidas") return IKT_WANT_CTA.comidas;
+  return null;
 }
 
-/** Eyebrow del header de vitrina Ikt. */
+/** Eyebrow del header de vitrina Ikt (solo Ropa en preview). */
 export function iktHeaderEyebrow(
   businessKind: string | null | undefined,
 ): string | null {
@@ -32,6 +33,10 @@ export function iktHeaderEyebrow(
   if (rubro === "ropa") return "Tienda de Ropa";
   return null;
 }
+
+/** Texto del banner «Abierto ahora» (Comidas). */
+export const IKT_COMIDAS_OPEN_BANNER = "🟢 ABIERTO AHORA";
+
 
 /** Iniciales para avatar circular (fallback sin foto). */
 export function storeMonogramInitials(name: string | null | undefined): string {

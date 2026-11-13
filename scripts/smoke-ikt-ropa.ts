@@ -28,12 +28,15 @@ assert(
   iktWantCtaLabel("ropa") === "💬 Consultar prenda por WhatsApp",
   "CTA microcopy",
 );
-assert(iktWantCtaLabel("comida") === null, "comida aún sin CTA Ikt");
+assert(
+  iktWantCtaLabel("comida") === IKT_WANT_CTA.comidas,
+  "comida CTA Ikt (PR4)",
+);
 assert(iktWantCtaLabel("artesanal") === null, "artesanal aún sin CTA Ikt");
 assert(iktWantCtaLabel(null) === null, "sin rubro = Lo quiero");
 
 assert(iktHeaderEyebrow("ropa") === "Tienda de Ropa", "eyebrow ropa");
-assert(iktHeaderEyebrow("comida") === null, "eyebrow solo ropa en PR3");
+assert(iktHeaderEyebrow("comida") === null, "eyebrow solo ropa");
 
 assert(storeMonogramInitials("CASA LINO") === "CL", "monograma 2 palabras");
 assert(storeMonogramInitials("Lino") === "LI", "monograma 1 palabra");

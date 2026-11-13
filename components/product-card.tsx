@@ -25,15 +25,17 @@ export function ProductCard({
   const kind = resolveBusinessKind(businessKind);
   const href = `/${store.storeSlug}/producto/${product.id}`;
   const price = formatPriceArs(product.priceCents);
-  /** Plantilla Ikt Ropa (Fase 2): sin marco, ratio 16/11, CTA microcopy. */
+  /** Plantillas Ikt Ropa/Comidas: sin marco, ratio Gemini, CTA microcopy. */
   const isRopaIkt = kind === "ropa";
+  const isComidaIkt = kind === "comida";
+  const isIktCard = isRopaIkt || isComidaIkt;
   const ctaLabel = iktWantCtaLabel(businessKind);
 
   return (
     <article
       className={`product-card group${kind ? ` product-card--${kind}` : ""}${
         isRopaIkt ? " product-card--ikt-ropa" : ""
-      }`}
+      }${isComidaIkt ? " product-card--ikt-comida" : ""}`}
     >
       <Link
         href={href}
@@ -41,7 +43,7 @@ export function ProductCard({
       >
         <div
           className={`product-card__media relative overflow-hidden${
-            kind && !isRopaIkt
+            kind && !isIktCard
               ? " product-card__media--framed"
               : " border border-[var(--border)]"
           }`}
@@ -49,7 +51,7 @@ export function ProductCard({
           {product.imageUrl ? (
             <div
               className={`product-card__photo-wrap${
-                kind && !isRopaIkt ? " product-card__photo-wrap--framed" : ""
+                kind && !isIktCard ? " product-card__photo-wrap--framed" : ""
               }`}
             >
               <Image
@@ -70,14 +72,9 @@ export function ProductCard({
               Sin foto
             </div>
           )}
-          {kind && !isRopaIkt ? (
+          {kind && !isIktCard ? (
             <ProductImageFrame kind={kind} frameId={product.id} />
           ) : null}
-          {kind === "comida" && product.priceCents != null && (
-            <span className="product-card__price-badge" aria-hidden="true">
-              {price}
-            </span>
-          )}
           {!product.inStock && (
             <span className="absolute bottom-3 left-3 z-[3] bg-[var(--soldout-bg)] px-3 py-1 text-[15px] font-medium text-[var(--soldout)]">
               Agotado
@@ -98,21 +95,28 @@ export function ProductCard({
               <p className="product-card__desc">{product.description}</p>
             ) : null}
           </div>
+        ) : isComidaIkt ? (
+          <div className="product-card__body product-card__body--ikt-comida">
+            <div className="product-card__title-row">
+              <h2 className="product-card__title font-[family-name:var(--font-display)] font-extrabold leading-snug text-[var(--ink)]">
+                {product.title}
+              </h2>
+              <span className="product-card__price product-card__price--primary font-[family-name:var(--font-display)] font-extrabold whitespace-nowrap">
+                {price}
+              </span>
+            </div>
+            {product.description ? (
+              <p className="product-card__desc">{product.description}</p>
+            ) : null}
+          </div>
         ) : (
           <div className="product-card__body">
             <h2 className="product-card__title font-[family-name:var(--font-display)] font-semibold leading-snug text-[var(--ink)]">
               {product.title}
             </h2>
-            {kind !== "comida" && (
-              <p className="product-card__price font-[family-name:var(--font-display)] font-bold text-[var(--primary)]">
-                {price}
-              </p>
-            )}
-            {kind === "comida" && (
-              <p className="product-card__price product-card__price--echo sr-only">
-                {price}
-              </p>
-            )}
+            <p className="product-card__price font-[family-name:var(--font-display)] font-bold text-[var(--primary)]">
+              {price}
+            </p>
           </div>
         )}
       </Link>
