@@ -62,6 +62,8 @@ npx tsx scripts/smoke-store-voice.ts
 - `stores.icon_192_url` / `icon_512_url` / `icon_apple_url` / `icon_svg_url` — iconos PWA (PNG/SVG en Blob)
 - `stores.accent_color` — color de acento de la vitrina (`#rrggbb`, null = terracota de marca)
 - `stores.business_kind` — rubro (`artesanal` | `comida` | `ropa`, null = layout default de fichas)
+- `stores.welcome_message` — frase corta debajo del nombre (null = sin frase)
+- `stores.theme` — tema de fondo (`claro` | `crema` | `oscuro`, null = look actual del sitio)
 
 Con `DATABASE_URL` (después de pull/merge de columnas nuevas):
 

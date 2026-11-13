@@ -15,6 +15,7 @@ import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
 import { accentStyleVars } from "@/lib/store-accent";
 import { businessKindClassName } from "@/lib/store-business-kind";
+import { storeThemeClassName } from "@/lib/store-theme";
 import { getCachedProduct } from "@/lib/store-data";
 
 export async function generateMetadata({
@@ -44,12 +45,16 @@ async function ProductBody({
 
   const accentVars = accentStyleVars(store.accentColor);
   const kindClass = businessKindClassName(store.businessKind);
+  const themeClass = storeThemeClassName(store.theme);
 
   return (
     <StorePurchaseProvider store={purchase}>
       <div
-        className={`fade-in mx-auto w-full max-w-3xl px-5 py-10 ${kindClass}`}
+        className={`store-theme-shell fade-in ${themeClass}`}
         style={accentVars as CSSProperties}
+      >
+      <div
+        className={`mx-auto w-full max-w-3xl px-5 py-10 ${kindClass}`}
       >
         <StoreHomeLink slug={slug} />
 
@@ -125,6 +130,7 @@ async function ProductBody({
             </div>
           );
         })()}
+      </div>
       </div>
     </StorePurchaseProvider>
   );

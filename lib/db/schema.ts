@@ -56,6 +56,16 @@ export const stores = pgTable("stores", {
    * Null = layout default. Migrar con `npm run db:push` si hay DATABASE_URL.
    */
   businessKind: text("business_kind"),
+  /**
+   * Frase corta debajo del nombre (ej. «Envíos a todo el país»).
+   * Null = sin frase. Migrar con `npm run db:push` si hay DATABASE_URL.
+   */
+  welcomeMessage: text("welcome_message"),
+  /**
+   * Tema de fondo de la vitrina (`claro` | `crema` | `oscuro`).
+   * Null = look actual del sitio. Migrar con `npm run db:push` si hay DATABASE_URL.
+   */
+  theme: text("theme"),
   isDemo: boolean("is_demo").default(false).notNull(),
   status: text("status").default("onboarding").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })

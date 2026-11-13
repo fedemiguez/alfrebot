@@ -20,6 +20,8 @@ import {
   businessKindClassName,
   businessKindHeaderLabel,
 } from "@/lib/store-business-kind";
+import { storeThemeClassName } from "@/lib/store-theme";
+import { normalizeWelcomeMessage } from "@/lib/store-welcome";
 import { getCachedStore } from "@/lib/store-data";
 
 export async function generateStaticParams() {
@@ -75,12 +77,17 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
   const accentVars = accentStyleVars(store.accentColor);
   const kindClass = businessKindClassName(store.businessKind);
   const kindLabel = businessKindHeaderLabel(store.businessKind);
+  const themeClass = storeThemeClassName(store.theme);
+  const welcome = normalizeWelcomeMessage(store.welcomeMessage);
 
   return (
     <StorePurchaseProvider store={purchase}>
       <div
-        className={`fade-in mx-auto w-full max-w-5xl px-5 py-10 ${kindClass}`}
+        className={`store-theme-shell fade-in ${themeClass}`}
         style={accentVars as CSSProperties}
+      >
+      <div
+        className={`mx-auto w-full max-w-5xl px-5 py-10 ${kindClass}`}
       >
         <header className="flex items-start gap-4">
           <Image
@@ -100,6 +107,7 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
                 {store.name}
               </span>
             </h1>
+            {welcome ? <p className="store-welcome">{welcome}</p> : null}
             {(store.ownerName || kindLabel) && (
               <p className="mt-3 text-[1.1rem] text-[var(--muted)]">
                 {store.ownerName
@@ -186,6 +194,7 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
             );
           })()}
         </footer>
+      </div>
       </div>
     </StorePurchaseProvider>
   );

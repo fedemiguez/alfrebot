@@ -8,6 +8,15 @@ import {
   matchBusinessKindFromText,
   wantsBusinessKindText,
 } from "@/lib/store-business-kind";
+import {
+  matchThemeFromText,
+  wantsStoreThemeText,
+} from "@/lib/store-theme";
+import {
+  extractWelcomeFromText,
+  wantsClearWelcomeText,
+  wantsWelcomeMessageText,
+} from "@/lib/store-welcome";
 
 const freeTextActionSchema = z.object({
   intent: z.enum([
@@ -22,6 +31,8 @@ const freeTextActionSchema = z.object({
     "profile_icon",
     "set_accent_color",
     "set_business_kind",
+    "set_store_theme",
+    "set_welcome_message",
     "help",
     "menu",
     "unknown",
@@ -33,6 +44,10 @@ const freeTextActionSchema = z.object({
   accentHint: z.string().optional(),
   /** Rubro (`artesanal` | `comida` | `ropa`) si el NLU lo detectó. */
   businessKindHint: z.string().optional(),
+  /** Tema (`claro` | `crema` | `oscuro`) si el NLU lo detectó. */
+  themeHint: z.string().optional(),
+  /** Frase de bienvenida detectada (vacío = borrar). */
+  welcomeHint: z.string().optional(),
 });
 
 export type FreeTextAction = z.infer<typeof freeTextActionSchema>;
@@ -374,6 +389,26 @@ export function parseSetupPlan(text: string): PendingSetupPlan | null {
     plan.businessKindLabel = kind.label;
   }
 
+  // Tema de fondo (“tema oscuro”, “estilo crema”).
+  const theme = matchThemeFromText(raw);
+  if (
+    theme &&
+    (wantsStoreThemeText(raw) || /\b(tema|estilo|fondo)\b/i.test(raw))
+  ) {
+    plan.theme = theme.id;
+    plan.themeLabel = theme.label;
+  }
+
+  // Frase de bienvenida (“decí que retiro en el local”).
+  if (wantsWelcomeMessageText(raw) || wantsClearWelcomeText(raw)) {
+    if (wantsClearWelcomeText(raw)) {
+      plan.welcomeMessage = "";
+    } else {
+      const welcome = extractWelcomeFromText(raw);
+      if (welcome) plan.welcomeMessage = welcome;
+    }
+  }
+
   // En mensajes largos, extractPersonName falla por el resto tras la coma.
   const ownerMatch = raw.match(
     /(?:me\s+llamo|me\s+digo|me\s+dicen|me\s+llaman|mi\s+nombre\s+es|soy)\s+([\p{L}][\p{L}'’.-]*(?:\s+(?:de|del|la|las|los|el|y|e|[\p{L}][\p{L}'’.-]*)){0,3})(?=\s*[,.;]|\s+la\s+tienda|\s+el\s+(?:logo|icono)|\s+productos?\b|$)/iu,
@@ -383,7 +418,13 @@ export function parseSetupPlan(text: string): PendingSetupPlan | null {
     if (looksLikePersonName(candidate)) {
       plan.ownerName = titleCaseName(candidate);
     }
-  } else {
+  } else if (
+    // Evitar que «estilo crema» / «tema oscuro» se lean como nombre de persona.
+    !plan.theme &&
+    plan.welcomeMessage === undefined &&
+    !plan.accentColor &&
+    !plan.businessKind
+  ) {
     const person = extractPersonName(raw);
     if (person.name && person.confidence !== "none") {
       plan.ownerName = person.name;
@@ -396,12 +437,16 @@ export function parseSetupPlan(text: string): PendingSetupPlan | null {
     plan.productTitles?.length,
     plan.accentColor,
     plan.businessKind,
+    plan.theme,
+    plan.welcomeMessage !== undefined ? plan.welcomeMessage || "clear" : null,
     plan.ownerName &&
       (plan.storeName ||
         plan.iconMode ||
         plan.productTitles ||
         plan.accentColor ||
-        plan.businessKind),
+        plan.businessKind ||
+        plan.theme ||
+        plan.welcomeMessage !== undefined),
   ].filter(Boolean).length;
 
   // Un solo campo aislado lo maneja el flujo paso a paso; pedimos plan real.
@@ -427,6 +472,12 @@ export function mergeSetupPlan(
     accentLabel: incoming.accentLabel ?? current.accentLabel,
     businessKind: incoming.businessKind ?? current.businessKind,
     businessKindLabel: incoming.businessKindLabel ?? current.businessKindLabel,
+    theme: incoming.theme ?? current.theme,
+    themeLabel: incoming.themeLabel ?? current.themeLabel,
+    welcomeMessage:
+      incoming.welcomeMessage !== undefined
+        ? incoming.welcomeMessage
+        : current.welcomeMessage,
     productTitles:
       incoming.productTitles && incoming.productTitles.length > 0
         ? incoming.productTitles
@@ -456,6 +507,18 @@ export function describeSetupPlan(plan: PendingSetupPlan): string {
       plan.businessKindLabel
         ? `rubro ${plan.businessKindLabel}`
         : `rubro ${plan.businessKind}`,
+    );
+  }
+  if (plan.theme) {
+    bits.push(
+      plan.themeLabel ? `estilo ${plan.themeLabel}` : `estilo ${plan.theme}`,
+    );
+  }
+  if (plan.welcomeMessage !== undefined) {
+    bits.push(
+      plan.welcomeMessage
+        ? `frase «${plan.welcomeMessage}»`
+        : "sin frase de bienvenida",
     );
   }
   if (plan.productTitles?.length) {
@@ -564,13 +627,33 @@ export async function interpretFreeText(
     };
   }
 
+  // Tema de fondo (“tema oscuro”, “estilo crema”).
+  if (wantsStoreThemeText(text)) {
+    const theme = matchThemeFromText(text);
+    return {
+      intent: "set_store_theme",
+      themeHint: theme?.id,
+    };
+  }
+
+  // Frase de bienvenida (“decí que retiro en el local”).
+  if (wantsWelcomeMessageText(text) || wantsClearWelcomeText(text)) {
+    const welcome = wantsClearWelcomeText(text)
+      ? ""
+      : extractWelcomeFromText(text) ?? undefined;
+    return {
+      intent: "set_welcome_message",
+      welcomeHint: welcome,
+    };
+  }
+
   // LLM opcional: Gateway o Google directo
   if (!process.env.AI_GATEWAY_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     return { intent: "unknown" };
   }
 
   const nluPrompt = `Sos el NLU de un bot de tienda por WhatsApp para personas mayores en Argentina.
-Intents: change_photo = foto de un PRODUCTO; generate_icon = armar/cambiar el ICONO de la TIENDA (app); upload_icon = subir imagen propia como icono de la tienda; profile_icon = usar la foto de Google/cuenta Clerk como icono de la tienda; set_accent_color = color de acento de la vitrina (botones/links); accentHint = hex #rrggbb si lo deducís (verde≈#047857, azul≈#1d4ed8, terracota≈#9a3412); set_business_kind = rubro del negocio (artesanal/cerámica, comida, ropa); businessKindHint = artesanal|comida|ropa.
+Intents: change_photo = foto de un PRODUCTO; generate_icon = armar/cambiar el ICONO de la TIENDA (app); upload_icon = subir imagen propia como icono de la tienda; profile_icon = usar la foto de Google/cuenta Clerk como icono de la tienda; set_accent_color = color de acento de la vitrina (botones/links); accentHint = hex #rrggbb si lo deducís (verde≈#047857, azul≈#1d4ed8, terracota≈#9a3412); set_business_kind = rubro del negocio (artesanal/cerámica, comida, ropa); businessKindHint = artesanal|comida|ropa; set_store_theme = tema/estilo de fondo (claro/crema/oscuro); themeHint = claro|crema|oscuro; set_welcome_message = frase corta bajo el nombre de la tienda; welcomeHint = texto de la frase (vacío = borrar).
 Del mensaje, devolvé una acción tipada. No inventes. Mensaje: """${text}"""`;
 
   try {
