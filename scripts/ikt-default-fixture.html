@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ikt default fixture (PR7)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ikt-bg: #ffffff;
+        --ikt-surface: #f8fafc;
+        --ikt-text-main: #0f172a;
+        --ikt-text-muted: #334155;
+        --ikt-primary: #000000;
+        --ikt-primary-text: #ffffff;
+        --ikt-border: #cbd5e1;
+        --ikt-radius-card: 14px;
+        --ikt-radius-btn: 10px;
+        --ikt-font-heading: "Plus Jakarta Sans", sans-serif;
+        --ikt-font-body: Inter, sans-serif;
+        --bg: var(--ikt-bg);
+        --card: var(--ikt-surface);
+        --border: var(--ikt-border);
+        --ink: var(--ikt-text-main);
+        --muted: var(--ikt-text-muted);
+        --primary: var(--ikt-primary);
+        --primary-fg: var(--ikt-primary-text);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: var(--ikt-font-body);
+        background: var(--ikt-bg);
+        color: var(--ikt-text-main);
+      }
+      .shell {
+        min-height: 100vh;
+        background: var(--ikt-bg);
+        padding: 1.5rem 1.25rem;
+        max-width: 26rem;
+        margin: 0 auto;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border-bottom: 2px solid color-mix(in srgb, var(--ink) 10%, transparent);
+        padding-bottom: 0.75rem;
+      }
+      .avatar {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 1rem;
+        background: var(--primary);
+        color: var(--primary-fg);
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+      }
+      h1 {
+        margin: 0;
+        font-family: var(--ikt-font-heading);
+        font-size: 1.5rem;
+        font-weight: 800;
+      }
+      .welcome { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.95rem; }
+      .voice {
+        position: sticky;
+        top: max(0.5rem, env(safe-area-inset-top, 0px));
+        z-index: 40;
+        margin-top: 1rem;
+        padding: 0.75rem;
+        border-radius: var(--ikt-radius-card);
+        border: 2px solid var(--ikt-primary);
+        background: var(--ikt-surface);
+      }
+      .voice button {
+        width: 100%;
+        min-height: 52px;
+        border: none;
+        border-radius: var(--ikt-radius-btn);
+        background: var(--ikt-primary);
+        color: var(--ikt-primary-text);
+        font-family: var(--ikt-font-heading);
+        font-weight: 800;
+        font-size: 0.95rem;
+      }
+      .voice .type {
+        margin-top: 0.5rem;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--ikt-radius-btn);
+        border: 1px solid color-mix(in srgb, var(--ikt-text-main) 20%, transparent);
+        background: color-mix(in srgb, var(--ikt-bg) 80%, white);
+      }
+      .voice input {
+        border: none;
+        background: transparent;
+        width: 100%;
+        font-size: 1.05rem;
+        font-family: var(--ikt-font-body);
+        color: var(--ikt-text-main);
+      }
+      .card {
+        margin-top: 1.25rem;
+        padding: 0.875rem;
+        border-radius: var(--ikt-radius-card);
+        border: 2px solid color-mix(in srgb, var(--ink) 10%, transparent);
+        background: var(--ikt-surface);
+      }
+      .media {
+        aspect-ratio: 1 / 1;
+        border-radius: 0.5rem;
+        background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+        margin-bottom: 0.75rem;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        font-family: var(--ikt-font-heading);
+        font-weight: 800;
+        font-size: 1.125rem;
+      }
+      .cta {
+        margin-top: 0.75rem;
+        width: 100%;
+        min-height: 52px;
+        border: none;
+        border-radius: var(--ikt-radius-card);
+        background: #128c7e;
+        color: white;
+        font-weight: 700;
+        font-size: 1.05rem;
+      }
+      :focus-visible {
+        outline: 2px solid var(--ikt-primary);
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell store-theme-shell store-theme-ikt store-theme-ikt-default">
+      <header class="store-header-default">
+        <div class="avatar" aria-hidden="true">TN</div>
+        <div>
+          <h1>Tienda Norma</h1>
+          <p class="welcome">Catálogo limpio · sin rubro</p>
+        </div>
+      </header>
+      <section class="voice" aria-label="Buscar por voz">
+        <button type="button">🎤 Tocar y hablar para buscar</button>
+        <div class="type">
+          <span aria-hidden="true">⌨️</span>
+          <input type="search" placeholder="O escribí acá…" value="" />
+        </div>
+      </section>
+      <article class="card product-card--ikt-default">
+        <div class="media"></div>
+        <div class="row">
+          <span>Pieza ejemplo</span>
+          <span>$12.000</span>
+        </div>
+        <button class="cta" type="button">Lo quiero</button>
+      </article>
+    </div>
+  </body>
+</html>

@@ -41,12 +41,27 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .fade-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .store-voice-btn:active:not(:disabled) {
+    transform: none !important;
   }
 }
 
@@ -125,9 +140,12 @@ body {
   opacity: 0.95;
 }
 
-/* ——— Product card templates por rubro (Fase B + marcos Fase D) ——— */
+/* ——— Product card templates por rubro (Fase B + marcos Fase D) ———
+ * Marcos SVG / passepartout: archivados en vitrina Ikt (PR7).
+ * CSS conservado; `shouldShowProductFrame` los deja off.
+ */
 .product-card__media {
-  /* Siempre cuadrado: crop con cover, nunca estirar (ni por rubro). */
+  /* Default / legacy: cuadrado; plantillas Ikt sobrescriben ratio. */
   aspect-ratio: 1 / 1;
   /* Passepartout: tinte suave del acento (no blanco puro) para que el marco se lea. */
   background: color-mix(in srgb, var(--primary) 16%, var(--card));
@@ -670,7 +688,7 @@ body {
 }
 
 /*
- * Trama de iconos por rubro (reusa business_kind).
+ * Trama de iconos por rubro (archivada PR7 — off vía shouldShowStorePattern).
  * Tiles SVG 640² de #52 (WhatsApp scatter) en public/patterns/.
  * mask-size nativo 640px → sin estirar el arte.
  */
@@ -767,10 +785,11 @@ body {
 }
 
 /*
- * Con rubro Ikt: paleta sólida, fonts preview, theme claro/crema/oscuro ignorado.
+ * Con Ikt (rubro o default): paleta sólida, fonts preview, theme legacy ignorado.
  * Mapea --ikt-* → tokens legacy de la vitrina (--bg/--ink/--primary/…).
  */
-.store-theme-shell[data-rubro] {
+.store-theme-shell[data-rubro],
+.store-theme-shell.store-theme-ikt-default {
   --bg: var(--ikt-bg);
   --paper: var(--ikt-surface);
   --card: var(--ikt-surface);
@@ -789,8 +808,20 @@ body {
 
 .store-theme-shell[data-rubro] h1,
 .store-theme-shell[data-rubro] h2,
-.store-theme-shell[data-rubro] h3 {
+.store-theme-shell[data-rubro] h3,
+.store-theme-shell.store-theme-ikt-default h1,
+.store-theme-shell.store-theme-ikt-default h2,
+.store-theme-shell.store-theme-ikt-default h3 {
   font-family: var(--ikt-font-heading);
+}
+
+/* Default sin rubro: tokens neutros (:root); --ikt-primary puede venir de accent. */
+.store-theme-shell.store-theme-ikt-default {
+  --ikt-bg: #ffffff;
+  --ikt-surface: #f8fafc;
+  --ikt-text-main: #0f172a;
+  --ikt-text-muted: #334155;
+  --ikt-border: #cbd5e1;
 }
 
 /* Ropa */
@@ -886,16 +917,17 @@ body {
   --ikt-border: #c5d6c8;
 }
 
-/* ——— Voice chrome sticky (Fase 1) ——— */
+/* ——— Voice chrome sticky (Fase 1 + polish PR7) ——— */
 .store-voice {
   margin-top: 1rem;
 }
 
 .store-voice-sticky {
   position: sticky;
-  top: max(0px, env(safe-area-inset-top, 0px));
+  top: max(0.5rem, env(safe-area-inset-top, 0px));
   z-index: 40;
   padding: 0.75rem;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
   border-radius: var(--ikt-radius-card);
   border: 2px solid var(--ikt-primary);
   background: var(--ikt-surface);
@@ -1077,4 +1109,132 @@ body {
   font-size: 0.9rem;
   line-height: 1.4;
   color: var(--ikt-text-muted);
+}
+
+/* ——— Polish PR7: default limpio, PDP, focus, a11y ——— */
+
+/* Cards default (sin rubro): limpia, tokens Ikt, ratio 1:1 cover */
+.product-card--ikt-default {
+  padding: 0.875rem;
+  border-radius: var(--ikt-radius-card);
+  border: 2px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  background: var(--ikt-surface, var(--card));
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
+}
+
+.product-card--ikt-default .product-card__media {
+  aspect-ratio: 1 / 1;
+  margin-bottom: 0.75rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: color-mix(in srgb, var(--muted) 14%, var(--card));
+}
+
+.product-card--ikt-default .product-card__photo-wrap {
+  inset: 0;
+}
+
+.product-card--ikt-default .product-card__body--ikt-default {
+  padding: 0;
+}
+
+.product-card--ikt-default .product-card__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.product-card--ikt-default .product-card__title {
+  margin-top: 0;
+  font-size: 1.125rem;
+  line-height: 1.3;
+}
+
+.product-card--ikt-default .product-card__price {
+  margin-top: 0;
+  font-size: 1.125rem;
+}
+
+.product-card--ikt-default .product-card__desc {
+  margin-top: 0.35rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--ikt-text-muted, var(--muted));
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* PDP: ratios + superficie Ikt */
+.store-pdp-media {
+  border: 1px solid var(--ikt-border, var(--border));
+  background: var(--ikt-surface, #ffffff);
+}
+
+.store-pdp-media--ikt {
+  border-radius: var(--ikt-radius-card);
+  border-width: 2px;
+  border-color: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.store-pdp-media--ratio-16-11 {
+  aspect-ratio: 16 / 11;
+}
+
+.store-pdp-media--ratio-16-10 {
+  aspect-ratio: 16 / 10;
+}
+
+.store-pdp-media--ratio-1-1 {
+  aspect-ratio: 1 / 1;
+}
+
+.store-pdp-material-badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 3;
+  max-width: calc(100% - 1.5rem);
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--ikt-border, var(--border));
+  background: var(--ikt-bg, var(--bg));
+  color: var(--ikt-text-main, var(--ink));
+  font-family: var(--ikt-font-body, var(--font-body));
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Focus rings visibles (teclado) en shell Ikt */
+.store-theme-shell :is(
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  .ikt-focusable,
+  .store-category-chip,
+  .store-voice-btn,
+  .btn,
+  .btn-ikt-cta,
+  .store-install-compact-btn
+):focus-visible {
+  outline: 2px solid var(--ikt-primary, var(--primary));
+  outline-offset: 3px;
+}
+
+.store-theme-shell .store-voice-input:focus-visible {
+  outline: none;
+}
+
+.store-theme-shell .store-voice-type:focus-within {
+  box-shadow: 0 0 0 2px var(--ikt-primary, var(--primary));
+}
+
+.store-theme-shell .btn-ikt-cta:focus-visible,
+.store-theme-shell .store-voice-btn:focus-visible {
+  outline-offset: 3px;
 }

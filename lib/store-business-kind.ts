@@ -169,8 +169,9 @@ export function businessKindClassName(
 }
 
 /**
- * Clase de trama de iconos en el shell de la vitrina (`store-pattern--comida`).
- * Sin rubro → string vacío (sin trama).
+ * Clase de trama de iconos en el shell (`store-pattern--comida`).
+ * Sin rubro → vacío. En vitrina pública preferir `shouldShowStorePattern`
+ * (PR7: trama archivada / off con Ikt).
  */
 export function storePatternClassName(
   stored: string | null | undefined,

@@ -14,12 +14,14 @@ import { formatPriceArs } from "@/lib/format";
 import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
 import { iktWantCtaLabel } from "@/lib/ikt-cta";
+import { artesaniaMaterialBadgeText } from "@/lib/artesania-material";
 import { accentStyleVars } from "@/lib/store-accent";
 import {
   businessKindClassName,
   resolveBusinessKind,
   storePatternClassName,
 } from "@/lib/store-business-kind";
+import { shouldShowStorePattern } from "@/lib/store-legacy-chrome";
 import { iktShellPresentation } from "@/lib/store-ikt-theme";
 import { storeThemeClassName } from "@/lib/store-theme";
 import { getCachedProduct } from "@/lib/store-data";
@@ -50,29 +52,37 @@ async function ProductBody({
   if (!purchase) notFound();
 
   const iktShell = iktShellPresentation(store);
-  const accentVars = iktShell.ikt
-    ? iktShell.styleVars
-    : accentStyleVars(store.accentColor);
+  const accentVars =
+    iktShell.ikt || iktShell.isDefault
+      ? iktShell.styleVars
+      : accentStyleVars(store.accentColor);
   const kindClass = businessKindClassName(store.businessKind);
   const kind = resolveBusinessKind(store.businessKind);
   const isRopaIkt = kind === "ropa";
   const isComidaIkt = kind === "comida";
   const isArtesaniaIkt = kind === "artesanal";
-  // Con rubro Ikt: theme claro/crema/oscuro ignorado (decisión Federico).
-  const themeClass = iktShell.ikt
-    ? (iktShell.themeClassName ?? "")
-    : storeThemeClassName(store.theme);
-  const patternClass =
-    isRopaIkt || isComidaIkt || isArtesaniaIkt
-      ? ""
-      : storePatternClassName(store.businessKind);
+  const isDefaultIkt = iktShell.isDefault;
+  // Con Ikt (rubro o default): theme claro/crema/oscuro ignorado.
+  const themeClass =
+    iktShell.ikt || iktShell.isDefault
+      ? (iktShell.themeClassName ?? "")
+      : storeThemeClassName(store.theme);
+  const patternClass = shouldShowStorePattern(store.businessKind)
+    ? storePatternClassName(store.businessKind)
+    : "";
   const ctaLabel = iktWantCtaLabel(store.businessKind);
-  const mediaAspect =
-    isRopaIkt || isArtesaniaIkt
-      ? "aspect-[16/11] rounded-lg"
-      : isComidaIkt
-        ? "aspect-[16/10] rounded-xl"
-        : "aspect-square";
+  const mediaAspectClass = isRopaIkt || isArtesaniaIkt
+    ? "store-pdp-media--ratio-16-11"
+    : isComidaIkt
+      ? "store-pdp-media--ratio-16-10"
+      : "store-pdp-media--ratio-1-1";
+  const materialBadge = isArtesaniaIkt
+    ? artesaniaMaterialBadgeText({
+        title: product.title,
+        description: product.description,
+        material: product.material,
+      })
+    : null;
 
   return (
     <StorePurchaseProvider store={purchase}>
@@ -88,7 +98,9 @@ async function ProductBody({
         <StoreHomeLink slug={slug} />
 
         <div
-          className={`relative overflow-hidden border border-[var(--border)] bg-white ${mediaAspect}`}
+          className={`store-pdp-media relative overflow-hidden ${mediaAspectClass}${
+            isDefaultIkt || iktShell.ikt ? " store-pdp-media--ikt" : ""
+          }`}
         >
           {product.imageUrl ? (
             <Image
@@ -107,8 +119,11 @@ async function ProductBody({
               Sin foto
             </div>
           )}
+          {materialBadge ? (
+            <span className="store-pdp-material-badge">{materialBadge}</span>
+          ) : null}
           {!product.inStock && (
-            <span className="absolute bottom-4 left-4 bg-[var(--soldout-bg)] px-3 py-1 text-[16px] font-medium text-[var(--soldout)]">
+            <span className="absolute bottom-4 left-4 z-[3] bg-[var(--soldout-bg)] px-3 py-1 text-[16px] font-medium text-[var(--soldout)]">
               Agotado
             </span>
           )}
@@ -118,16 +133,24 @@ async function ProductBody({
           className={`mt-6 text-[1.75rem] font-semibold text-[var(--ink)] sm:text-4xl${
             isArtesaniaIkt
               ? " store-pdp-title--serif font-bold"
-              : " font-[family-name:var(--font-display)]"
+              : isDefaultIkt || iktShell.ikt
+                ? " font-[family-name:var(--font-ikt-heading)] font-extrabold"
+                : " font-[family-name:var(--font-display)]"
           }`}
         >
           {product.title}
         </h1>
-        <p className="mt-3 font-[family-name:var(--font-display)] text-[2rem] font-bold text-[var(--primary)]">
+        <p
+          className={`mt-3 text-[2rem] font-bold${
+            isComidaIkt
+              ? " font-[family-name:var(--font-ikt-heading)] text-[var(--ikt-primary,var(--primary))]"
+              : " font-[family-name:var(--font-ikt-heading)] text-[var(--ink)]"
+          }`}
+        >
           {formatPriceArs(product.priceCents)}
         </p>
         {product.description && (
-          <p className="mt-5 text-[1.15rem] leading-relaxed text-[var(--ink)]">
+          <p className="mt-5 text-[1.15rem] leading-relaxed text-[var(--ikt-text-muted,var(--muted))]">
             {product.description}
           </p>
         )}

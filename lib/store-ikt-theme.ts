@@ -138,7 +138,8 @@ export function resolveIktTheme(store: {
 
 /**
  * Props de presentación para el shell público.
- * Con rubro Ikt: ignora theme claro/crema/oscuro; --primary desde la paleta.
+ * - Con rubro Ikt: ignora theme claro/crema/oscuro; --primary desde la paleta.
+ * - Sin rubro (Fase 6): tokens neutros Ikt + shell limpio (sin theme legacy).
  */
 export function iktShellPresentation(store: {
   businessKind?: string | null;
@@ -146,21 +147,33 @@ export function iktShellPresentation(store: {
   theme?: string | null;
 }): {
   ikt: IktThemeResolved | null;
-  /** Clase de tema legacy; vacía si hay rubro Ikt. */
+  /** true = plantilla default limpia (sin data-rubro). */
+  isDefault: boolean;
+  /** Clase de tema; Ikt o default limpio (nunca claro/crema/oscuro con Ikt). */
   themeClassName: string | null;
   styleVars: Record<string, string>;
 } {
   const ikt = resolveIktTheme(store);
   if (!ikt) {
+    const accent = normalizeAccentHex(store.accentColor);
+    const primary = accent ?? "#000000";
     return {
       ikt: null,
-      themeClassName: null,
-      styleVars: {},
+      isDefault: true,
+      themeClassName: "store-theme-ikt store-theme-ikt-default",
+      styleVars: {
+        "--primary": primary,
+        "--primary-fg": "#ffffff",
+        "--store-accent": primary,
+        "--ikt-primary": primary,
+        "--ikt-primary-text": "#ffffff",
+      },
     };
   }
 
   return {
     ikt,
+    isDefault: false,
     themeClassName: "store-theme-ikt",
     styleVars: {
       "--primary": ikt.primary,

@@ -8,6 +8,7 @@ import type { StorePurchaseInfo } from "@/lib/store-purchase";
 import {
   resolveBusinessKind,
 } from "@/lib/store-business-kind";
+import { shouldShowProductFrame } from "@/lib/store-legacy-chrome";
 import { artesaniaMaterialBadgeText } from "@/lib/artesania-material";
 import { iktWantCtaLabel } from "@/lib/ikt-cta";
 
@@ -19,7 +20,7 @@ export function ProductCard({
 }: {
   product: Product;
   store: StorePurchaseInfo;
-  /** Rubro de la tienda; null/undefined = layout default (sin marco). */
+  /** Rubro de la tienda; null/undefined = layout default limpio Ikt. */
   businessKind?: string | null;
   priority?: boolean;
 }) {
@@ -30,7 +31,8 @@ export function ProductCard({
   const isRopaIkt = kind === "ropa";
   const isComidaIkt = kind === "comida";
   const isArtesaniaIkt = kind === "artesanal";
-  const isIktCard = isRopaIkt || isComidaIkt || isArtesaniaIkt;
+  const isDefaultIkt = !kind;
+  const showFrame = shouldShowProductFrame(businessKind);
   const ctaLabel = iktWantCtaLabel(businessKind);
   const materialBadge = isArtesaniaIkt
     ? artesaniaMaterialBadgeText({
@@ -46,23 +48,25 @@ export function ProductCard({
         isRopaIkt ? " product-card--ikt-ropa" : ""
       }${isComidaIkt ? " product-card--ikt-comida" : ""}${
         isArtesaniaIkt ? " product-card--ikt-artesania" : ""
-      }`}
+      }${isDefaultIkt ? " product-card--ikt-default" : ""}`}
     >
       <Link
         href={href}
-        className="product-card__link block focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+        className="product-card__link ikt-focusable block focus:outline-none"
       >
         <div
           className={`product-card__media relative overflow-hidden${
-            kind && !isIktCard
+            showFrame
               ? " product-card__media--framed"
-              : " border border-[var(--border)]"
+              : isDefaultIkt
+                ? ""
+                : " border border-[var(--border)]"
           }`}
         >
           {product.imageUrl ? (
             <div
               className={`product-card__photo-wrap${
-                kind && !isIktCard ? " product-card__photo-wrap--framed" : ""
+                showFrame ? " product-card__photo-wrap--framed" : ""
               }`}
             >
               <Image
@@ -83,7 +87,7 @@ export function ProductCard({
               Sin foto
             </div>
           )}
-          {kind && !isIktCard ? (
+          {showFrame && kind ? (
             <ProductImageFrame kind={kind} frameId={product.id} />
           ) : null}
           {materialBadge ? (
@@ -140,13 +144,18 @@ export function ProductCard({
             ) : null}
           </div>
         ) : (
-          <div className="product-card__body">
-            <h2 className="product-card__title font-[family-name:var(--font-display)] font-semibold leading-snug text-[var(--ink)]">
-              {product.title}
-            </h2>
-            <p className="product-card__price font-[family-name:var(--font-display)] font-bold text-[var(--primary)]">
-              {price}
-            </p>
+          <div className="product-card__body product-card__body--ikt-default">
+            <div className="product-card__title-row">
+              <h2 className="product-card__title font-[family-name:var(--font-ikt-heading)] font-extrabold leading-snug text-[var(--ink)]">
+                {product.title}
+              </h2>
+              <span className="product-card__price font-[family-name:var(--font-ikt-heading)] font-extrabold whitespace-nowrap text-[var(--ink)]">
+                {price}
+              </span>
+            </div>
+            {product.description ? (
+              <p className="product-card__desc">{product.description}</p>
+            ) : null}
           </div>
         )}
       </Link>

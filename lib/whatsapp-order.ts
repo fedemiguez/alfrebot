@@ -13,6 +13,10 @@ export function storeCatalogUrl(slug: string | null | undefined): string | null 
   return `${appBaseUrl()}/${slug}`;
 }
 
+/**
+ * Texto prefill de wa.me (mismo flujo / buildWaMeUrl).
+ * Tono alineado a spec Gemini Ikt — sin cambiar el canal ni el CTA.
+ */
 export function productWantMessage(input: {
   productTitle: string;
   priceCents: number | null | undefined;
@@ -21,14 +25,16 @@ export function productWantMessage(input: {
   ownerName?: string | null;
 }): string {
   const price = formatPriceArs(input.priceCents);
-  const store = input.storeName ? ` de ${input.storeName}` : "";
-  const link = storeCatalogUrl(input.storeSlug);
-  const greeting = input.ownerName ? `¡Hola ${input.ownerName}!` : "¡Hola!";
+  const who =
+    input.storeName?.trim() ||
+    input.ownerName?.trim() ||
+    null;
+  const greeting = who ? `¡Hola ${who}! 👋` : "¡Hola! 👋";
   const lines = [
     greeting,
-    `Quiero pedirte${store}:`,
-    `• ${input.productTitle} — ${price}`,
+    `Vi su página web. Me gustaría consultar o pedir: *${input.productTitle}* (${price}). ¿Me podrían ayudar?`,
   ];
+  const link = storeCatalogUrl(input.storeSlug);
   if (link) lines.push(``, `Catálogo: ${link}`);
   return lines.join("\n");
 }

@@ -429,7 +429,7 @@ export function HowToOrderNote({
     const text =
       checkoutMode === "cart"
         ? "Sumalo al pedido. Cuando termines, abrí Pedido y mandalo por WhatsApp."
-        : "Tocá Lo quiero y te abre WhatsApp para pedirlo.";
+        : "Tocá el botón de WhatsApp y te abre el chat para pedirlo.";
     return (
       <p className="store-howto-compact mt-4" role="note">
         {text}
@@ -446,8 +446,8 @@ export function HowToOrderNote({
         ]
       : [
           "Elegí el producto",
-          "Tocá Lo quiero",
-          "Confirmá el pedido por WhatsApp",
+          "Tocá el botón de WhatsApp",
+          "Confirmá el pedido por el chat",
         ];
 
   return (
