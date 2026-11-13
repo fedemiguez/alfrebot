@@ -30,6 +30,7 @@ import {
   resolveBusinessKind,
   storePatternClassName,
 } from "@/lib/store-business-kind";
+import { shouldShowStorePattern } from "@/lib/store-legacy-chrome";
 import { iktShellPresentation } from "@/lib/store-ikt-theme";
 import { storeThemeClassName } from "@/lib/store-theme";
 import { normalizeWelcomeMessage } from "@/lib/store-welcome";
@@ -86,25 +87,28 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
   const iconSrc = store.icon192Url || monogramIconPath(slug, 192);
 
   const iktShell = iktShellPresentation(store);
-  const accentVars = iktShell.ikt
-    ? iktShell.styleVars
-    : accentStyleVars(store.accentColor);
+  // Ikt (rubro o default): tokens vía styleVars. Legacy accent solo si algo falla.
+  const accentVars =
+    iktShell.ikt || iktShell.isDefault
+      ? iktShell.styleVars
+      : accentStyleVars(store.accentColor);
   const kindClass = businessKindClassName(store.businessKind);
   const kindLabel = businessKindHeaderLabel(store.businessKind);
   const kind = resolveBusinessKind(store.businessKind);
   const isRopaIkt = kind === "ropa";
   const isComidaIkt = kind === "comida";
   const isArtesaniaIkt = kind === "artesanal";
+  const isDefaultIkt = iktShell.isDefault;
   const headerEyebrow = iktHeaderEyebrow(store.businessKind);
-  // Con rubro Ikt: theme claro/crema/oscuro ignorado (decisión Federico).
-  const themeClass = iktShell.ikt
-    ? (iktShell.themeClassName ?? "")
-    : storeThemeClassName(store.theme);
-  // Con rubro Ikt (ropa/comida/artesanal): trama off.
-  const patternClass =
-    isRopaIkt || isComidaIkt || isArtesaniaIkt
-      ? ""
-      : storePatternClassName(store.businessKind);
+  // Con Ikt (rubro o default): theme claro/crema/oscuro ignorado.
+  const themeClass =
+    iktShell.ikt || iktShell.isDefault
+      ? (iktShell.themeClassName ?? "")
+      : storeThemeClassName(store.theme);
+  // Marcos/trama archivados (PR7); helper centraliza la decisión.
+  const patternClass = shouldShowStorePattern(store.businessKind)
+    ? storePatternClassName(store.businessKind)
+    : "";
   const welcome = normalizeWelcomeMessage(store.welcomeMessage);
   const monogram = storeMonogramInitials(store.name);
   const showOpenBanner = isComidaIkt && Boolean(store.openNow);
@@ -222,27 +226,40 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
             </div>
           </header>
         ) : (
-          <header className="flex items-start gap-4">
-            <Image
-              src={iconSrc}
-              alt=""
-              width={72}
-              height={72}
-              className="mt-1 size-[4.5rem] shrink-0 rounded-xl border border-[var(--border)] bg-[var(--card)] object-cover ring-2 ring-[var(--primary)]/25"
-              priority
-              unoptimized={
-                iconSrc.startsWith("/") || iconSrc.startsWith("data:")
-              }
-            />
+          <header className="store-header-default flex items-center gap-4 border-b-2 border-[color-mix(in_srgb,var(--ink)_10%,transparent)] pb-3">
+            {store.icon192Url ? (
+              <Image
+                src={iconSrc}
+                alt=""
+                width={56}
+                height={56}
+                className="store-header-default__avatar size-14 shrink-0 rounded-2xl border border-[var(--border)] bg-[var(--card)] object-cover"
+                priority
+                unoptimized={
+                  iconSrc.startsWith("/") || iconSrc.startsWith("data:")
+                }
+              />
+            ) : (
+              <div
+                className="store-header-default__avatar flex size-14 shrink-0 items-center justify-center rounded-2xl text-base font-extrabold"
+                style={{
+                  backgroundColor: "var(--primary)",
+                  color: "var(--primary-fg)",
+                }}
+                aria-hidden="true"
+              >
+                {monogram}
+              </div>
+            )}
             <div className="min-w-0">
-              <h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight text-[var(--ink)] sm:text-5xl">
-                <span className="border-b-[3px] border-[var(--primary)] pb-0.5">
-                  {store.name}
-                </span>
+              <h1 className="store-header-default__name font-[family-name:var(--font-ikt-heading)] text-2xl font-extrabold tracking-tight text-[var(--ink)] sm:text-3xl">
+                {store.name}
               </h1>
-              {welcome ? <p className="store-welcome">{welcome}</p> : null}
+              {welcome ? (
+                <p className="store-welcome mt-1 text-[0.95rem]">{welcome}</p>
+              ) : null}
               {(store.ownerName || kindLabel) && (
-                <p className="mt-3 text-[1.1rem] text-[var(--muted)]">
+                <p className="mt-2 text-[1rem] text-[var(--muted)]">
                   {store.ownerName
                     ? `Productos de ${store.ownerName}`
                     : null}
@@ -301,7 +318,11 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
             <StoreArtesaniasCatalog products={products} store={purchase} />
           </div>
         ) : (
-          <div className="mt-10 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            className={`mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3${
+              isDefaultIkt ? " store-catalog-default" : ""
+            }`}
+          >
             {products.map((product, i) => (
               <ProductCard
                 key={product.id}

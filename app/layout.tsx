@@ -22,7 +22,7 @@ const body = Source_Sans_3({
   weight: ["400", "600", "700"],
 });
 
-/** Fuentes preview Ikt — solo se aplican en shell de vitrina con data-rubro. */
+/** Fuentes preview Ikt — shell de vitrina con data-rubro o default limpio. */
 const iktHeading = Plus_Jakarta_Sans({
   variable: "--font-ikt-heading",
   subsets: ["latin"],
