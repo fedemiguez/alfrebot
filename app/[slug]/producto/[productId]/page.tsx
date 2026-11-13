@@ -14,7 +14,10 @@ import { formatPriceArs } from "@/lib/format";
 import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
 import { accentStyleVars } from "@/lib/store-accent";
-import { businessKindClassName } from "@/lib/store-business-kind";
+import {
+  businessKindClassName,
+  storePatternClassName,
+} from "@/lib/store-business-kind";
 import { storeThemeClassName } from "@/lib/store-theme";
 import { getCachedProduct } from "@/lib/store-data";
 
@@ -46,11 +49,12 @@ async function ProductBody({
   const accentVars = accentStyleVars(store.accentColor);
   const kindClass = businessKindClassName(store.businessKind);
   const themeClass = storeThemeClassName(store.theme);
+  const patternClass = storePatternClassName(store.businessKind);
 
   return (
     <StorePurchaseProvider store={purchase}>
       <div
-        className={`store-theme-shell fade-in ${themeClass}`}
+        className={`store-theme-shell fade-in ${themeClass} ${patternClass}`.trim()}
         style={accentVars as CSSProperties}
       >
       <div

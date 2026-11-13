@@ -1,6 +1,7 @@
 /**
- * Rubro del negocio (Fase B + marcos Fase D).
- * Define layout de card y marco decorativo en la foto; null = default sin marco.
+ * Rubro del negocio (Fase B + marcos Fase D + trama de fondo).
+ * Define layout de card, marco en la foto y trama de iconos en la vitrina;
+ * null = default sin marco ni trama.
  */
 
 export type BusinessKind = "artesanal" | "comida" | "ropa";
@@ -165,6 +166,17 @@ export function businessKindClassName(
 ): string {
   const kind = resolveBusinessKind(stored);
   return kind ? `store-kind-${kind}` : "store-kind-default";
+}
+
+/**
+ * Clase de trama de iconos en el shell de la vitrina (`store-pattern--comida`).
+ * Sin rubro → string vacío (sin trama).
+ */
+export function storePatternClassName(
+  stored: string | null | undefined,
+): string {
+  const kind = resolveBusinessKind(stored);
+  return kind ? `store-pattern store-pattern--${kind}` : "";
 }
 
 /** Label opcional para el header de la vitrina. */

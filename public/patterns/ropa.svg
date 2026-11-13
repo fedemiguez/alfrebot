@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" fill="none">
+  <!-- Trama ropa: remera, percha, pantalón, zapato, bolsa, gorra -->
+  <g stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- remera -->
+    <g transform="translate(18 16)">
+      <path d="M16 12 L8 18 L12 24 L16 20 V38 H32 V20 L36 24 L40 18 L32 12 C30 16 26 18 24 18 C22 18 18 16 16 12 Z"/>
+    </g>
+    <!-- percha -->
+    <g transform="translate(104 22)">
+      <circle cx="24" cy="10" r="3"/>
+      <path d="M24 13 V18"/>
+      <path d="M8 28 C14 18 34 18 40 28"/>
+      <path d="M8 28 H40"/>
+    </g>
+    <!-- pantalón -->
+    <g transform="translate(184 16)">
+      <path d="M14 10 H34 V22 L38 40 H28 L24 24 L20 40 H10 L14 22 Z"/>
+    </g>
+    <!-- zapato -->
+    <g transform="translate(24 120)">
+      <path d="M8 28 C12 22 18 20 26 20 H34 C38 20 40 24 38 28 C36 32 30 34 24 34 H12 C8 34 6 32 8 28 Z"/>
+      <path d="M14 20 C16 14 22 12 26 14"/>
+    </g>
+    <!-- bolsa -->
+    <g transform="translate(112 118)">
+      <path d="M12 18 H36 V38 H12 Z"/>
+      <path d="M18 18 V14 C18 10 21 8 24 8 C27 8 30 10 30 14 V18"/>
+    </g>
+    <!-- gorra -->
+    <g transform="translate(188 116)">
+      <path d="M10 28 H38"/>
+      <path d="M12 28 C12 18 18 12 24 12 C30 12 36 18 36 28"/>
+      <path d="M36 28 H42 C40 32 36 34 32 34 H20"/>
+    </g>
+  </g>
+</svg>

@@ -291,6 +291,8 @@ body {
 
 /* Temas de fondo (Fase C). Preservan --primary del accent_color. */
 .store-theme-shell {
+  position: relative;
+  isolation: isolate;
   min-height: 100%;
   background:
     radial-gradient(
@@ -305,6 +307,54 @@ body {
     ),
     var(--bg);
   color: var(--ink);
+}
+
+.store-theme-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+/*
+ * Trama de iconos por rubro (reusa business_kind).
+ * Máscara SVG + paint con --primary ~8–10%; no tapa productos/CTAs.
+ */
+.store-pattern::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: color-mix(in srgb, var(--primary) 72%, var(--muted));
+  opacity: 0.09;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 11.5rem 11.5rem;
+  mask-size: 11.5rem 11.5rem;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+}
+
+.store-pattern--comida::before {
+  -webkit-mask-image: url("/patterns/comida.svg");
+  mask-image: url("/patterns/comida.svg");
+}
+
+.store-pattern--ropa::before {
+  -webkit-mask-image: url("/patterns/ropa.svg");
+  mask-image: url("/patterns/ropa.svg");
+}
+
+.store-pattern--artesanal::before {
+  -webkit-mask-image: url("/patterns/artesanal.svg");
+  mask-image: url("/patterns/artesanal.svg");
+}
+
+@media (max-width: 640px) {
+  .store-pattern::before {
+    -webkit-mask-size: 9.25rem 9.25rem;
+    mask-size: 9.25rem 9.25rem;
+    opacity: 0.08;
+  }
 }
 
 .store-theme-claro {
@@ -337,6 +387,12 @@ body {
   --soldout: #d6d3d1;
   --soldout-bg: #44403c;
   --primary-fg: #ffffff;
+}
+
+/* En oscuro: trama más clara y suave (no pelear con el acento). */
+.store-theme-oscuro.store-pattern::before {
+  background-color: color-mix(in srgb, var(--primary) 28%, #f5f5f4);
+  opacity: 0.065;
 }
 
 .store-welcome {
