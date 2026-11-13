@@ -22,6 +22,7 @@ import { WebChatSignOut } from "@/components/web-chat-sign-out";
 import { WebChatSsoFinish } from "@/components/web-chat-sso-finish";
 import type { OutboundMessage } from "@/lib/channels/types";
 import { CHOICE, segmentUrls } from "@/lib/bot/render";
+import { welcomeMainMessage } from "@/lib/bot/welcome-copy";
 
 function outboundDisplayText(m: OutboundMessage): string | undefined {
   if (m.kind === "text" || m.kind === "sign_out") return m.text;
@@ -41,11 +42,11 @@ const V2_CHANNEL_WA = "v2_channel_wa";
 /** Tras login Clerk, reanudar onboarding web sin repetir la elección de canal. */
 const PENDING_WEB_ONBOARDING_KEY = "alfrebot_pending_web_onboarding";
 
-function proactiveHello(firstName?: string | null): string {
-  const name = firstName?.trim();
-  return name
-    ? `Hola ${name}, ¿en qué necesitás que te ayude?`
-    : "Hola, ¿en qué necesitás que te ayude?";
+function proactiveHello(
+  firstName?: string | null,
+  closing: "owner" | "guest" = "guest",
+): string {
+  return welcomeMainMessage({ firstName, closing });
 }
 
 /** Saludo fresco + elección de canal (guest / sin tienda). */
@@ -56,7 +57,7 @@ function buildV2ChannelIntro(firstName?: string | null): ChatItem {
     messages: [
       {
         kind: "text",
-        text: proactiveHello(firstName),
+        text: proactiveHello(firstName, "guest"),
         options: [
           { id: V2_CHANNEL_WEB, label: "Seguir en este chat" },
           { id: V2_CHANNEL_WA, label: "Ir a WhatsApp" },
@@ -74,7 +75,7 @@ function buildV2OwnerIntro(firstName?: string | null): ChatItem {
     messages: [
       {
         kind: "text",
-        text: proactiveHello(firstName),
+        text: proactiveHello(firstName, "owner"),
         options: [
           { id: CHOICE.MENU_GROUP_PRODUCTS, label: "Productos" },
           { id: CHOICE.MENU_GROUP_STORE, label: "Tienda" },
