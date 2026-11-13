@@ -128,10 +128,51 @@ body {
 /* ——— Product card templates por rubro (Fase B + marcos Fase D) ——— */
 .product-card__media {
   aspect-ratio: 1 / 1;
+  /* Passepartout: tinte suave del acento (no blanco puro) para que el marco se lea. */
+  background: color-mix(in srgb, var(--primary) 16%, var(--card));
 }
 
 .product-card__media--framed {
   border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
+}
+
+/* Contenedor de la foto: full por defecto; con marco, inset = passepartout. */
+.product-card__photo-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/*
+ * Inset bajo el marco: franja de acento + trazo visibles con foto cover.
+ * Porcentajes alineados al viewBox 100 de product-image-frame (trazo interno).
+ */
+.product-card__photo-wrap--framed {
+  inset: 10%;
+}
+
+.product-card--artesanal .product-card__photo-wrap--framed {
+  /* Hatch ~6.5 + dashed ~8.5; aire extra → franja de acento bajo el trazo. */
+  inset: 13%;
+}
+
+.product-card--comida .product-card__photo-wrap--framed {
+  /* Aro interno ~7.5 + franja de acento. */
+  inset: 12%;
+}
+
+.product-card--ropa .product-card__photo-wrap--framed {
+  /* Rect editorial ~5 + aire para esquinas en L. */
+  inset: 10%;
+}
+
+.store-theme-oscuro .product-card__media {
+  background: color-mix(in srgb, var(--primary) 22%, var(--card));
+}
+
+.store-theme-crema .product-card__media {
+  background: color-mix(in srgb, var(--primary) 14%, var(--card));
 }
 
 .product-card__title {
