@@ -3,8 +3,7 @@
 import { SignIn, SignUp } from "@clerk/nextjs";
 import { useEffect, useId, useState } from "react";
 import { alfrebotClerkChatAppearance } from "@/lib/clerk-appearance";
-
-const RETURN_URL = "/asistente";
+import { CLERK_AFTER_AUTH_URL } from "@/lib/clerk-redirects";
 
 export function ChatAuthOverlay({
   open,
@@ -74,8 +73,10 @@ export function ChatAuthOverlay({
           {mode === "sign-up" ? (
             <SignUp
               routing="hash"
-              forceRedirectUrl={RETURN_URL}
-              signInForceRedirectUrl={RETURN_URL}
+              forceRedirectUrl={CLERK_AFTER_AUTH_URL}
+              fallbackRedirectUrl={CLERK_AFTER_AUTH_URL}
+              signInForceRedirectUrl={CLERK_AFTER_AUTH_URL}
+              signInFallbackRedirectUrl={CLERK_AFTER_AUTH_URL}
               appearance={alfrebotClerkChatAppearance}
               fallback={
                 <p className="py-8 text-center text-[var(--muted)]">
@@ -86,8 +87,10 @@ export function ChatAuthOverlay({
           ) : (
             <SignIn
               routing="hash"
-              forceRedirectUrl={RETURN_URL}
-              signUpForceRedirectUrl={RETURN_URL}
+              forceRedirectUrl={CLERK_AFTER_AUTH_URL}
+              fallbackRedirectUrl={CLERK_AFTER_AUTH_URL}
+              signUpForceRedirectUrl={CLERK_AFTER_AUTH_URL}
+              signUpFallbackRedirectUrl={CLERK_AFTER_AUTH_URL}
               appearance={alfrebotClerkChatAppearance}
               fallback={
                 <p className="py-8 text-center text-[var(--muted)]">
