@@ -91,6 +91,16 @@ export const products = pgTable("products", {
   priceCents: integer("price_cents"),
   imageUrl: text("image_url"),
   imageBlobKey: text("image_blob_key"),
+  /**
+   * Categoría libre para chips de vitrina (sugerida por AI al alta/edición).
+   * Null = sin categoría guardada (chips pueden caer a heurística). Migrar con `npm run db:push`.
+   */
+  category: text("category"),
+  /**
+   * Material libre para badge Artesanías (sugerido por AI).
+   * Null = sin material guardado (badge puede caer a heurística). Migrar con `npm run db:push`.
+   */
+  material: text("material"),
   inStock: boolean("in_stock").default(true).notNull(),
   /** Cantidad disponible; null si la tienda no lleva stock numérico. */
   quantity: integer("quantity"),

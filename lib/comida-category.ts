@@ -1,12 +1,16 @@
 /**
- * Categorías de vitrina Comidas (Fase 3): heurística por palabras clave
- * hasta que exista `products.category` + sugerencia AI (Fase 5).
+ * Categorías de vitrina Comidas: heurística + preferencia de `products.category` (Fase 5).
  */
 
-export type ComidaCategoryChip = {
-  id: string;
-  label: string;
-};
+import {
+  collectCategoryChips,
+  productMatchesCategory,
+  resolveProductCategoryChip,
+  type CategorizedProduct,
+  type CategoryChip,
+} from "@/lib/product-category";
+
+export type ComidaCategoryChip = CategoryChip;
 
 /** Orden estable de chips conocidos (además de “Todo”). */
 const COMIDA_CATEGORY_HEURISTICS: ReadonlyArray<{
@@ -178,28 +182,22 @@ export function inferComidaCategory(
   return null;
 }
 
+export function resolveComidaCategory(
+  product: CategorizedProduct,
+): ComidaCategoryChip | null {
+  return resolveProductCategoryChip(product, inferComidaCategory);
+}
+
 /** Chips presentes en el catálogo: “Todo” + categorías con al menos un producto. */
 export function collectComidaCategoryChips(
-  products: ReadonlyArray<{ title: string; description?: string | null }>,
+  products: ReadonlyArray<CategorizedProduct>,
 ): ComidaCategoryChip[] {
-  const seen = new Set<string>();
-  const chips: ComidaCategoryChip[] = [{ id: "todo", label: "Todo" }];
-
-  for (const product of products) {
-    const cat = inferComidaCategory(product.title, product.description);
-    if (!cat || seen.has(cat.id)) continue;
-    seen.add(cat.id);
-    chips.push(cat);
-  }
-
-  return chips;
+  return collectCategoryChips(products, inferComidaCategory);
 }
 
 export function productMatchesComidaCategory(
-  product: { title: string; description?: string | null },
+  product: CategorizedProduct,
   categoryId: string,
 ): boolean {
-  if (!categoryId || categoryId === "todo") return true;
-  const cat = inferComidaCategory(product.title, product.description);
-  return cat?.id === categoryId;
+  return productMatchesCategory(product, categoryId, inferComidaCategory);
 }

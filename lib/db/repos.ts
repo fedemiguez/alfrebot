@@ -27,6 +27,18 @@ export type ProductDraft = {
   imageUrl?: string;
   imageBlobKey?: string;
   skipDesc?: boolean;
+  /** Categoría confirmada/editada por la dueña (chips). */
+  category?: string | null;
+  /** Material confirmado/editado (badge artesanal). */
+  material?: string | null;
+  /** Sugerencia AI pendiente de confirmar (categoría). */
+  categorySuggested?: string | null;
+  /** Sugerencia AI pendiente de confirmar (material). */
+  materialSuggested?: string | null;
+  /** true si la dueña ya aceptó/editó categoría en este alta. */
+  categoryConfirmed?: boolean;
+  /** true si la dueña ya aceptó/editó material en este alta. */
+  materialConfirmed?: boolean;
 };
 
 /** Plan multi-intent: varias cosas en un mensaje (nombre tienda + logo + productos…). */
@@ -889,6 +901,8 @@ export async function createProduct(input: {
   priceCents?: number | null;
   imageUrl?: string | null;
   imageBlobKey?: string | null;
+  category?: string | null;
+  material?: string | null;
   quantity?: number | null;
   inStock?: boolean;
 }): Promise<Product> {
@@ -897,6 +911,8 @@ export async function createProduct(input: {
   const quantity = input.quantity ?? null;
   const inStock =
     input.inStock ?? (quantity == null ? true : quantity > 0);
+  const category = input.category?.trim() || null;
+  const material = input.material?.trim() || null;
   if (!hasDatabaseUrl()) {
     const created: Product = {
       id: newId(),
@@ -906,6 +922,8 @@ export async function createProduct(input: {
       priceCents: input.priceCents ?? null,
       imageUrl: input.imageUrl ?? null,
       imageBlobKey: input.imageBlobKey ?? null,
+      category,
+      material,
       inStock,
       quantity,
       hidden: false,
@@ -926,6 +944,8 @@ export async function createProduct(input: {
       priceCents: input.priceCents ?? null,
       imageUrl: input.imageUrl ?? null,
       imageBlobKey: input.imageBlobKey ?? null,
+      category,
+      material,
       inStock,
       quantity,
       position,
@@ -955,6 +975,8 @@ export async function updateProduct(
       | "priceCents"
       | "imageUrl"
       | "imageBlobKey"
+      | "category"
+      | "material"
       | "inStock"
       | "quantity"
       | "hidden"

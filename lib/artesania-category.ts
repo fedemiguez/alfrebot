@@ -1,12 +1,16 @@
 /**
- * Categorías de vitrina Artesanías (Fase 4): heurística por palabras clave
- * hasta que exista `products.category` + sugerencia AI (Fase 5).
+ * Categorías de vitrina Artesanías: heurística + preferencia de `products.category` (Fase 5).
  */
 
-export type ArtesaniaCategoryChip = {
-  id: string;
-  label: string;
-};
+import {
+  collectCategoryChips,
+  productMatchesCategory,
+  resolveProductCategoryChip,
+  type CategorizedProduct,
+  type CategoryChip,
+} from "@/lib/product-category";
+
+export type ArtesaniaCategoryChip = CategoryChip;
 
 /** Orden estable de chips conocidos (además de “Todo”). */
 const ARTESANIA_CATEGORY_HEURISTICS: ReadonlyArray<{
@@ -106,28 +110,22 @@ export function inferArtesaniaCategory(
   return null;
 }
 
+export function resolveArtesaniaCategory(
+  product: CategorizedProduct,
+): ArtesaniaCategoryChip | null {
+  return resolveProductCategoryChip(product, inferArtesaniaCategory);
+}
+
 /** Chips presentes en el catálogo: “Todo” + categorías con al menos un producto. */
 export function collectArtesaniaCategoryChips(
-  products: ReadonlyArray<{ title: string; description?: string | null }>,
+  products: ReadonlyArray<CategorizedProduct>,
 ): ArtesaniaCategoryChip[] {
-  const seen = new Set<string>();
-  const chips: ArtesaniaCategoryChip[] = [{ id: "todo", label: "Todo" }];
-
-  for (const product of products) {
-    const cat = inferArtesaniaCategory(product.title, product.description);
-    if (!cat || seen.has(cat.id)) continue;
-    seen.add(cat.id);
-    chips.push(cat);
-  }
-
-  return chips;
+  return collectCategoryChips(products, inferArtesaniaCategory);
 }
 
 export function productMatchesArtesaniaCategory(
-  product: { title: string; description?: string | null },
+  product: CategorizedProduct,
   categoryId: string,
 ): boolean {
-  if (!categoryId || categoryId === "todo") return true;
-  const cat = inferArtesaniaCategory(product.title, product.description);
-  return cat?.id === categoryId;
+  return productMatchesCategory(product, categoryId, inferArtesaniaCategory);
 }
