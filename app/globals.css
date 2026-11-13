@@ -316,69 +316,38 @@ body {
 
 /*
  * Trama de iconos por rubro (reusa business_kind).
- * Tile SVG ~640 con ~40 iconos en scatter (rotación ±35°, escalas distintas).
- * Doble capa a tamaños/offsets distintos → no se lee como grilla 3×2 al repetir.
+ * Tiles SVG 640² de #52 (WhatsApp scatter) en public/patterns/.
+ * mask-size nativo 640px → sin estirar el arte.
  */
-.store-pattern::before,
-.store-pattern::after {
+.store-pattern::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background-color: color-mix(in srgb, var(--primary) 72%, var(--muted));
+  opacity: 0.14;
   -webkit-mask-repeat: repeat;
   mask-repeat: repeat;
+  -webkit-mask-size: 640px 640px;
+  mask-size: 640px 640px;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
 }
 
-.store-pattern::before {
-  opacity: 0.13;
-  -webkit-mask-size: 42rem 42rem;
-  mask-size: 42rem 42rem;
-  -webkit-mask-position: -3rem -2rem;
-  mask-position: -3rem -2rem;
-}
-
-.store-pattern::after {
-  opacity: 0.08;
-  -webkit-mask-size: 55rem 55rem;
-  mask-size: 55rem 55rem;
-  -webkit-mask-position: 14rem 9rem;
-  mask-position: 14rem 9rem;
-}
-
-.store-pattern--comida::before,
-.store-pattern--comida::after {
+.store-pattern--comida::before {
   -webkit-mask-image: url("/patterns/comida.svg");
   mask-image: url("/patterns/comida.svg");
 }
 
-.store-pattern--ropa::before,
-.store-pattern--ropa::after {
+.store-pattern--ropa::before {
   -webkit-mask-image: url("/patterns/ropa.svg");
   mask-image: url("/patterns/ropa.svg");
 }
 
-.store-pattern--artesanal::before,
-.store-pattern--artesanal::after {
+.store-pattern--artesanal::before {
   -webkit-mask-image: url("/patterns/artesanal.svg");
   mask-image: url("/patterns/artesanal.svg");
-}
-
-@media (max-width: 640px) {
-  .store-pattern::before {
-    opacity: 0.15;
-    -webkit-mask-size: 100vw 100vw;
-    mask-size: 100vw 100vw;
-  }
-
-  .store-pattern::after {
-    opacity: 0.09;
-    -webkit-mask-size: 130vw 130vw;
-    mask-size: 130vw 130vw;
-    -webkit-mask-position: 22vw 16vw;
-    mask-position: 22vw 16vw;
-  }
 }
 
 .store-theme-claro {

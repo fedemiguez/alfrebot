@@ -1,64 +1,104 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" fill="none">
-  <!-- Trama ropa: defs Gemini + scatter (36 iconos) -->
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
   <defs>
-<g id="tshirt" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
-<path d="M9 3 L4 6 L6 11 L9 9 V21 H15 V9 L18 11 L20 6 L15 3 C13 5 11 5 9 3 Z"/>
-</g>
-<g id="hanger" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
-<path d="M12 6 C11 6 10 5 10 4 C10 3 11 2 12 2 C13 2 14 3 14 4 C14 5 13 6 12 6 Z"/>
-<path d="M3 15 C3 14 5 13 12 13 C19 13 21 14 21 15 L20 17 H4 Z"/>
-<path d="M12 13 V8"/>
-</g>
-<g id="pants" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
-<path d="M7 3 H17 L19 21 H15 L12 12 L9 21 H5 Z"/>
-</g>
-<g id="shoe" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
-<path d="M3 15 H19 C21 15 22 16 22 18 C22 20 20 21 18 21 H5 C3 21 3 19 3 17 Z"/>
-<path d="M3 15 L6 9 H15 L18 15"/>
-</g>
-<g id="bag" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
-<path d="M6 8 H18 V20 H6 Z"/>
-<path d="M9 8 V6 C9 4 10 3 12 3 C14 3 15 4 15 6 V8"/>
-</g>
-<g id="cap" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
-<path d="M3 13 C3 9 7 8 12 8 C17 8 21 9 21 13"/>
-<path d="M2 13 H22 C22 15 20 16 18 16 H6 C4 16 2 15 2 13 Z"/>
-</g>
+    <g id="remera" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+      <g transform="scale(1.52)">
+        <path d="M-6 -7 L-14 -4 L-12 2 L-6 0 L-6 12 L6 12 L6 0 L12 2 L14 -4 L6 -7 Q0 -3 -6 -7"/>
+      </g>
+    </g>
+    <g id="percha" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+      <g transform="scale(1.42)">
+        <circle cx="0" cy="-12" r="2.2"/>
+        <path d="M0 -9.8 L0 -6 L-14 5 L-14 8 L14 8 L14 5 L0 -6"/>
+      </g>
+    </g>
+    <g id="pantalon" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+      <g transform="scale(1.52)">
+        <path d="M-8 -13 L-8 -9 L-10 13 L-2 13 L0 -1 L2 13 L10 13 L8 -9 L8 -13 Z"/>
+        <path d="M-5.5 -13 L5.5 -13"/>
+      </g>
+    </g>
+    <g id="zapato" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+      <g transform="scale(1.42)">
+        <path d="M-13 3 L-13 -2 Q-13 -8 -5 -8 L2 -8 L2 -1 L13 -1 Q17 -1 17 3 L17 6 L-13 6 Z"/>
+        <path d="M-9 2 L3 2"/>
+      </g>
+    </g>
+    <g id="bolsa" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+      <g transform="scale(1.52)">
+        <rect x="-10" y="-3" width="20" height="16" rx="2"/>
+        <path d="M-5.5 -3 L-5.5 -8 Q0 -14 5.5 -8 L5.5 -3"/>
+      </g>
+    </g>
+    <g id="gorra" stroke="#000" fill="none" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+      <g transform="scale(1.42)">
+        <path d="M-11 2 Q-11 -8 0 -10 Q11 -8 11 2"/>
+        <path d="M-15 4 Q-2 9 13 4 L11 2 L-11 2"/>
+        <circle cx="0" cy="-11.4" r="1.3" fill="#000" stroke="none"/>
+      </g>
+    </g>
   </defs>
-  <use href="#bag" transform="translate(437.8 465.2) rotate(19.6) scale(1.04) translate(-12 -12)" />
-  <use href="#pants" transform="translate(291.4 508.5) rotate(-31.7) scale(1.02) translate(-12 -12)" />
-  <use href="#pants" transform="translate(422.7 252.3) rotate(-15.2) scale(1.24) translate(-12 -12)" />
-  <use href="#hanger" transform="translate(490.4 320.4) rotate(9.3) scale(1.27) translate(-12 -12)" />
-  <use href="#cap" transform="translate(87.0 339.3) rotate(16.0) scale(1.02) translate(-12 -12)" />
-  <use href="#bag" transform="translate(187.1 385.7) rotate(-34.8) scale(1.01) translate(-12 -12)" />
-  <use href="#shoe" transform="translate(402.2 124.4) rotate(-17.0) scale(1.27) translate(-12 -12)" />
-  <use href="#shoe" transform="translate(185.0 562.2) rotate(-2.8) scale(0.94) translate(-12 -12)" />
-  <use href="#bag" transform="translate(323.3 247.5) rotate(4.6) scale(0.95) translate(-12 -12)" />
-  <use href="#cap" transform="translate(128.4 188.1) rotate(-24.2) scale(0.92) translate(-12 -12)" />
-  <use href="#cap" transform="translate(482.5 89.7) rotate(8.3) scale(0.96) translate(-12 -12)" />
-  <use href="#hanger" transform="translate(456.1 142.0) rotate(-4.1) scale(1.16) translate(-12 -12)" />
-  <use href="#hanger" transform="translate(256.5 347.8) rotate(16.9) scale(1.09) translate(-12 -12)" />
-  <use href="#pants" transform="translate(231.7 39.4) rotate(-22.5) scale(1.14) translate(-12 -12)" />
-  <use href="#tshirt" transform="translate(470.5 208.9) rotate(6.8) scale(0.96) translate(-12 -12)" />
-  <use href="#bag" transform="translate(222.6 216.9) rotate(-23.5) scale(0.86) translate(-12 -12)" />
-  <use href="#bag" transform="translate(56.1 65.4) rotate(0.8) scale(1.05) translate(-12 -12)" />
-  <use href="#tshirt" transform="translate(137.8 128.0) rotate(-23.6) scale(1.27) translate(-12 -12)" />
-  <use href="#tshirt" transform="translate(477.9 584.2) rotate(13.2) scale(0.89) translate(-12 -12)" />
-  <use href="#cap" transform="translate(101.4 466.1) rotate(12.3) scale(1.24) translate(-12 -12)" />
-  <use href="#pants" transform="translate(360.1 207.6) rotate(15.0) scale(1.25) translate(-12 -12)" />
-  <use href="#bag" transform="translate(563.4 59.6) rotate(9.0) scale(0.87) translate(-12 -12)" />
-  <use href="#shoe" transform="translate(85.4 579.0) rotate(8.5) scale(0.72) translate(-12 -12)" />
-  <use href="#pants" transform="translate(570.6 601.0) rotate(-14.3) scale(0.76) translate(-12 -12)" />
-  <use href="#pants" transform="translate(399.0 37.2) rotate(31.3) scale(0.96) translate(-12 -12)" />
-  <use href="#cap" transform="translate(214.9 429.7) rotate(17.7) scale(1.29) translate(-12 -12)" />
-  <use href="#tshirt" transform="translate(154.8 498.5) rotate(28.3) scale(1.13) translate(-12 -12)" />
-  <use href="#shoe" transform="translate(415.7 383.0) rotate(6.1) scale(0.94) translate(-12 -12)" />
-  <use href="#hanger" transform="translate(562.7 449.0) rotate(19.3) scale(1.14) translate(-12 -12)" />
-  <use href="#hanger" transform="translate(236.4 510.9) rotate(30.1) scale(0.81) translate(-12 -12)" />
-  <use href="#tshirt" transform="translate(261.4 168.2) rotate(15.7) scale(1.10) translate(-12 -12)" />
-  <use href="#tshirt" transform="translate(594.9 268.3) rotate(10.1) scale(1.08) translate(-12 -12)" />
-  <use href="#cap" transform="translate(382.2 429.8) rotate(-9.9) scale(0.75) translate(-12 -12)" />
-  <use href="#shoe" transform="translate(488.4 524.8) rotate(-8.9) scale(0.89) translate(-12 -12)" />
-  <use href="#hanger" transform="translate(179.6 158.9) rotate(31.9) scale(0.76) translate(-12 -12)" />
-  <use href="#shoe" transform="translate(510.6 382.5) rotate(-15.5) scale(0.97) translate(-12 -12)" />
+  <use href="#percha" transform="translate(214.6 195.8) rotate(15.4) scale(0.98)"/>
+  <use href="#bolsa" transform="translate(446.7 497.9) rotate(14.6) scale(0.92)"/>
+  <use href="#pantalon" transform="translate(156.2 406.4) rotate(21.1) scale(1.15)"/>
+  <use href="#zapato" transform="translate(266.4 162.2) rotate(-14.0) scale(1.09)"/>
+  <use href="#gorra" transform="translate(212.6 431.3) rotate(-26.1) scale(1.09)"/>
+  <use href="#remera" transform="translate(113.7 359.5) rotate(9.2) scale(0.91)"/>
+  <use href="#bolsa" transform="translate(181.9 142.8) rotate(-4.1) scale(0.97)"/>
+  <use href="#remera" transform="translate(125.5 457.8) rotate(29.5) scale(0.96)"/>
+  <use href="#percha" transform="translate(118.5 140.5) rotate(-9.9) scale(1.13)"/>
+  <use href="#pantalon" transform="translate(210.5 372.4) rotate(-27.5) scale(0.93)"/>
+  <use href="#remera" transform="translate(149.6 191.1) rotate(-23.6) scale(0.97)"/>
+  <use href="#pantalon" transform="translate(191.0 254.7) rotate(-15.3) scale(0.90)"/>
+  <use href="#bolsa" transform="translate(117.1 299.5) rotate(-27.6) scale(1.20)"/>
+  <use href="#zapato" transform="translate(181.7 489.6) rotate(-4.8) scale(1.03)"/>
+  <use href="#zapato" transform="translate(391.2 478.3) rotate(21.9) scale(1.21)"/>
+  <use href="#remera" transform="translate(179.9 316.4) rotate(30.6) scale(1.13)"/>
+  <use href="#pantalon" transform="translate(84.6 192.8) rotate(19.1) scale(1.00)"/>
+  <use href="#bolsa" transform="translate(359.5 530.1) rotate(17.9) scale(1.18)"/>
+  <use href="#remera" transform="translate(269.6 356.0) rotate(-13.0) scale(0.97)"/>
+  <use href="#percha" transform="translate(497.3 462.5) rotate(-5.0) scale(1.09)"/>
+  <use href="#pantalon" transform="translate(77.7 94.5) rotate(-12.3) scale(0.98)"/>
+  <use href="#percha" transform="translate(479.1 554.0) rotate(-27.9) scale(1.12)"/>
+  <use href="#pantalon" transform="translate(299.7 522.9) rotate(-6.8) scale(1.11)"/>
+  <use href="#gorra" transform="translate(239.2 296.0) rotate(-24.8) scale(1.10)"/>
+  <use href="#pantalon" transform="translate(534.1 530.1) rotate(-14.2) scale(1.09)"/>
+  <use href="#pantalon" transform="translate(108.3 517.0) rotate(-1.1) scale(1.13)"/>
+  <use href="#pantalon" transform="translate(287.8 220.7) rotate(31.0) scale(0.93)"/>
+  <use href="#pantalon" transform="translate(166.8 546.4) rotate(5.5) scale(1.21)"/>
+  <use href="#remera" transform="translate(443.1 434.7) rotate(-2.6) scale(1.17)"/>
+  <use href="#bolsa" transform="translate(75.3 421.5) rotate(-22.7) scale(1.07)"/>
+  <use href="#percha" transform="translate(345.9 440.5) rotate(29.3) scale(1.19)"/>
+  <use href="#gorra" transform="translate(136.7 79.8) rotate(-18.5) scale(1.02)"/>
+  <use href="#pantalon" transform="translate(270.1 457.8) rotate(26.3) scale(1.03)"/>
+  <use href="#pantalon" transform="translate(201.5 77.0) rotate(-1.1) scale(1.05)"/>
+  <use href="#gorra" transform="translate(324.5 274.2) rotate(19.0) scale(0.93)"/>
+  <use href="#gorra" transform="translate(325.5 383.5) rotate(-25.4) scale(1.13)"/>
+  <use href="#zapato" transform="translate(347.4 205.6) rotate(26.7) scale(1.21)"/>
+  <use href="#bolsa" transform="translate(236.2 530.5) rotate(-24.3) scale(1.17)"/>
+  <use href="#percha" transform="translate(454.0 375.9) rotate(23.0) scale(0.96)"/>
+  <use href="#bolsa" transform="translate(77.6 569.9) rotate(-9.0) scale(1.03)"/>
+  <use href="#percha" transform="translate(569.5 476.0) rotate(7.7) scale(0.92)"/>
+  <use href="#percha" transform="translate(367.6 314.4) rotate(-1.4) scale(1.14)"/>
+  <use href="#percha" transform="translate(261.9 69.5) rotate(-22.5) scale(1.19)"/>
+  <use href="#pantalon" transform="translate(547.9 418.3) rotate(-16.8) scale(1.15)"/>
+  <use href="#gorra" transform="translate(415.0 548.1) rotate(13.4) scale(1.12)"/>
+  <use href="#remera" transform="translate(415.5 277.3) rotate(33.9) scale(1.06)"/>
+  <use href="#pantalon" transform="translate(384.7 394.0) rotate(-26.5) scale(1.06)"/>
+  <use href="#gorra" transform="translate(322.3 76.1) rotate(-5.4) scale(0.93)"/>
+  <use href="#percha" transform="translate(411.0 213.0) rotate(-16.7) scale(0.99)"/>
+  <use href="#pantalon" transform="translate(474.3 282.5) rotate(-22.0) scale(0.98)"/>
+  <use href="#bolsa" transform="translate(332.4 139.1) rotate(-29.9) scale(1.02)"/>
+  <use href="#percha" transform="translate(382.5 76.7) rotate(25.7) scale(0.99)"/>
+  <use href="#pantalon" transform="translate(514.5 367.0) rotate(2.2) scale(1.17)"/>
+  <use href="#gorra" transform="translate(387.7 159.7) rotate(-14.8) scale(1.11)"/>
+  <use href="#bolsa" transform="translate(470.7 197.6) rotate(-16.9) scale(0.99)"/>
+  <use href="#remera" transform="translate(531.7 255.9) rotate(-28.1) scale(1.14)"/>
+  <use href="#remera" transform="translate(528.9 191.1) rotate(24.2) scale(1.20)"/>
+  <use href="#percha" transform="translate(555.7 320.1) rotate(25.6) scale(1.14)"/>
+  <use href="#remera" transform="translate(452.3 136.0) rotate(-31.4) scale(1.17)"/>
+  <use href="#bolsa" transform="translate(499.9 100.6) rotate(12.7) scale(1.13)"/>
+  <use href="#bolsa" transform="translate(560.9 136.7) rotate(-15.7) scale(0.93)"/>
+  <use href="#remera" transform="translate(440.6 77.0) rotate(-6.9) scale(0.92)"/>
+  <use href="#zapato" transform="translate(556.6 78.2) rotate(-3.0) scale(1.08)"/>
+  <use href="#percha" transform="translate(72.0 254.1) rotate(11.5) scale(1.11)"/>
 </svg>
