@@ -82,7 +82,7 @@ async function main() {
   // Sin STT: mensaje claro, no rompe
   const fail = await sayAudio(null);
   assert(
-    fail.some((r) => r.kind === "text" && /No pude (escuchar|entender)/.test(r.text)),
+    fail.some((r) => r.kind === "text" && /No te escuché bien|Mandame otro audio/.test(r.text)),
     "fallback sin transcript",
   );
   console.log("OK fallback sin STT");
@@ -117,14 +117,14 @@ async function main() {
 
   const priceReplies = await sayAudio("quince mil");
   assert(
-    priceReplies.some((r) => r.kind === "text" && /Te escuché: «quince mil»/.test(r.text)),
+    priceReplies.some((r) => r.kind === "text" && /Te escuché: \*\*quince mil\*\*/.test(r.text)),
     "eco transcript",
   );
   assert(
     priceReplies.some(
       (r) =>
         r.kind === "text" &&
-        /contar algo|escribir, mandar un audio|Saltar/i.test(r.text),
+        /contar algo|hablarme|escribirlo o saltar|Saltar/i.test(r.text),
     ),
     "avanzó a descripción",
   );

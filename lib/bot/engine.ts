@@ -1094,7 +1094,7 @@ export async function handleMessage(
       return [
         {
           kind: "text",
-          text: "No pude entender el audio ahora (la IA a veces se satura). Probá de nuevo en un rato o escribilo.",
+          text: "No te escuché bien.\n\nMandame otro audio 🎤 o escribilo.",
         },
       ];
     }
@@ -1102,7 +1102,9 @@ export async function handleMessage(
       { ...msg, text: transcript, media: undefined },
       caps,
     );
-    return [{ kind: "text", text: `Te escuché: «${transcript}»` }, ...rest];
+    const heard =
+      transcript.length > 120 ? `${transcript.slice(0, 117)}…` : transcript;
+    return [{ kind: "text", text: `Te escuché: **${heard}**` }, ...rest];
   }
 
   return handleMessageBody(msg, caps);
@@ -2490,7 +2492,7 @@ async function handleMessageBody(
         await setState("STOCK_QTY", draft);
         return [
           withCancelEscape(
-            `¿Cuántas unidades de "${product.title}" quedan? Decime un número (puede ser 0), por texto o audio.`,
+            `¿Cuántas unidades de "${product.title}" quedan?\n\nDecime un número por audio 🎤 o escrito (puede ser 0).`,
             caps,
           ),
         ];
@@ -2508,7 +2510,7 @@ async function handleMessageBody(
       await setState("STOCK_QTY", draft);
       return [
         withCancelEscape(
-          `¿Cuántas unidades de "${product.title}" quedan? Decime un número, por texto o audio.`,
+          `¿Cuántas unidades de "${product.title}" quedan?\n\nDecime un número por audio 🎤 o escrito.`,
           caps,
         ),
       ];
@@ -3235,7 +3237,7 @@ async function handleMessageBody(
     if (!title) {
       replies.push(
         withCancelEscape(
-          "¿Cómo se llama el producto? Podés escribirlo o mandarme un audio.",
+          '¿Cómo se llama el producto?\n\nDecilo por audio 🎤 o escribilo. Por ejemplo: "Taza de cerámica".',
           caps,
         ),
       );
@@ -3257,7 +3259,7 @@ async function handleMessageBody(
       await setState("PRODUCT_PRICE", draft);
       replies.push(
         withCancelEscape(
-          "¿A cómo la vendés? Podés decir 15 mil o 15000 (texto o audio).",
+          '¿A cómo la vendés?\n\nDecime el precio por audio 🎤 o escrito. Por ejemplo: "quince mil" o 15000.',
           caps,
         ),
       );
@@ -3268,7 +3270,7 @@ async function handleMessageBody(
       setState,
       "PRODUCT_DESC",
       withOptions(
-        "¿Querés contar algo del producto? Podés escribir, mandar un audio o saltar.",
+        "¿Querés contar algo del producto?\n\nPodés hablarme 🎤, escribirlo o saltar.",
         [{ id: CHOICE.SKIP, label: "Saltar" }],
         caps,
       ),
@@ -3293,7 +3295,7 @@ async function handleMessageBody(
       setState,
       "PRODUCT_DESC",
       withOptions(
-        "¿Querés contar algo del producto? Podés escribir, mandar un audio o saltar.",
+        "¿Querés contar algo del producto?\n\nPodés hablarme 🎤, escribirlo o saltar.",
         [{ id: CHOICE.SKIP, label: "Saltar" }],
         caps,
       ),
@@ -3677,7 +3679,7 @@ async function continuePriceEdit(
   await setState("PRICE_INPUT", nextDraft);
   return [
     withCancelEscape(
-      `¿A cómo querés dejar "${product.title}"? Hoy sale ${formatPriceArs(product.priceCents)}. Decime el precio nuevo (texto o audio).`,
+      `¿A cómo querés dejar "${product.title}"?\nHoy sale ${formatPriceArs(product.priceCents)}.\n\nDecime el precio nuevo por audio 🎤 o escrito.`,
       caps,
     ),
   ];
@@ -4411,7 +4413,7 @@ async function goToStockConfirm(
     return [
       {
         kind: "text",
-        text: `¿Cuántas unidades de "${product.title}" quedan? Decime un número (puede ser 0), por texto o audio.`,
+        text: `¿Cuántas unidades de "${product.title}" quedan?\n\nDecime un número por audio 🎤 o escrito (puede ser 0).`,
       },
     ];
   }
@@ -4524,7 +4526,7 @@ async function startProductFromImage(
     await setState("PRODUCT_TITLE", nextDraft);
     return [
       withCancelEscape(
-        "¿Cómo se llama el producto? Podés escribirlo o mandarme un audio.",
+        '¿Cómo se llama el producto?\n\nDecilo por audio 🎤 o escribilo. Por ejemplo: "Taza de cerámica".',
         caps,
       ),
     ];
@@ -4533,7 +4535,7 @@ async function startProductFromImage(
     await setState("PRODUCT_PRICE", nextDraft);
     return [
       withCancelEscape(
-        "¿A cómo la vendés? Podés decir 15 mil o 15000 (texto o audio).",
+        '¿A cómo la vendés?\n\nDecime el precio por audio 🎤 o escrito. Por ejemplo: "quince mil" o 15000.',
         caps,
       ),
     ];
@@ -4541,7 +4543,7 @@ async function startProductFromImage(
   const { draft: withChoices, message } = withPendingChoices(
     nextDraft,
     withOptions(
-      "¿Querés contar algo del producto? Podés escribir, mandar un audio o saltar.",
+      "¿Querés contar algo del producto?\n\nPodés hablarme 🎤, escribirlo o saltar.",
 
       [{ id: CHOICE.SKIP, label: "Saltar" }],
       caps,

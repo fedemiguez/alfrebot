@@ -632,17 +632,17 @@ export function SimulatorChat({
       } catch {
         stopMicTracks();
         mediaRecorderRef.current = null;
-        setError("No pude cortar la grabación. Probá de nuevo.");
+        setError("No pude cortar la grabación. Probá de nuevo o escribilo.");
       }
       return;
     }
 
     if (typeof window === "undefined" || typeof MediaRecorder === "undefined") {
-      setError("Este navegador no permite grabar audio. Probá en WhatsApp real o en Chrome/Safari.");
+      setError("No se puede grabar audio acá. Escribilo, o probá en Chrome o Safari.");
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError("No hay acceso al micrófono en este navegador.");
+      setError("No puedo usar el micrófono. Escribilo, o permití el acceso y probá de nuevo.");
       return;
     }
 
@@ -679,7 +679,7 @@ export function SimulatorChat({
         audioChunksRef.current = [];
         mediaRecorderRef.current = null;
         if (blob.size < 64) {
-          setError("El audio quedó vacío. Tocá el micrófono, hablá y tocá de nuevo para enviar.");
+          setError("No escuché nada. Tocá el micrófono, hablá y tocá de nuevo. O escribilo.");
           return;
         }
         void sendAudioBlob(blob, type);
@@ -691,7 +691,7 @@ export function SimulatorChat({
     } catch {
       stopMicTracks();
       setRecording(false);
-      setError("No pude usar el micrófono. Revisá el permiso del navegador.");
+      setError("No pude usar el micrófono. Permití el acceso o escribilo.");
     }
   }
 
@@ -720,7 +720,7 @@ export function SimulatorChat({
       });
       const json = (await up.json()) as { url?: string; error?: string };
       if (!up.ok || !json.url) {
-        throw new Error(json.error || "No se pudo subir el audio");
+        throw new Error(json.error || "No pude enviar el audio. Probá de nuevo o escribilo.");
       }
 
       sendPayload(
@@ -741,10 +741,10 @@ export function SimulatorChat({
       const aborted =
         err instanceof DOMException && err.name === "AbortError";
       const message = aborted
-        ? "La subida del audio tardó demasiado. Probá de nuevo."
+        ? "El audio tardó demasiado. Probá de nuevo o escribilo."
         : err instanceof Error
           ? err.message
-          : "No se pudo enviar el audio";
+          : "No pude enviar el audio. Probá de nuevo o escribilo.";
       setError(message);
     } finally {
       window.clearTimeout(timer);
@@ -1300,7 +1300,7 @@ export function SimulatorChat({
             }}
             placeholder={
               canUseBot
-                ? "Escribí o grabá un audio"
+                ? "Podés hablarme o escribir"
                 : "Elegí cómo seguir para empezar"
             }
             enterKeyHint="send"
