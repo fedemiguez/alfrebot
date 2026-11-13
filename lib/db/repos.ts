@@ -1,7 +1,10 @@
 import { and, asc, desc, eq } from "drizzle-orm";
+import { deleteOwnedBlobs } from "@/lib/blob";
 import {
+  clerkIdentityKey,
   clerkUserIdFromIdentity,
   isClerkIdentity,
+  isWaChannelIdentity,
 } from "@/lib/channel-identity";
 import { getDb, hasDatabaseUrl } from "@/lib/db/index";
 import { getMemoryDb, newId, now } from "@/lib/db/memory";
@@ -223,32 +226,154 @@ export async function deleteProduct(id: string): Promise<boolean> {
   return rows.length > 0;
 }
 
+/** Texto que el admin debe escribir para confirmar el borrado. */
+export function storeDeleteConfirmPhrase(store: Store): string {
+  const slug = store.slug?.trim();
+  if (slug) return slug;
+  const name = store.name?.trim();
+  if (name) return name;
+  return store.id;
+}
+
+/** Acepta slug, nombre de tienda, o id si no hay slug/nombre. */
+export function matchesStoreDeleteConfirm(
+  store: Store,
+  typed: string,
+): boolean {
+  const value = typed.trim();
+  if (!value) return false;
+  const slug = store.slug?.trim();
+  if (slug && value === slug) return true;
+  const name = store.name?.trim();
+  if (name && value === name) return true;
+  if (!slug && !name && value === store.id) return true;
+  return false;
+}
+
+async function deleteConversationByIdentity(
+  channelIdentity: string,
+): Promise<void> {
+  if (!channelIdentity) return;
+  if (!hasDatabaseUrl()) {
+    getMemoryDb().conversations.delete(channelIdentity);
+    return;
+  }
+  const db = getDb();
+  await db
+    .delete(conversations)
+    .where(eq(conversations.channelIdentity, channelIdentity));
+}
+
+async function deleteSignupIntentsForPhones(phones: string[]): Promise<void> {
+  const unique = [...new Set(phones.filter(Boolean))];
+  if (unique.length === 0) return;
+  if (!hasDatabaseUrl()) {
+    const mem = getMemoryDb();
+    for (const [code, intent] of mem.signupIntents) {
+      if (unique.includes(intent.phone)) mem.signupIntents.delete(code);
+    }
+    return;
+  }
+  const db = getDb();
+  for (const phone of unique) {
+    await db.delete(signupIntents).where(eq(signupIntents.phone, phone));
+  }
+}
+
+export type DeleteStoreResult =
+  | {
+      ok: true;
+      storeId: string;
+      slug: string | null;
+      productsDeleted: number;
+      blobsAttempted: number;
+      blobsDeleted: number;
+    }
+  | { ok: false; error: string };
+
 /**
- * Borra una tienda solo si es demo (simulador). Incluye sus productos.
- * Las tiendas reales no se eliminan desde el MVP del panel.
+ * Hard-delete de una tienda y datos relacionados (productos, conversación,
+ * intents de vínculo/alta, blobs propios). Solo para super-admin.
  */
-export async function deleteDemoStore(
+export async function deleteStoreCascade(
   id: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<DeleteStoreResult> {
   const store = await getStoreById(id);
   if (!store) return { ok: false, error: "Tienda no encontrada" };
-  if (!store.isDemo) {
-    return { ok: false, error: "Solo se pueden borrar tiendas demo" };
-  }
+
+  const storeProducts = await listProductsByStore(id, { includeHidden: true });
+  const blobRefs: Array<string | null | undefined> = [
+    ...storeProducts.flatMap((p) => [p.imageBlobKey, p.imageUrl]),
+    store.icon192Url,
+    store.icon512Url,
+    store.iconAppleUrl,
+    store.iconSvgUrl,
+  ];
 
   if (!hasDatabaseUrl()) {
     const mem = getMemoryDb();
     for (const [pid, product] of mem.products) {
       if (product.storeId === id) mem.products.delete(pid);
     }
+    mem.conversations.delete(store.channelIdentity);
+    if (store.clerkUserId) {
+      mem.conversations.delete(clerkIdentityKey(store.clerkUserId));
+      for (const [code, intent] of mem.channelLinkIntents) {
+        if (intent.clerkUserId === store.clerkUserId) {
+          mem.channelLinkIntents.delete(code);
+        }
+      }
+    }
+    const phones: string[] = [];
+    if (isWaChannelIdentity(store.channelIdentity)) {
+      phones.push(store.channelIdentity);
+    }
+    if (store.contactPhone) phones.push(store.contactPhone);
+    for (const [code, intent] of mem.signupIntents) {
+      if (phones.includes(intent.phone)) mem.signupIntents.delete(code);
+    }
     mem.stores.delete(id);
-    return { ok: true };
+  } else {
+    const db = getDb();
+    // FK: products → stores (sin onDelete cascade en schema)
+    await db.delete(products).where(eq(products.storeId, id));
+    await deleteConversationByIdentity(store.channelIdentity);
+    if (store.clerkUserId) {
+      await deleteConversationByIdentity(clerkIdentityKey(store.clerkUserId));
+      await deleteChannelLinkIntentsForClerk(store.clerkUserId);
+    }
+    const phones: string[] = [];
+    if (isWaChannelIdentity(store.channelIdentity)) {
+      phones.push(store.channelIdentity);
+    }
+    if (store.contactPhone) phones.push(store.contactPhone);
+    await deleteSignupIntentsForPhones(phones);
+    await db.delete(stores).where(eq(stores.id, id));
   }
 
-  const db = getDb();
-  await db.delete(products).where(eq(products.storeId, id));
-  await db.delete(stores).where(eq(stores.id, id));
-  return { ok: true };
+  const blobs = await deleteOwnedBlobs(blobRefs);
+  return {
+    ok: true,
+    storeId: id,
+    slug: store.slug,
+    productsDeleted: storeProducts.length,
+    blobsAttempted: blobs.attempted,
+    blobsDeleted: blobs.deleted,
+  };
+}
+
+/**
+ * Borra una tienda solo si es demo (simulador). Delega al cascade completo.
+ */
+export async function deleteDemoStore(
+  id: string,
+): Promise<DeleteStoreResult> {
+  const store = await getStoreById(id);
+  if (!store) return { ok: false, error: "Tienda no encontrada" };
+  if (!store.isDemo) {
+    return { ok: false, error: "Solo se pueden borrar tiendas demo" };
+  }
+  return deleteStoreCascade(id);
 }
 
 export async function slugExists(slug: string): Promise<boolean> {

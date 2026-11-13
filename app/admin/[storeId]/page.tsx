@@ -9,7 +9,11 @@ import {
   formatPriceArs,
   resolveStoreContactPhone,
 } from "@/lib/format";
-import { getStoreById, listProductsByStore } from "@/lib/db/repos";
+import {
+  getStoreById,
+  listProductsByStore,
+  storeDeleteConfirmPhrase,
+} from "@/lib/db/repos";
 import {
   deleteDemoStoreAction,
   deleteProductAction,
@@ -20,6 +24,7 @@ import {
   toggleProductHiddenAction,
   toggleProductStockAction,
 } from "../actions";
+import { DeleteStoreForm } from "../delete-store-form";
 
 function formatDate(d: Date): string {
   return new Intl.DateTimeFormat("es-AR", {
@@ -295,13 +300,14 @@ async function AdminStoreBody({
         </ul>
       </section>
 
-      {store.isDemo && (
+      {store.isDemo ? (
         <section className="mt-12 border-t border-[var(--border)] pt-8">
           <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--ink)]">
             Tienda demo
           </h2>
           <p className="mt-2 text-[16px] text-[var(--muted)]">
-            Se puede borrar porque viene del simulador.
+            Atajo sin confirmación (solo demos del simulador). Para un borrado
+            con confirmación usá la zona de peligro abajo.
           </p>
           <form action={deleteDemoStoreAction} className="mt-4">
             <input type="hidden" name="storeId" value={store.id} />
@@ -310,7 +316,21 @@ async function AdminStoreBody({
             </button>
           </form>
         </section>
-      )}
+      ) : null}
+
+      <DeleteStoreForm
+        storeId={store.id}
+        confirmPhrase={storeDeleteConfirmPhrase(store)}
+        confirmLabel={
+          store.slug?.trim()
+            ? "slug"
+            : store.name?.trim()
+              ? "nombre"
+              : "id"
+        }
+        storeName={store.name}
+        productCount={products.length}
+      />
     </main>
   );
 }

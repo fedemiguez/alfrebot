@@ -11,8 +11,10 @@ import {
 import {
   deleteDemoStore,
   deleteProduct,
+  deleteStoreCascade,
   getProduct,
   getStoreById,
+  matchesStoreDeleteConfirm,
   updateProduct,
   updateStoreCheckoutMode,
   updateStoreContactPhone,
@@ -102,6 +104,37 @@ export async function deleteDemoStoreAction(formData: FormData): Promise<void> {
   const result = await deleteDemoStore(storeId);
   if (!result.ok) return;
   bustStoreCache(store?.slug);
+  revalidatePath("/admin");
+  redirect("/admin");
+}
+
+/**
+ * Borrado permanente de cualquier tienda (solo cookie admin).
+ * Exige confirmación escribiendo slug o nombre.
+ */
+export async function deleteStoreAction(
+  _prev: { error?: string } | null,
+  formData: FormData,
+): Promise<{ error?: string }> {
+  await requireAdmin();
+  const storeId = String(formData.get("storeId") ?? "").trim();
+  const confirm = String(formData.get("confirm") ?? "");
+  if (!storeId) return { error: "Falta el id de la tienda" };
+
+  const store = await getStoreById(storeId);
+  if (!store) return { error: "Tienda no encontrada" };
+
+  if (!matchesStoreDeleteConfirm(store, confirm)) {
+    return {
+      error:
+        "La confirmación no coincide. Escribí el slug o el nombre exacto de la tienda.",
+    };
+  }
+
+  const result = await deleteStoreCascade(storeId);
+  if (!result.ok) return { error: result.error };
+
+  bustStoreCache(result.slug);
   revalidatePath("/admin");
   redirect("/admin");
 }
