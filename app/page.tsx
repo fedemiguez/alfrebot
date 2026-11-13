@@ -14,7 +14,7 @@ export default function Home() {
 
       <section
         aria-label="Inicio"
-        className="relative z-10 mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-6 py-16 text-center"
+        className="relative z-10 mx-auto flex min-h-dvh w-full max-w-lg flex-col items-center justify-center px-6 py-16 text-center"
       >
         <p className="fade-in font-[family-name:var(--font-display)] text-5xl font-semibold tracking-tight text-[#075E54] sm:text-6xl">
           alfrebot
