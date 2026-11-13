@@ -162,6 +162,10 @@ async function main() {
   );
   console.log("menu Personalizar → Frase OK");
 
+  assert(
+    parseSetupPlan("estilo crema") == null,
+    "solo «estilo crema» no es multi-intent",
+  );
   const nluTheme = await say("estilo crema");
   assert(
     nluTheme.some((r) => r.kind === "text" && /Crema artesanal/i.test(r.text)),

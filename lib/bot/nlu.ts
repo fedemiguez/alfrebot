@@ -418,7 +418,13 @@ export function parseSetupPlan(text: string): PendingSetupPlan | null {
     if (looksLikePersonName(candidate)) {
       plan.ownerName = titleCaseName(candidate);
     }
-  } else {
+  } else if (
+    // Evitar que «estilo crema» / «tema oscuro» se lean como nombre de persona.
+    !plan.theme &&
+    plan.welcomeMessage === undefined &&
+    !plan.accentColor &&
+    !plan.businessKind
+  ) {
     const person = extractPersonName(raw);
     if (person.name && person.confidence !== "none") {
       plan.ownerName = person.name;
