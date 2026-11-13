@@ -12,6 +12,15 @@ const isProtectedRoute = createRouteMatcher([
 
 export default isClerkConfigured()
   ? clerkMiddleware(async (auth, req) => {
+      // Logueado → siempre al chat (no a la home).
+      if (req.nextUrl.pathname === "/") {
+        const { userId } = await auth();
+        if (userId) {
+          const url = req.nextUrl.clone();
+          url.pathname = "/asistente";
+          return NextResponse.redirect(url);
+        }
+      }
       if (isProtectedRoute(req)) {
         await auth.protect({
           unauthenticatedUrl: new URL("/sign-up", req.url).toString(),

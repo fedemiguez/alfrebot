@@ -5,10 +5,10 @@ import {
   SignIn,
   useAuth,
 } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { alfrebotClerkChatAppearance } from "@/lib/clerk-appearance";
-
-const RETURN_URL = "/asistente";
+import { CLERK_AFTER_AUTH_URL } from "@/lib/clerk-redirects";
 
 function readSsoHashPending(): boolean {
   if (typeof window === "undefined") return false;
@@ -20,7 +20,7 @@ function clearAuthHash() {
   if (typeof window === "undefined") return;
   const h = window.location.hash || "";
   if (!h) return;
-  if (!/sso-callback|factor_redirect_callback|factor-in|sign-up/i.test(h)) return;
+  if (!/sso-callback|factor_redirect_callback|sign-in|sign-up/i.test(h)) return;
   window.history.replaceState(
     null,
     "",
@@ -39,6 +39,7 @@ export function WebChatSsoFinish({
   onPendingChange?: (pending: boolean) => void;
 }) {
   const { isLoaded, isSignedIn } = useAuth();
+  const router = useRouter();
   const [hashPending, setHashPending] = useState(readSsoHashPending);
 
   useEffect(() => {
@@ -56,22 +57,40 @@ export function WebChatSsoFinish({
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
-    if (!readSsoHashPending() && !(window.location.hash || "")) return;
-    clearAuthHash();
-    setHashPending(false);
-  }, [isLoaded, isSignedIn]);
+    if (readSsoHashPending() || window.location.hash) {
+      clearAuthHash();
+      setHashPending(false);
+    }
+    // Si el callback mandó a otra ruta (p. ej. `/`), volver al chat.
+    if (window.location.pathname !== CLERK_AFTER_AUTH_URL) {
+      const q = window.location.search || "";
+      router.replace(`${CLERK_AFTER_AUTH_URL}${q}`);
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   if (!hashPending) return null;
 
   return (
     <>
-      {/* Path-style callback (por si Clerk no usa solo hash). */}
-      <AuthenticateWithRedirectCallback />
+      {/* Path-style callback: sin estos redirects cae al default `/`. */}
+      <AuthenticateWithRedirectCallback
+        signInForceRedirectUrl={CLERK_AFTER_AUTH_URL}
+        signUpForceRedirectUrl={CLERK_AFTER_AUTH_URL}
+        signInFallbackRedirectUrl={CLERK_AFTER_AUTH_URL}
+        signUpFallbackRedirectUrl={CLERK_AFTER_AUTH_URL}
+        continueSignUpUrl={CLERK_AFTER_AUTH_URL}
+      />
       {/* Hash routing del overlay: hace falta SignIn montado para #/sso-callback. */}
-      <div className="pointer-events-none fixed h-0 w-0 overflow-hidden opacity-0" aria-hidden>
+      <div
+        className="pointer-events-none fixed h-0 w-0 overflow-hidden opacity-0"
+        aria-hidden
+      >
         <SignIn
           routing="hash"
-          forceRedirectUrl={RETURN_URL}
+          forceRedirectUrl={CLERK_AFTER_AUTH_URL}
+          fallbackRedirectUrl={CLERK_AFTER_AUTH_URL}
+          signUpForceRedirectUrl={CLERK_AFTER_AUTH_URL}
+          signUpFallbackRedirectUrl={CLERK_AFTER_AUTH_URL}
           appearance={alfrebotClerkChatAppearance}
         />
       </div>
