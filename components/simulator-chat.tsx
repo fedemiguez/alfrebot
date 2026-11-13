@@ -19,6 +19,7 @@ import { ChatAuthOverlay } from "@/components/chat-auth-overlay";
 import { OwnerChatAvatar } from "@/components/owner-chat-avatar";
 import { WebChatAuthBridge } from "@/components/web-chat-auth-bridge";
 import { WebChatSignOut } from "@/components/web-chat-sign-out";
+import { WebChatSsoFinish } from "@/components/web-chat-sso-finish";
 import type { OutboundMessage } from "@/lib/channels/types";
 import { CHOICE, segmentUrls } from "@/lib/bot/render";
 
@@ -227,7 +228,10 @@ export function SimulatorChat({
     isLoaded: boolean;
     isSignedIn: boolean;
     userId: string | null;
+    imageUrl: string | null;
+    firstName: string | null;
   } | null>(null);
+  const [ssoFinishing, setSsoFinishing] = useState(false);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -250,18 +254,26 @@ export function SimulatorChat({
     identityMode === "clerk"
       ? ownerEmail || (sessionAuthed ? "cuenta web" : "invitado")
       : phone || "…";
-  const canUseBot = !needsClerkGate || sessionAuthed;
+  const canUseBot = !needsClerkGate || (sessionAuthed && !ssoFinishing);
+  const liveOwnerImageUrl = clerkLive?.imageUrl || ownerImageUrl;
+  const liveOwnerFirstName = clerkLive?.firstName || ownerFirstName;
 
   const onClerkSession = useCallback(
     (state: {
       isLoaded: boolean;
       isSignedIn: boolean;
       userId: string | null;
+      imageUrl: string | null;
+      firstName: string | null;
     }) => {
       setClerkLive(state);
     },
     [],
   );
+
+  const onSsoPendingChange = useCallback((pending: boolean) => {
+    setSsoFinishing(pending);
+  }, []);
 
   useEffect(() => {
     setPhone((prev) => {
@@ -276,20 +288,21 @@ export function SimulatorChat({
     if (initialStoreSlug) setStoreSlug(initialStoreSlug);
   }, [initialStoreSlug]);
 
-  // Tras login en overlay: cerrar modal y refrescar RSC sin F5.
+  // Tras login / SSO: cerrar modal y refrescar RSC sin F5.
   useEffect(() => {
     if (identityMode !== "clerk") return;
-    if (!clerkLive?.isLoaded || !clerkLive.isSignedIn) return;
+    if (!clerkLive?.isLoaded || !clerkLive.isSignedIn || ssoFinishing) return;
     if (authOpen) setAuthOpen(false);
     if (!isAuthenticated && !refreshedAfterLoginRef.current) {
       refreshedAfterLoginRef.current = true;
       router.refresh();
     }
-  }, [identityMode, clerkLive, authOpen, isAuthenticated, router]);
+  }, [identityMode, clerkLive, authOpen, isAuthenticated, router, ssoFinishing]);
 
   // Tienda en header: si hay sesión pero aún no hay slug (props RSC viejas), pedirlo.
   useEffect(() => {
-    if (identityMode !== "clerk" || !sessionAuthed || storeSlug) return;
+    if (identityMode !== "clerk" || !sessionAuthed || ssoFinishing || storeSlug)
+      return;
     let cancelled = false;
     void (async () => {
       try {
@@ -308,7 +321,27 @@ export function SimulatorChat({
     return () => {
       cancelled = true;
     };
-  }, [identityMode, sessionAuthed, storeSlug]);
+  }, [identityMode, sessionAuthed, ssoFinishing, storeSlug]);
+
+  // Dueño con tienda: pasar del intro de canal al hub sin esperar un mensaje.
+  useEffect(() => {
+    if (!isV2 || identityMode !== "clerk") return;
+    if (!sessionAuthed || ssoFinishing || !storeSlug) return;
+    setChannelPicked(true);
+    setItems((prev) => {
+      if (prev.length === 1 && prev[0]?.id === V2_INTRO_ID) {
+        return [buildV2OwnerIntro(liveOwnerFirstName)];
+      }
+      return prev;
+    });
+  }, [
+    isV2,
+    identityMode,
+    sessionAuthed,
+    ssoFinishing,
+    storeSlug,
+    liveOwnerFirstName,
+  ]);
 
   // Scroll solo dentro del panel de mensajes (no scrollIntoView del documento:
   // con teclado móvil empuja el shell fuera de vista).
@@ -386,6 +419,10 @@ export function SimulatorChat({
   }
 
   function sendPayload(payload: Record<string, unknown>, userBubble: ChatItem) {
+    if (needsClerkGate && ssoFinishing) {
+      setError("Estamos terminando el inicio de sesión. Probá en un segundo.");
+      return;
+    }
     if (needsClerkGate && !sessionAuthed) {
       openAuthForWeb();
       return;
@@ -1009,7 +1046,7 @@ export function SimulatorChat({
                       maxHeight: 28,
                     }}
                   >
-                    <OwnerChatAvatar imageUrl={ownerImageUrl} size={28} />
+                    <OwnerChatAvatar imageUrl={liveOwnerImageUrl} size={28} />
                   </div>
                 )}
                 <div className="fade-in max-w-[85%] rounded-lg rounded-tr-sm bg-[#DCF8C6] px-3 py-2 text-[17px] text-[var(--ink)] shadow-sm">
@@ -1282,11 +1319,15 @@ export function SimulatorChat({
           {identityMode === "clerk" && (
             <>
               <WebChatAuthBridge onChange={onClerkSession} />
+              <WebChatSsoFinish onPendingChange={onSsoPendingChange} />
               <WebChatSignOut requestId={signOutRequestId} />
             </>
           )}
           {needsClerkGate && (
-            <ChatAuthOverlay open={authOpen} onClose={dismissAuthOverlay} />
+            <ChatAuthOverlay
+              open={authOpen && !ssoFinishing}
+              onClose={dismissAuthOverlay}
+            />
           )}
 
         {pickSourceOpen && (
@@ -1365,7 +1406,7 @@ export function SimulatorChat({
                 producto.
               </p>
               <div className="mt-5 flex flex-col gap-3">
-                {ownerImageUrl ? (
+                {liveOwnerImageUrl ? (
                   <button
                     type="button"
                     className="btn btn-primary w-full min-h-12"
@@ -1391,7 +1432,7 @@ export function SimulatorChat({
                 <button
                   type="button"
                   className={
-                    ownerImageUrl
+                    liveOwnerImageUrl
                       ? "btn btn-secondary w-full min-h-12"
                       : "btn btn-primary w-full min-h-12"
                   }
@@ -1399,7 +1440,7 @@ export function SimulatorChat({
                 >
                   Elegir imagen
                 </button>
-                {!ownerImageUrl ? (
+                {!liveOwnerImageUrl ? (
                   <p className="text-[15px] leading-relaxed text-[var(--muted)]">
                     Para usar tu foto de cuenta, entrá con Google (u otra cuenta
                     con foto de perfil).

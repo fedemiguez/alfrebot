@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { useEffect } from "react";
 
 /**
@@ -14,17 +14,29 @@ export function WebChatAuthBridge({
     isLoaded: boolean;
     isSignedIn: boolean;
     userId: string | null;
+    imageUrl: string | null;
+    firstName: string | null;
   }) => void;
 }) {
   const { isLoaded, isSignedIn, userId } = useAuth();
+  const { user } = useUser();
 
   useEffect(() => {
     onChange({
       isLoaded: Boolean(isLoaded),
       isSignedIn: Boolean(isSignedIn),
       userId: userId ?? null,
+      imageUrl: user?.imageUrl?.trim() || null,
+      firstName: user?.firstName?.trim() || null,
     });
-  }, [isLoaded, isSignedIn, userId, onChange]);
+  }, [
+    isLoaded,
+    isSignedIn,
+    userId,
+    user?.imageUrl,
+    user?.firstName,
+    onChange,
+  ]);
 
   return null;
 }
