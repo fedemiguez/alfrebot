@@ -128,6 +128,11 @@ import {
   buildAndUploadStoreIconsFromImage,
   extractIconDesignHint,
 } from "@/lib/store-icon";
+import {
+  welcomeAskNameMessage,
+  welcomeBackMessage,
+  welcomeMainMessage,
+} from "@/lib/bot/welcome-copy";
 
 export type BotState =
   | "NEW"
@@ -1278,10 +1283,10 @@ async function handleMessageBody(
         tracksQuantity: existingStore.tracksQuantity,
       };
       await setState("IDLE", draft);
-      const hello = existingStore.ownerName
-        ? `¡Hola de nuevo, ${existingStore.ownerName}! Encontré tu tienda.`
-        : "¡Hola de nuevo! Encontré tu tienda.";
-      replies.push({ kind: "text", text: hello });
+      replies.push({
+        kind: "text",
+        text: welcomeBackMessage(existingStore.ownerName),
+      });
       replies.push(menuMessage(caps, msg.from));
       return replies;
     }
@@ -1317,7 +1322,11 @@ async function handleMessageBody(
     await setState("ASK_NAME", draft);
     replies.push({
       kind: "text",
-      text: "¡Hola! Soy alfrebot, tu ayudante para armar la tienda. ¿Cómo te llamás?\n\nSi ya la armaste en la web, escribí «ya tengo cuenta».",
+      text: welcomeMainMessage({ closing: "onboarding" }),
+    });
+    replies.push({
+      kind: "text",
+      text: welcomeAskNameMessage(),
     });
     return replies;
   }
@@ -1857,12 +1866,12 @@ async function handleMessageBody(
         ? "En tu catálogo van a poder armar un pedido y mandártelo por WhatsApp."
         : "En tu catálogo cada producto tiene Lo quiero para escribirte por WhatsApp.";
     const stockHint = tracksQuantity
-      ? "Podés anotar cantidades desde el menú → Productos → Stock / pausa."
-      : "Podés marcar productos como Agotado desde el menú → Productos → Stock / pausa.";
+      ? "Cuando quieras avisar cuántas unidades te quedan, pedime por audio o desde Productos."
+      : "Cuando se te agote algo, pedime avisarlo por audio o desde Productos.";
     const continuityHint = isClerkIdentity(msg.from)
-      ? " Los pedidos de clientes van por el WhatsApp de pedidos que cargaste."
+      ? "Los pedidos de clientes van por el WhatsApp de pedidos que cargaste."
       : msg.channel === "simulator" && isWhatsAppContactPhone(msg.from)
-        ? " Cuando quieras, escribile al bot por WhatsApp desde este mismo número y seguís la conversación."
+        ? "Cuando quieras, escribile al bot por WhatsApp desde este mismo número y seguís la conversación."
         : "";
     const hasPlan =
       Boolean(draft.pendingSetupPlan?.iconMode) ||
@@ -1871,11 +1880,12 @@ async function handleMessageBody(
       Boolean(draft.pendingSetupPlan?.businessKind) ||
       Boolean(draft.pendingSetupPlan?.theme) ||
       draft.pendingSetupPlan?.welcomeMessage !== undefined;
+    const continuityBlock = continuityHint ? `\n\n${continuityHint}` : "";
     replies.push({
       kind: "text",
       text: hasPlan
-        ? `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${checkoutHint} ${stockHint}${continuityHint}`
-        : `¡Listo! Tu tienda ya está en ${storeUrl(store.slug!)}. ${checkoutHint} ${stockHint}${continuityHint}\n\nMandame una foto de tu primer producto.`,
+        ? `¡Listo! 🎉 Tu tienda ya está en ${storeUrl(store.slug!)}.\n\n${checkoutHint}\n\n${stockHint}${continuityBlock}`
+        : `¡Listo! 🎉 Tu tienda ya está en ${storeUrl(store.slug!)}.\n\n${checkoutHint}\n\n${stockHint}${continuityBlock}\n\n¿Empezamos? Mandame la foto de tu primer producto o contame por audio qué vendés.`,
     });
     if (hasPlan) {
       return flushPendingSetupPlan(
