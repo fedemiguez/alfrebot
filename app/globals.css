@@ -167,6 +167,8 @@ body {
 .product-card--comida .product-card__photo-wrap--framed {
   /* Aro interno ~7.5 + franja de acento. */
   inset: 12%;
+  /* Solo comida: el marco SVG ya es redondeado (rx≈11); la foto sigue esa curva. */
+  border-radius: 12%;
 }
 
 .product-card--ropa .product-card__photo-wrap--framed {
