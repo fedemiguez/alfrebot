@@ -127,6 +127,7 @@ body {
 
 /* ——— Product card templates por rubro (Fase B + marcos Fase D) ——— */
 .product-card__media {
+  /* Siempre cuadrado: crop con cover, nunca estirar (ni por rubro). */
   aspect-ratio: 1 / 1;
   /* Passepartout: tinte suave del acento (no blanco puro) para que el marco se lea. */
   background: color-mix(in srgb, var(--primary) 16%, var(--card));
@@ -142,6 +143,12 @@ body {
   inset: 0;
   z-index: 1;
   overflow: hidden;
+}
+
+/* Crop centrado; no deformar aunque el contenedor o la fuente no sean 1:1. */
+.product-card__photo {
+  object-fit: cover;
+  object-position: center;
 }
 
 /*
@@ -249,11 +256,7 @@ body {
   border: none;
 }
 
-/* Artesanal: foto más alta, precio chico, tipografía cálida */
-.product-card--artesanal .product-card__media {
-  aspect-ratio: 4 / 5;
-}
-
+/* Artesanal: tipografía cálida (media siempre 1:1) */
 .product-card--artesanal .product-card__title {
   margin-top: 1rem;
   font-size: 1.35rem;
@@ -271,11 +274,7 @@ body {
   color: color-mix(in srgb, var(--primary) 88%, #7c2d12);
 }
 
-/* Comida: énfasis en precio (badge), marco tipo plato */
-.product-card--comida .product-card__media {
-  aspect-ratio: 5 / 4;
-}
-
+/* Comida: énfasis en precio (badge), marco tipo plato (media siempre 1:1) */
 .product-card--comida .product-card__title {
   margin-top: 0.65rem;
   font-size: 1.2rem;
@@ -285,11 +284,7 @@ body {
   color: color-mix(in srgb, var(--primary) 75%, #047857);
 }
 
-/* Ropa: foco en foto, tipografía más liviana, marco editorial */
-.product-card--ropa .product-card__media {
-  aspect-ratio: 3 / 4;
-}
-
+/* Ropa: tipografía más liviana, marco editorial (media siempre 1:1) */
 .product-card--ropa .product-card__title {
   margin-top: 0.65rem;
   font-size: 1.05rem;

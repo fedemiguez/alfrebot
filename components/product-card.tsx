@@ -47,7 +47,7 @@ export function ProductCard({
                 alt={product.title}
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                className="product-card__photo object-cover"
+                className="product-card__photo object-cover object-center"
                 priority={priority}
                 unoptimized={
                   product.imageUrl.startsWith("/") ||
