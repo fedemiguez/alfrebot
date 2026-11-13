@@ -320,6 +320,7 @@ export function ProductBuyActions({
   store,
   product,
   layout = "stack",
+  ctaLabel = null,
 }: {
   store: StorePurchaseInfo;
   product: {
@@ -330,12 +331,19 @@ export function ProductBuyActions({
     inStock: boolean;
   };
   layout?: "stack" | "inline";
+  /** Microcopy Ikt (ej. consultar prenda); null = “Lo quiero”. */
+  ctaLabel?: string | null;
 }) {
   const accepts = storeAcceptsWhatsAppOrders(store);
   const wrap =
     layout === "inline"
       ? "mt-3 flex flex-wrap items-center gap-2"
       : "mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap";
+  const iktWrap = ctaLabel
+    ? layout === "inline"
+      ? "mt-3 flex w-full"
+      : "mt-4 flex w-full"
+    : wrap;
 
   if (store.checkoutMode === "cart") {
     return (
@@ -353,7 +361,7 @@ export function ProductBuyActions({
   if (!accepts) return null;
 
   return (
-    <div className={wrap}>
+    <div className={iktWrap}>
       <WantItButton
         phone={store.phone}
         showPhone={store.showPhone}
@@ -363,7 +371,8 @@ export function ProductBuyActions({
         storeSlug={store.storeSlug}
         ownerName={store.ownerName}
         disabled={!product.inStock}
-        className={!product.inStock ? "opacity-50" : ""}
+        label={ctaLabel}
+        className={`${ctaLabel ? "w-full" : ""} ${!product.inStock ? "opacity-50" : ""}`.trim()}
       />
     </div>
   );

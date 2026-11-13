@@ -13,9 +13,11 @@ import { StoreContactLine } from "@/components/store-contact";
 import { formatPriceArs } from "@/lib/format";
 import { resolveStoreContactPhone } from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
+import { iktWantCtaLabel } from "@/lib/ikt-cta";
 import { accentStyleVars } from "@/lib/store-accent";
 import {
   businessKindClassName,
+  resolveBusinessKind,
   storePatternClassName,
 } from "@/lib/store-business-kind";
 import { iktShellPresentation } from "@/lib/store-ikt-theme";
@@ -52,11 +54,15 @@ async function ProductBody({
     ? iktShell.styleVars
     : accentStyleVars(store.accentColor);
   const kindClass = businessKindClassName(store.businessKind);
+  const isRopaIkt = resolveBusinessKind(store.businessKind) === "ropa";
   // Con rubro Ikt: theme claro/crema/oscuro ignorado (decisión Federico).
   const themeClass = iktShell.ikt
     ? (iktShell.themeClassName ?? "")
     : storeThemeClassName(store.theme);
-  const patternClass = storePatternClassName(store.businessKind);
+  const patternClass = isRopaIkt
+    ? ""
+    : storePatternClassName(store.businessKind);
+  const ctaLabel = iktWantCtaLabel(store.businessKind);
 
   return (
     <StorePurchaseProvider store={purchase}>
@@ -71,7 +77,11 @@ async function ProductBody({
       >
         <StoreHomeLink slug={slug} />
 
-        <div className="relative aspect-square overflow-hidden border border-[var(--border)] bg-white">
+        <div
+          className={`relative overflow-hidden border border-[var(--border)] bg-white ${
+            isRopaIkt ? "aspect-[16/11] rounded-lg" : "aspect-square"
+          }`}
+        >
           {product.imageUrl ? (
             <Image
               src={product.imageUrl}
@@ -79,7 +89,7 @@ async function ProductBody({
               fill
               priority
               sizes="(max-width: 768px) 100vw, 768px"
-              className="object-cover"
+              className="object-cover object-center"
               unoptimized={
                 product.imageUrl.startsWith("/") || product.imageUrl.startsWith("data:")
               }
@@ -122,6 +132,7 @@ async function ProductBody({
             imageUrl: product.imageUrl,
             inStock: product.inStock,
           }}
+          ctaLabel={ctaLabel}
         />
 
         <NoPublicPhoneNote

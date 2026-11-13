@@ -16,6 +16,10 @@ type Props = {
   ownerName?: string | null;
   className?: string;
   disabled?: boolean;
+  /** Microcopy Ikt por rubro; default “Lo quiero”. */
+  label?: string | null;
+  /** Si true, oculta el ícono WA (el label Ikt ya trae emoji). */
+  hideIcon?: boolean;
 };
 
 export function WantItButton({
@@ -28,6 +32,8 @@ export function WantItButton({
   ownerName,
   className = "",
   disabled = false,
+  label = null,
+  hideIcon = false,
 }: Props) {
   if (!storeAcceptsWhatsAppOrders({ showPhone, phone })) {
     return null;
@@ -44,16 +50,19 @@ export function WantItButton({
     }),
   );
 
+  const text = label?.trim() || "Lo quiero";
+  const ikt = Boolean(label?.trim());
+
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`btn btn-wa gap-2 ${disabled ? "pointer-events-none opacity-50" : ""} ${className}`}
+      className={`btn gap-2 ${ikt ? "btn-ikt-cta" : "btn-wa"} ${disabled ? "pointer-events-none opacity-50" : ""} ${className}`}
       aria-disabled={disabled || undefined}
     >
-      <WhatsAppIcon className="size-6 shrink-0" />
-      Lo quiero
+      {!hideIcon && !ikt ? <WhatsAppIcon className="size-6 shrink-0" /> : null}
+      {text}
     </a>
   );
 }
