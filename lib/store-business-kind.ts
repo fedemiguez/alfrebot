@@ -1,6 +1,6 @@
 /**
- * Rubro del negocio (Fase B personalización).
- * Define plantilla de card en la vitrina; null = layout default.
+ * Rubro del negocio (Fase B + marcos Fase D).
+ * Define layout de card y marco decorativo en la foto; null = default sin marco.
  */
 
 export type BusinessKind = "artesanal" | "comida" | "ropa";
