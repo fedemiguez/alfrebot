@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, Lexend, Plus_Jakarta_Sans, Source_Sans_3 } from "next/font/google";
+import {
+  Inter,
+  Lexend,
+  Playfair_Display,
+  Plus_Jakarta_Sans,
+  Source_Sans_3,
+} from "next/font/google";
 import { AppClerkProvider } from "@/components/clerk-provider";
 import { isClerkConfigured } from "@/lib/clerk";
 import "./globals.css";
@@ -27,6 +33,13 @@ const iktBody = Inter({
   variable: "--font-ikt-body",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+/** Serif cálida — nombre de taller y títulos de pieza (Artesanías). */
+const iktSerif = Playfair_Display({
+  variable: "--font-ikt-serif",
+  subsets: ["latin"],
+  weight: ["700"],
 });
 
 export const metadata: Metadata = {
@@ -59,7 +72,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      className={`${display.variable} ${body.variable} ${iktHeading.variable} ${iktBody.variable} h-full antialiased`}
+      className={`${display.variable} ${body.variable} ${iktHeading.variable} ${iktBody.variable} ${iktSerif.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <AppClerkProvider enabled={isClerkConfigured()}>{children}</AppClerkProvider>

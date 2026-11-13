@@ -8,6 +8,7 @@ import type { StorePurchaseInfo } from "@/lib/store-purchase";
 import {
   resolveBusinessKind,
 } from "@/lib/store-business-kind";
+import { artesaniaMaterialBadgeText } from "@/lib/artesania-material";
 import { iktWantCtaLabel } from "@/lib/ikt-cta";
 
 export function ProductCard({
@@ -25,17 +26,23 @@ export function ProductCard({
   const kind = resolveBusinessKind(businessKind);
   const href = `/${store.storeSlug}/producto/${product.id}`;
   const price = formatPriceArs(product.priceCents);
-  /** Plantillas Ikt Ropa/Comidas: sin marco, ratio Gemini, CTA microcopy. */
+  /** Plantillas Ikt: sin marco, ratio Gemini, CTA microcopy. */
   const isRopaIkt = kind === "ropa";
   const isComidaIkt = kind === "comida";
-  const isIktCard = isRopaIkt || isComidaIkt;
+  const isArtesaniaIkt = kind === "artesanal";
+  const isIktCard = isRopaIkt || isComidaIkt || isArtesaniaIkt;
   const ctaLabel = iktWantCtaLabel(businessKind);
+  const materialBadge = isArtesaniaIkt
+    ? artesaniaMaterialBadgeText(product.title, product.description)
+    : null;
 
   return (
     <article
       className={`product-card group${kind ? ` product-card--${kind}` : ""}${
         isRopaIkt ? " product-card--ikt-ropa" : ""
-      }${isComidaIkt ? " product-card--ikt-comida" : ""}`}
+      }${isComidaIkt ? " product-card--ikt-comida" : ""}${
+        isArtesaniaIkt ? " product-card--ikt-artesania" : ""
+      }`}
     >
       <Link
         href={href}
@@ -75,6 +82,11 @@ export function ProductCard({
           {kind && !isIktCard ? (
             <ProductImageFrame kind={kind} frameId={product.id} />
           ) : null}
+          {materialBadge ? (
+            <span className="product-card__material-badge">
+              {materialBadge}
+            </span>
+          ) : null}
           {!product.inStock && (
             <span className="absolute bottom-3 left-3 z-[3] bg-[var(--soldout-bg)] px-3 py-1 text-[15px] font-medium text-[var(--soldout)]">
               Agotado
@@ -102,6 +114,20 @@ export function ProductCard({
                 {product.title}
               </h2>
               <span className="product-card__price product-card__price--primary font-[family-name:var(--font-display)] font-extrabold whitespace-nowrap">
+                {price}
+              </span>
+            </div>
+            {product.description ? (
+              <p className="product-card__desc">{product.description}</p>
+            ) : null}
+          </div>
+        ) : isArtesaniaIkt ? (
+          <div className="product-card__body product-card__body--ikt-artesania">
+            <div className="product-card__title-row">
+              <h2 className="product-card__title product-card__title--serif font-bold leading-snug text-[var(--ink)]">
+                {product.title}
+              </h2>
+              <span className="product-card__price font-[family-name:var(--font-display)] font-extrabold whitespace-nowrap text-[var(--ink)]">
                 {price}
               </span>
             </div>

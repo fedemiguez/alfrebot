@@ -29,7 +29,10 @@ assert(
   "CTA microcopy",
 );
 assert(iktWantCtaLabel("ropa") === IKT_WANT_CTA.ropa, "ropa intacto");
-assert(iktWantCtaLabel("artesanal") === null, "artesanal aún sin CTA Ikt");
+assert(
+  iktWantCtaLabel("artesanal") === IKT_WANT_CTA.artesanias,
+  "artesanal CTA Ikt (PR5)",
+);
 assert(iktHeaderEyebrow("comida") === null, "comida sin eyebrow (logo+nombre)");
 
 assert(

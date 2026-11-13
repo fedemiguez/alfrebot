@@ -57,18 +57,22 @@ async function ProductBody({
   const kind = resolveBusinessKind(store.businessKind);
   const isRopaIkt = kind === "ropa";
   const isComidaIkt = kind === "comida";
+  const isArtesaniaIkt = kind === "artesanal";
   // Con rubro Ikt: theme claro/crema/oscuro ignorado (decisión Federico).
   const themeClass = iktShell.ikt
     ? (iktShell.themeClassName ?? "")
     : storeThemeClassName(store.theme);
   const patternClass =
-    isRopaIkt || isComidaIkt ? "" : storePatternClassName(store.businessKind);
+    isRopaIkt || isComidaIkt || isArtesaniaIkt
+      ? ""
+      : storePatternClassName(store.businessKind);
   const ctaLabel = iktWantCtaLabel(store.businessKind);
-  const mediaAspect = isRopaIkt
-    ? "aspect-[16/11] rounded-lg"
-    : isComidaIkt
-      ? "aspect-[16/10] rounded-xl"
-      : "aspect-square";
+  const mediaAspect =
+    isRopaIkt || isArtesaniaIkt
+      ? "aspect-[16/11] rounded-lg"
+      : isComidaIkt
+        ? "aspect-[16/10] rounded-xl"
+        : "aspect-square";
 
   return (
     <StorePurchaseProvider store={purchase}>
@@ -110,7 +114,13 @@ async function ProductBody({
           )}
         </div>
 
-        <h1 className="mt-6 font-[family-name:var(--font-display)] text-[1.75rem] font-semibold text-[var(--ink)] sm:text-4xl">
+        <h1
+          className={`mt-6 text-[1.75rem] font-semibold text-[var(--ink)] sm:text-4xl${
+            isArtesaniaIkt
+              ? " store-pdp-title--serif font-bold"
+              : " font-[family-name:var(--font-display)]"
+          }`}
+        >
           {product.title}
         </h1>
         <p className="mt-3 font-[family-name:var(--font-display)] text-[2rem] font-bold text-[var(--primary)]">
