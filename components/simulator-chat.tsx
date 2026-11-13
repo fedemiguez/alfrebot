@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -15,6 +17,7 @@ import {
 import { AlfrebotRobotAvatar } from "@/components/alfrebot-robot-avatar";
 import { ChatAuthOverlay } from "@/components/chat-auth-overlay";
 import { OwnerChatAvatar } from "@/components/owner-chat-avatar";
+import { WebChatAuthBridge } from "@/components/web-chat-auth-bridge";
 import { WebChatSignOut } from "@/components/web-chat-sign-out";
 import type { OutboundMessage } from "@/lib/channels/types";
 import { CHOICE, segmentUrls } from "@/lib/bot/render";
@@ -193,6 +196,7 @@ export function SimulatorChat({
 }) {
   const isV2 = variant === "v2";
   const needsClerkGate = identityMode === "clerk";
+  const router = useRouter();
   const showOwnerHub = isV2 && isAuthenticated && hasActiveStore;
   const [phone, setPhone] = useState(initialPhone || "");
   const [input, setInput] = useState("");
@@ -219,6 +223,11 @@ export function SimulatorChat({
   const [channelPicked, setChannelPicked] = useState(showOwnerHub);
   const [authOpen, setAuthOpen] = useState(false);
   const [signOutRequestId, setSignOutRequestId] = useState(0);
+  const [clerkLive, setClerkLive] = useState<{
+    isLoaded: boolean;
+    isSignedIn: boolean;
+    userId: string | null;
+  } | null>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -228,14 +237,31 @@ export function SimulatorChat({
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const resumedWebRef = useRef(false);
+  const refreshedAfterLoginRef = useRef(false);
   const shellStyle = useChatShellViewport(isV2);
   const busy = sending || pending || uploading || recording || sendingAudio;
   const signupCode = initialCode?.replace(/\D/g, "").slice(0, 4) || "";
+  /** Sesión viva (Clerk) o prop RSC — evita esperar F5 para Tienda / enviar. */
+  const sessionAuthed =
+    identityMode === "clerk"
+      ? Boolean(clerkLive?.isSignedIn ?? isAuthenticated)
+      : true;
   const displayIdentity =
     identityMode === "clerk"
-      ? ownerEmail || (isAuthenticated ? "cuenta web" : "invitado")
+      ? ownerEmail || (sessionAuthed ? "cuenta web" : "invitado")
       : phone || "…";
-  const canUseBot = !needsClerkGate || isAuthenticated;
+  const canUseBot = !needsClerkGate || sessionAuthed;
+
+  const onClerkSession = useCallback(
+    (state: {
+      isLoaded: boolean;
+      isSignedIn: boolean;
+      userId: string | null;
+    }) => {
+      setClerkLive(state);
+    },
+    [],
+  );
 
   useEffect(() => {
     setPhone((prev) => {
@@ -245,6 +271,44 @@ export function SimulatorChat({
       return defaultSimPhone();
     });
   }, [initialPhone, identityMode]);
+
+  useEffect(() => {
+    if (initialStoreSlug) setStoreSlug(initialStoreSlug);
+  }, [initialStoreSlug]);
+
+  // Tras login en overlay: cerrar modal y refrescar RSC sin F5.
+  useEffect(() => {
+    if (identityMode !== "clerk") return;
+    if (!clerkLive?.isLoaded || !clerkLive.isSignedIn) return;
+    if (authOpen) setAuthOpen(false);
+    if (!isAuthenticated && !refreshedAfterLoginRef.current) {
+      refreshedAfterLoginRef.current = true;
+      router.refresh();
+    }
+  }, [identityMode, clerkLive, authOpen, isAuthenticated, router]);
+
+  // Tienda en header: si hay sesión pero aún no hay slug (props RSC viejas), pedirlo.
+  useEffect(() => {
+    if (identityMode !== "clerk" || !sessionAuthed || storeSlug) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/me/store", {
+          credentials: "same-origin",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { slug?: string | null };
+        if (!cancelled && data.slug?.trim()) {
+          setStoreSlug(data.slug.trim());
+        }
+      } catch {
+        // ignore — el botón aparece cuando haya slug
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [identityMode, sessionAuthed, storeSlug]);
 
   // Scroll solo dentro del panel de mensajes (no scrollIntoView del documento:
   // con teclado móvil empuja el shell fuera de vista).
@@ -322,7 +386,7 @@ export function SimulatorChat({
   }
 
   function sendPayload(payload: Record<string, unknown>, userBubble: ChatItem) {
-    if (needsClerkGate && !isAuthenticated) {
+    if (needsClerkGate && !sessionAuthed) {
       openAuthForWeb();
       return;
     }
@@ -447,7 +511,7 @@ export function SimulatorChat({
     }
     if (choiceId === V2_CHANNEL_WEB) {
       setChannelPicked(true);
-      if (needsClerkGate && !isAuthenticated) {
+      if (needsClerkGate && !sessionAuthed) {
         setItems((prev) => [
           ...prev,
           { id: `u_${Date.now()}`, role: "user", text: label },
@@ -506,7 +570,7 @@ export function SimulatorChat({
 
   function dismissAuthOverlay() {
     setAuthOpen(false);
-    if (isAuthenticated) return;
+    if (sessionAuthed) return;
     clearPendingWebOnboarding();
     if (isV2) {
       setChannelPicked(false);
@@ -777,7 +841,7 @@ export function SimulatorChat({
 
   function startConversation() {
     if (busy) return;
-    if (needsClerkGate && !isAuthenticated) {
+    if (needsClerkGate && !sessionAuthed) {
       openAuthForWeb();
       return;
     }
@@ -813,14 +877,53 @@ export function SimulatorChat({
               {isV2 ? "en línea · chat web" : `Chat web · ${displayIdentity}`}
             </p>
           </div>
-          {isV2 && storePreviewUrl && (
-            <Link
-              href={storePreviewUrl}
-              target="_blank"
-              className="shrink-0 rounded-full bg-white/15 px-3 py-2 text-[14px] font-semibold text-white transition-colors duration-200 hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            >
-              Ver tienda
-            </Link>
+          {isV2 && (storePreviewUrl || (identityMode === "clerk" && sessionAuthed)) && (
+            <div className="flex shrink-0 items-center gap-1.5">
+              {storePreviewUrl && (
+                <Link
+                  href={storePreviewUrl}
+                  target="_blank"
+                  className="shrink-0 rounded-full bg-white/15 px-3 py-2 text-[14px] font-semibold text-white transition-colors duration-200 hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                >
+                  Ver tienda
+                </Link>
+              )}
+              {identityMode === "clerk" && sessionAuthed && (
+                <button
+                  type="button"
+                  aria-label="Cerrar sesión"
+                  title="Cerrar sesión"
+                  disabled={busy}
+                  onClick={() => {
+                    sendPayload(
+                      { text: "salir" },
+                      {
+                        id: `u_${Date.now()}`,
+                        role: "user",
+                        text: "Cerrar sesión",
+                      },
+                    );
+                  }}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition-colors duration-200 hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -877,7 +980,7 @@ export function SimulatorChat({
                   (identityMode !== "clerk" && !phone)
                 }
               >
-                {needsClerkGate && !isAuthenticated
+                {needsClerkGate && !sessionAuthed
                   ? "Entrar y empezar"
                   : "Empezar"}
               </button>
@@ -1176,12 +1279,15 @@ export function SimulatorChat({
           </button>
         </form>
 
-        {identityMode === "clerk" && (
-          <WebChatSignOut requestId={signOutRequestId} />
-        )}
-        {needsClerkGate && (
-          <ChatAuthOverlay open={authOpen} onClose={dismissAuthOverlay} />
-        )}
+          {identityMode === "clerk" && (
+            <>
+              <WebChatAuthBridge onChange={onClerkSession} />
+              <WebChatSignOut requestId={signOutRequestId} />
+            </>
+          )}
+          {needsClerkGate && (
+            <ChatAuthOverlay open={authOpen} onClose={dismissAuthOverlay} />
+          )}
 
         {pickSourceOpen && (
           <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
