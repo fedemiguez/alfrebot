@@ -31,7 +31,7 @@ export async function AsistenteChatBody({
   );
   const botDigits = metaBotNumber();
   const continueWaLink = `https://wa.me/${botDigits}?text=${encodeURIComponent(
-    "Hola! Quiero armar mi tienda desde la web.",
+    "Hola, quiero armar mi tienda",
   )}`;
 
   return (

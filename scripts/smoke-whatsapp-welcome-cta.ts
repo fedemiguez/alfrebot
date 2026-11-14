@@ -77,11 +77,16 @@ function assertFullWelcome(
 }
 
 async function main() {
-  const ctaNew = "Hola! Quiero armar mi tienda desde la web.";
-  const ctaLegacy = "Hola! Quiero seguir armando mi tienda desde la web.";
+  const ctaNew = "Hola, quiero armar mi tienda";
+  const ctaLegacyShort = "quiero armar mi tienda";
+  const ctaLegacyWeb = "Hola! Quiero armar mi tienda desde la web.";
+  const ctaLegacySeguir =
+    "Hola! Quiero seguir armando mi tienda desde la web.";
 
   assert(isStoreCreateIntentPhrase(ctaNew), "cta new = intent");
-  assert(isStoreCreateIntentPhrase(ctaLegacy), "cta legacy = intent");
+  assert(isStoreCreateIntentPhrase(ctaLegacyShort), "cta legacy short = intent");
+  assert(isStoreCreateIntentPhrase(ctaLegacyWeb), "cta legacy web = intent");
+  assert(isStoreCreateIntentPhrase(ctaLegacySeguir), "cta legacy seguir = intent");
   assert(
     isStoreCreateIntentPhrase("Hola! Quiero armar mi tienda"),
     "cta short = intent",
@@ -126,7 +131,8 @@ async function main() {
   });
 
   assertFullWelcome(await say(ctaNew), "IDLE cta");
-  assertFullWelcome(await say(ctaLegacy), "IDLE legacy seguir");
+  assertFullWelcome(await say(ctaLegacyWeb), "IDLE legacy web");
+  assertFullWelcome(await say(ctaLegacySeguir), "IDLE legacy seguir");
 
   const shortMenu = await say("menú");
   const shortBody = shortMenu
