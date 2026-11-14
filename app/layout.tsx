@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import {
-  Inter,
+  Bricolage_Grotesque,
+  Cormorant_Garamond,
+  Fraunces,
   Lexend,
-  Playfair_Display,
   Plus_Jakarta_Sans,
   Source_Sans_3,
 } from "next/font/google";
@@ -22,24 +23,42 @@ const body = Source_Sans_3({
   weight: ["400", "600", "700"],
 });
 
-/** Fuentes preview Ikt — shell de vitrina con data-rubro o default limpio. */
-const iktHeading = Plus_Jakarta_Sans({
-  variable: "--font-ikt-heading",
+/** Cuerpo Ikt + botones — alta legibilidad (+60). */
+const iktBody = Plus_Jakarta_Sans({
+  variable: "--font-ikt-body",
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+});
+
+/** Comidas — títulos y precios (Bricolage Grotesque). */
+const iktComidas = Bricolage_Grotesque({
+  variable: "--font-ikt-comidas",
   subsets: ["latin"],
   weight: ["600", "700", "800"],
 });
 
-const iktBody = Inter({
-  variable: "--font-ikt-body",
+/** Ropa — títulos serif editorial (Cormorant Garamond). */
+const iktRopa = Cormorant_Garamond({
+  variable: "--font-ikt-ropa",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["600", "700"],
 });
 
-/** Serif cálida — nombre de taller y títulos de pieza (Artesanías). */
-const iktSerif = Playfair_Display({
-  variable: "--font-ikt-serif",
+/** Artesanías — títulos de taller (Fraunces). */
+const iktArtesanias = Fraunces({
+  variable: "--font-ikt-artesanias",
   subsets: ["latin"],
-  weight: ["700"],
+  weight: ["600", "700"],
+});
+
+/**
+ * Alias de heading genérico (default sin rubro / fallback).
+ * Por rubro se sobreescribe --ikt-font-heading en CSS.
+ */
+const iktHeading = Plus_Jakarta_Sans({
+  variable: "--font-ikt-heading",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -72,7 +91,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      className={`${display.variable} ${body.variable} ${iktHeading.variable} ${iktBody.variable} ${iktSerif.variable} h-full antialiased`}
+      className={`${display.variable} ${body.variable} ${iktBody.variable} ${iktHeading.variable} ${iktComidas.variable} ${iktRopa.variable} ${iktArtesanias.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <AppClerkProvider enabled={isClerkConfigured()}>{children}</AppClerkProvider>

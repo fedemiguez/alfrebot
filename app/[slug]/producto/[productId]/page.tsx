@@ -72,9 +72,9 @@ async function ProductBody({
     : "";
   const ctaLabel = iktWantCtaLabel(store.businessKind);
   const mediaAspectClass = isRopaIkt || isArtesaniaIkt
-    ? "store-pdp-media--ratio-16-11"
+    ? "store-pdp-media--ratio-4-5"
     : isComidaIkt
-      ? "store-pdp-media--ratio-16-10"
+      ? "store-pdp-media--ratio-4-3"
       : "store-pdp-media--ratio-1-1";
   const materialBadge = isArtesaniaIkt
     ? artesaniaMaterialBadgeText({

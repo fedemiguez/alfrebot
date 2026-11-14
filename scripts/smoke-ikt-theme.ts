@@ -33,42 +33,43 @@ assert(comidaDefault?.palette === "brasa-fuego", "comida default brasa");
 const artesanalDefault = resolveIktTheme({ businessKind: "artesanal" });
 assert(artesanalDefault?.palette === "arcilla-sol", "artesanal default arcilla");
 
-// Exact / nearest primary matches
+// Exact / nearest primary matches (hex Gemini)
 const noir = resolveIktTheme({
   businessKind: "ropa",
-  accentColor: "#111111",
+  accentColor: "#111827",
 });
 assert(noir?.palette === "monochrome-noir", "exact noir");
 
 const sage = resolveIktTheme({
   businessKind: "ropa",
-  accentColor: "#2f4f2e",
+  accentColor: "#354F3B",
 });
 assert(sage?.palette === "botanical-sage", "exact sage");
 
 const nearMatcha = resolveIktTheme({
   businessKind: "comida",
-  accentColor: "#4a6a20",
+  accentColor: "#2E5A36",
 });
-assert(nearMatcha?.palette === "cafe-matcha", "near matcha");
+assert(nearMatcha?.palette === "cafe-matcha", "exact matcha");
 
 const nearNogal = resolveIktTheme({
   businessKind: "artesanal",
-  accentColor: "#3a5a52",
+  accentColor: "#3E634D",
 });
-assert(nearNogal?.palette === "bosque-nogal", "near nogal");
+assert(nearNogal?.palette === "bosque-nogal", "exact nogal");
 
 const indigo = resolveIktTheme({
   businessKind: "artesanal",
-  accentColor: "#c92a37",
+  accentColor: "#B83B44",
 });
 assert(indigo?.palette === "indigo-telar", "exact indigo");
 
 // Theme claro/crema/oscuro no influye en resolveIktTheme
 const ignoreTheme = resolveIktTheme({
   businessKind: "ropa",
-  accentColor: "#a65e38",
+  accentColor: "#9A5B36",
 });
 assert(ignoreTheme?.palette === "lino-arena", "accent wins; theme unused");
+assert(ignoreTheme?.whatsapp === "#2B4C3F", "whatsapp token");
 
 console.log("smoke-ikt-theme: OK");

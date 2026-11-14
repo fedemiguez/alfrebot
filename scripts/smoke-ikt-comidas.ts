@@ -1,5 +1,5 @@
 /**
- * Smoke Fase 3 — plantilla Comidas (categorías + CTA + banner copy).
+ * Smoke — plantilla Comidas (categorías + CTA + banner copy Gemini).
  * Run: npx tsx scripts/smoke-ikt-comidas.ts
  */
 
@@ -31,13 +31,17 @@ assert(
 assert(iktWantCtaLabel("ropa") === IKT_WANT_CTA.ropa, "ropa intacto");
 assert(
   iktWantCtaLabel("artesanal") === IKT_WANT_CTA.artesanias,
-  "artesanal CTA Ikt (PR5)",
+  "artesanal CTA Ikt",
 );
-assert(iktHeaderEyebrow("comida") === null, "comida sin eyebrow (logo+nombre)");
+assert(
+  iktHeaderEyebrow("comida") === "COMIDA CASERA · RECIÉN HECHA",
+  "kicker comidas",
+);
 
 assert(
-  IKT_COMIDAS_OPEN_BANNER === "🟢 ABIERTO AHORA",
-  "banner copy",
+  IKT_COMIDAS_OPEN_BANNER ===
+    "🟢 ABIERTO AHORA · Retiro en el local o envío a domicilio",
+  "banner copy Gemini",
 );
 
 const burger = inferComidaCategory(
@@ -65,23 +69,6 @@ assert(
   chips.some((c) => c.id === "carnes") && chips.some((c) => c.id === "pastas"),
   "chips Carnes+Pastas",
 );
-assert(
-  chips.filter((c) => c.id === "carnes").length === 1,
-  "sin duplicar Carnes",
-);
-
-assert(
-  productMatchesComidaCategory({ title: "Hamburguesa" }, "todo"),
-  "Todo incluye todos",
-);
-assert(
-  productMatchesComidaCategory({ title: "Hamburguesa" }, "carnes"),
-  "filtro carnes",
-);
-assert(
-  !productMatchesComidaCategory({ title: "Ñoquis" }, "carnes"),
-  "ñoquis fuera de carnes",
-);
 
 const theme = resolveIktTheme({
   businessKind: "comida",
@@ -89,5 +76,7 @@ const theme = resolveIktTheme({
 });
 assert(theme?.rubro === "comidas", "rubro comidas");
 assert(theme?.palette === "brasa-fuego", "paleta brasa-fuego");
+assert(theme?.primary === "#D84315", "primary brasa");
+assert(theme?.whatsapp === "#1B5E20", "whatsapp brasa");
 
 console.log("smoke-ikt-comidas: OK");

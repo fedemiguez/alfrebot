@@ -10,6 +10,8 @@ export type StorePurchaseInfo = {
   phone: string;
   showPhone: boolean;
   checkoutMode: CheckoutMode;
+  /** Rubro de negocio (para copy WA Ikt); null = legacy. */
+  businessKind?: string | null;
 };
 
 export function normalizeCheckoutMode(
@@ -27,6 +29,7 @@ export function storePurchaseProps(store: {
   contactPhone?: string | null;
   showPhone: boolean;
   checkoutMode?: CheckoutMode | string | null;
+  businessKind?: string | null;
 }): StorePurchaseInfo | null {
   if (!store.slug) return null;
   const contact = resolveStoreContactPhone(store);
@@ -37,6 +40,10 @@ export function storePurchaseProps(store: {
     ownerName: store.ownerName,
     phone: contact ?? "",
     showPhone: store.showPhone && Boolean(contact),
-    checkoutMode: normalizeCheckoutMode(store.checkoutMode),
+    // Spec +60: sin carrito multipaso en vitrina Ikt — un solo CTA WhatsApp.
+    checkoutMode: store.businessKind
+      ? "whatsapp"
+      : normalizeCheckoutMode(store.checkoutMode),
+    businessKind: store.businessKind ?? null,
   };
 }

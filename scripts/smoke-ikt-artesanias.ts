@@ -34,10 +34,13 @@ assert(
 assert(iktWantCtaLabel("ropa") === IKT_WANT_CTA.ropa, "ropa intacto");
 assert(iktWantCtaLabel("comida") === IKT_WANT_CTA.comidas, "comida intacto");
 assert(
-  iktHeaderEyebrow("artesanal") === "Taller Artesanal",
-  "eyebrow artesanal",
+  iktHeaderEyebrow("artesanal") === "TALLER ARTESANAL · PIEZAS ÚNICAS",
+  "kicker artesanal Gemini",
 );
-assert(iktHeaderEyebrow("ropa") === "Tienda de Ropa", "eyebrow ropa intacto");
+assert(
+  iktHeaderEyebrow("ropa") === "SHOWROOM · COLECCIÓN ACTUAL",
+  "kicker ropa intacto",
+);
 
 const esmalte = inferArtesaniaMaterial(
   "Cuenco Aurora",

@@ -90,11 +90,6 @@ export function ProductCard({
           {showFrame && kind ? (
             <ProductImageFrame kind={kind} frameId={product.id} />
           ) : null}
-          {materialBadge ? (
-            <span className="product-card__material-badge">
-              {materialBadge}
-            </span>
-          ) : null}
           {!product.inStock && (
             <span
               className={`absolute bottom-3 left-3 z-[3] px-3 py-1 text-[15px] font-medium ${
@@ -107,6 +102,11 @@ export function ProductCard({
             </span>
           )}
         </div>
+        {materialBadge ? (
+          <span className="product-card__material-badge product-card__material-badge--below">
+            {materialBadge}
+          </span>
+        ) : null}
         {isRopaIkt ? (
           <div className="product-card__body product-card__body--ikt-ropa">
             <div className="product-card__title-row">

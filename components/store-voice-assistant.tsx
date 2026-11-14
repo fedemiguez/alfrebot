@@ -22,6 +22,7 @@ import {
 } from "@/lib/voice/browser-speech";
 import { WantItButton } from "@/components/want-it-button";
 import { ProductBuyActions } from "@/components/store-purchase";
+import { iktWantCtaLabel } from "@/lib/ikt-cta";
 
 type Props = {
   store: StorePurchaseInfo;
@@ -37,7 +38,8 @@ type Phase =
   | "done"
   | "error";
 
-const IDLE_LABEL = "🎤 Tocar y hablar para buscar";
+const IDLE_LABEL = "Tocar y hablar para buscar";
+const LISTENING_LABEL = "Escuchando tu voz...";
 
 export function StoreVoiceAssistant({
   store,
@@ -52,12 +54,14 @@ export function StoreVoiceAssistant({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [typedQuery, setTypedQuery] = useState("");
+  const [understoodPhrase, setUnderstoodPhrase] = useState<string | null>(null);
 
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const selectedIdRef = useRef<string | null>(null);
+  const ctaLabel = iktWantCtaLabel(store.businessKind);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
@@ -91,8 +95,12 @@ export function StoreVoiceAssistant({
       if (!cleaned) {
         setError("No escuché nada. Tocá el micrófono y decí qué buscás.");
         setPhase("error");
+        setUnderstoodPhrase(null);
         return;
       }
+
+      setTypedQuery(cleaned);
+      setUnderstoodPhrase(cleaned);
 
       const turn = resolveVoiceTurn({
         transcript: cleaned,
@@ -213,6 +221,7 @@ export function StoreVoiceAssistant({
       recorder.start(250);
       setPhase("recording");
       setSpokenLine("Escuchando… tocá Listo cuando termines.");
+      setUnderstoodPhrase(null);
     } catch {
       stopMicTracks();
       setPhase("error");
@@ -232,6 +241,7 @@ export function StoreVoiceAssistant({
     setInterim("");
     setTranscript("");
     setResult(null);
+    setUnderstoodPhrase(null);
     setSpokenLine("Escuchando… decí qué buscás.");
 
     const recognition = new Ctor();
@@ -269,7 +279,6 @@ export function StoreVoiceAssistant({
         setError("Necesito permiso del micrófono para escucharte.");
         return;
       }
-      // Fallback cloud si el servicio del browser falla
       if (cloudSttAvailable) {
         void startMediaFallback();
         return;
@@ -332,6 +341,23 @@ export function StoreVoiceAssistant({
     applyTranscript(q);
   }
 
+  function clearSearch() {
+    stopSpeaking();
+    try {
+      recognitionRef.current?.abort();
+    } catch {
+      /* ignore */
+    }
+    setTypedQuery("");
+    setTranscript("");
+    setInterim("");
+    setResult(null);
+    setUnderstoodPhrase(null);
+    setSpokenLine("");
+    setError(null);
+    setPhase("idle");
+  }
+
   const displayText = interim || transcript;
   const hits =
     result?.kind === "results" || result?.kind === "want_ambiguous"
@@ -340,19 +366,30 @@ export function StoreVoiceAssistant({
         ? [result.product]
         : [];
 
+  const isListening = phase === "listening" || phase === "recording";
+  const primaryBusy = phase === "transcribing";
   const primaryLabel =
-    phase === "listening" || phase === "recording"
-      ? "Listo"
-      : phase === "transcribing"
+    isListening
+      ? phase === "recording"
+        ? "Listo"
+        : LISTENING_LABEL
+      : primaryBusy
         ? "Escuchando…"
         : IDLE_LABEL;
 
-  const primaryBusy = phase === "transcribing";
-  const isListening = phase === "listening" || phase === "recording";
+  const showUnderstood =
+    Boolean(understoodPhrase) && phase === "done" && !isListening;
+  const showListeningHint = isListening || phase === "transcribing";
+  const voiceExample =
+    products.find((p) => p.inStock)?.title ?? "el producto que buscás";
 
   return (
     <section className="store-voice" aria-labelledby="voice-assist-title">
-      <div className="store-voice-sticky">
+      {/*
+        Card flotante sticky (Gemini): top 8px / z-index 20 / sombra.
+        Al scrollear se solapa sobre el feed de productos.
+      */}
+      <div className="store-voice-sticky ikt-voice-card">
         <h2 id="voice-assist-title" className="sr-only">
           Buscar hablando
         </h2>
@@ -360,19 +397,44 @@ export function StoreVoiceAssistant({
           type="button"
           onClick={onPrimaryClick}
           disabled={primaryBusy}
-          className={`store-voice-btn${isListening ? " is-listening" : ""}`}
+          className={`store-voice-btn ikt-voice-btn${isListening ? " is-listening" : ""}`}
           aria-pressed={isListening}
           aria-label={primaryLabel}
         >
-          {primaryLabel}
+          <span className="store-voice-btn__icon" aria-hidden="true">
+            <span
+              className={`store-voice-btn__pulse${isListening ? " is-on" : ""}`}
+            />
+            <MicIcon />
+          </span>
+          <span>{primaryLabel}</span>
         </button>
+
+        {showListeningHint ? (
+          <div className="store-voice-feedback is-listening" role="status">
+            <span aria-hidden="true">🎙️</span>
+            <p>
+              Escuchando… Probá decir:{" "}
+              <em>&ldquo;{voiceExample}&rdquo;</em>
+            </p>
+          </div>
+        ) : null}
+
+        {showUnderstood && understoodPhrase ? (
+          <div className="store-voice-feedback is-understood" role="status">
+            <span aria-hidden="true">✅</span>
+            <p>
+              Entendí: <strong>&ldquo;{understoodPhrase}&rdquo;</strong>
+            </p>
+          </div>
+        ) : null}
 
         <form className="store-voice-type" onSubmit={onTypedSubmit}>
           <label htmlFor="store-voice-text" className="sr-only">
             Buscar por texto
           </label>
           <span className="store-voice-type-icon" aria-hidden="true">
-            🔍
+            <SearchIcon />
           </span>
           <input
             id="store-voice-text"
@@ -380,41 +442,38 @@ export function StoreVoiceAssistant({
             enterKeyHint="search"
             autoComplete="off"
             value={typedQuery}
-            onChange={(e) => setTypedQuery(e.target.value)}
-            placeholder="O escribí acá (ej: Camisa)…"
+            onChange={(e) => {
+              setTypedQuery(e.target.value);
+              if (!e.target.value.trim()) {
+                setUnderstoodPhrase(null);
+              }
+            }}
+            placeholder="O escribí acá..."
             className="store-voice-input"
           />
+          {typedQuery.trim() ? (
+            <button
+              type="button"
+              className="store-voice-clear"
+              onClick={clearSearch}
+            >
+              Borrar
+            </button>
+          ) : null}
         </form>
 
-        {isListening && (
-          <p className="store-voice-status" role="status">
-            Escuchando…
+        {error ? (
+          <p className="store-voice-error" role="alert">
+            {error}
           </p>
-        )}
-        {phase === "transcribing" && (
-          <p className="store-voice-status is-muted" role="status">
-            Entendiendo lo que dijiste…
-          </p>
-        )}
+        ) : null}
       </div>
 
-      {(displayText || spokenLine) && (
-        <p className="store-voice-transcript" aria-live="polite">
-          {displayText ? `“${displayText}”` : spokenLine}
-        </p>
-      )}
-
-      {spokenLine && displayText && (
-        <p className="store-voice-spoken" aria-live="polite">
+      {spokenLine && displayText && phase === "done" ? (
+        <p className="store-voice-spoken sr-only" aria-live="polite">
           {spokenLine}
         </p>
-      )}
-
-      {error && (
-        <p className="store-voice-error" role="alert">
-          {error}
-        </p>
-      )}
+      ) : null}
 
       {hits.length > 0 && (
         <ul className="store-voice-hits">
@@ -430,10 +489,10 @@ export function StoreVoiceAssistant({
                 className="w-full text-left"
                 onClick={() => setSelectedId(hit.id)}
               >
-                <p className="font-[family-name:var(--font-display)] text-[1.3rem] font-semibold text-[var(--ink)]">
+                <p className="font-[family-name:var(--ikt-font-heading)] text-[1.3rem] font-semibold text-[var(--ink)]">
                   {hit.title}
                 </p>
-                <p className="mt-1 font-[family-name:var(--font-display)] text-[1.5rem] font-bold text-[var(--primary)]">
+                <p className="mt-1 font-[family-name:var(--ikt-font-heading)] text-[1.5rem] font-bold text-[var(--primary)]">
                   {formatPriceArs(hit.priceCents)}
                   {!hit.inStock && (
                     <span className="ml-2 text-[1rem] font-medium text-[var(--soldout)]">
@@ -443,7 +502,7 @@ export function StoreVoiceAssistant({
                 </p>
               </button>
               <div className="mt-3">
-                {store.checkoutMode === "whatsapp" ? (
+                {store.checkoutMode === "whatsapp" || ctaLabel ? (
                   <WantItButton
                     phone={store.phone}
                     showPhone={store.showPhone}
@@ -452,8 +511,10 @@ export function StoreVoiceAssistant({
                     storeName={store.storeName}
                     storeSlug={store.storeSlug}
                     ownerName={store.ownerName}
+                    businessKind={store.businessKind}
                     disabled={!hit.inStock}
-                    className={!hit.inStock ? "opacity-50" : ""}
+                    label={ctaLabel}
+                    className={!hit.inStock ? "opacity-50 w-full" : "w-full"}
                   />
                 ) : (
                   <ProductBuyActions
@@ -466,6 +527,7 @@ export function StoreVoiceAssistant({
                       inStock: hit.inStock,
                     }}
                     layout="inline"
+                    ctaLabel={ctaLabel}
                   />
                 )}
               </div>
@@ -474,5 +536,48 @@ export function StoreVoiceAssistant({
         </ul>
       )}
     </section>
+  );
+}
+
+function MicIcon() {
+  return (
+    <svg
+      className="store-voice-mic"
+      width={24}
+      height={24}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"
+      />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"
+      />
+    </svg>
   );
 }

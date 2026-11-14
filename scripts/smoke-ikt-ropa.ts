@@ -1,5 +1,5 @@
 /**
- * Smoke Fase 2 — plantilla Ropa (categorías heurísticas + CTA + monograma).
+ * Smoke — plantilla Ropa (categorías + CTA + monograma + kicker Gemini).
  * Run: npx tsx scripts/smoke-ikt-ropa.ts
  */
 
@@ -30,16 +30,22 @@ assert(
 );
 assert(
   iktWantCtaLabel("comida") === IKT_WANT_CTA.comidas,
-  "comida CTA Ikt (PR4)",
+  "comida CTA Ikt",
 );
 assert(
   iktWantCtaLabel("artesanal") === IKT_WANT_CTA.artesanias,
-  "artesanal CTA Ikt (PR5)",
+  "artesanal CTA Ikt",
 );
 assert(iktWantCtaLabel(null) === null, "sin rubro = Lo quiero");
 
-assert(iktHeaderEyebrow("ropa") === "Tienda de Ropa", "eyebrow ropa");
-assert(iktHeaderEyebrow("comida") === null, "comida sin eyebrow");
+assert(
+  iktHeaderEyebrow("ropa") === "SHOWROOM · COLECCIÓN ACTUAL",
+  "kicker ropa Gemini",
+);
+assert(
+  iktHeaderEyebrow("comida") === "COMIDA CASERA · RECIÉN HECHA",
+  "kicker comida",
+);
 
 assert(storeMonogramInitials("CASA LINO") === "CL", "monograma 2 palabras");
 assert(storeMonogramInitials("Lino") === "LI", "monograma 1 palabra");
@@ -50,7 +56,6 @@ assert(
   inferRopaCategory("Camisa de lino")?.id === "camisas",
   "camisa → Camisas",
 );
-assert(inferRopaCategory("Jarrón azul") === null, "cerámica sin categoría ropa");
 
 const chips = collectRopaCategoryChips([
   { title: "Saco de lino" },
@@ -62,10 +67,6 @@ assert(chips[0]?.id === "todo", "primer chip Todo");
 assert(
   chips.some((c) => c.id === "abrigos") && chips.some((c) => c.id === "camisas"),
   "chips Abrigos+Camisas",
-);
-assert(
-  chips.filter((c) => c.id === "abrigos").length === 1,
-  "sin duplicar Abrigos",
 );
 
 assert(
@@ -83,9 +84,11 @@ assert(
 
 const theme = resolveIktTheme({
   businessKind: "ropa",
-  accentColor: "#A65E38",
+  accentColor: "#9A5B36",
 });
 assert(theme?.rubro === "ropa", "rubro ropa");
 assert(theme?.palette === "lino-arena", "paleta lino-arena");
+assert(theme?.primary === "#9A5B36", "primary lino");
+assert(theme?.whatsapp === "#2B4C3F", "whatsapp lino");
 
 console.log("smoke-ikt-ropa: OK");

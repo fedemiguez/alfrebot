@@ -345,7 +345,11 @@ export function ProductBuyActions({
       : "mt-4 flex w-full"
     : wrap;
 
-  if (store.checkoutMode === "cart") {
+  // Spec +60 / Ikt: con microcopy de rubro, siempre CTA WhatsApp directo
+  // (sin carrito multipaso ni selectores de variantes).
+  const forceWhatsApp = Boolean(ctaLabel);
+
+  if (store.checkoutMode === "cart" && !forceWhatsApp) {
     return (
       <div className={wrap}>
         <AddToCartButton store={store} product={product} />
@@ -370,6 +374,7 @@ export function ProductBuyActions({
         storeName={store.storeName}
         storeSlug={store.storeSlug}
         ownerName={store.ownerName}
+        businessKind={store.businessKind}
         disabled={!product.inStock}
         label={ctaLabel}
         className={`${ctaLabel ? "w-full" : ""} ${!product.inStock ? "opacity-50" : ""}`.trim()}
