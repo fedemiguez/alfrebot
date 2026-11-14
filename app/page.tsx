@@ -126,7 +126,7 @@ export default function Home() {
           </ol>
 
           <Link
-            href="/ayuda#familia"
+            href="/asistente"
             className="fade-in mt-8 inline-flex min-h-[54px] w-full touch-manipulation items-center justify-center rounded-full bg-[#075E54] px-8 text-[1.125rem] font-bold text-white transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54] sm:w-auto [animation-delay:120ms]"
           >
             Quiero armarle la tienda a un familiar
