@@ -49,7 +49,7 @@ export function StoreArtesaniasCatalog({
         onSelect={setActiveId}
       />
 
-      <div className="store-artesanias-grid mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="store-artesanias-grid mt-7 grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((product, i) => (
           <ProductCard
             key={product.id}
@@ -62,7 +62,7 @@ export function StoreArtesaniasCatalog({
       </div>
 
       {filtered.length === 0 && (
-        <p className="mt-8 text-[var(--muted)]">
+        <p className="mt-8 text-base leading-relaxed text-[var(--ikt-text-muted,var(--muted))]">
           No hay piezas en esta categoría.
         </p>
       )}

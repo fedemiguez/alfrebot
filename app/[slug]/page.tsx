@@ -175,17 +175,13 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
         ) : isArtesaniaIkt ? (
           <header className="store-header-artesanias text-center">
             {headerEyebrow ? (
-              <p className="store-header-artesanias__eyebrow text-xs font-bold uppercase tracking-wider text-[var(--ink)] opacity-80">
+              <p className="store-header-artesanias__eyebrow">
                 {headerEyebrow}
               </p>
             ) : null}
-            <h1 className="store-header-artesanias__name text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
-              {store.name}
-            </h1>
+            <h1 className="store-header-artesanias__name">{store.name}</h1>
             {welcome ? (
-              <p className="store-welcome mt-0.5 text-xs font-medium opacity-90">
-                {welcome}
-              </p>
+              <p className="store-header-artesanias__welcome">{welcome}</p>
             ) : null}
           </header>
         ) : isComidaIkt ? (
