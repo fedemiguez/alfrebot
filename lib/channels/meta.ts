@@ -135,6 +135,50 @@ async function fetchMetaMedia(mediaId: string): Promise<Blob> {
   return bin.blob();
 }
 
+/**
+ * Argentina mobile on WhatsApp: country 54 + mobile trunk 9 + 10 national digits.
+ * If we only have 54 + 10 digits (no 9), insert the 9. Already 549… (13 digits) stays.
+ */
+function normalizeArgentinaMobileDigits(digits: string): string {
+  if (/^54\d{10}$/.test(digits) && digits[2] !== "9") {
+    return `549${digits.slice(2)}`;
+  }
+  return digits;
+}
+
+/** Toggle AR mobile 9 for a single 131030 retry: 549XXXXXXXXXX ↔ 54XXXXXXXXXX. */
+function alternateArgentinaMobileDigits(digits: string): string | null {
+  if (/^549\d{10}$/.test(digits)) return `54${digits.slice(3)}`;
+  if (/^54\d{10}$/.test(digits) && digits[2] !== "9") {
+    return `549${digits.slice(2)}`;
+  }
+  return null;
+}
+
+function isMetaRecipientNotAllowed(errText: string): boolean {
+  return errText.includes("131030");
+}
+
+async function postMetaMessage(
+  phoneId: string,
+  token: string,
+  body: unknown,
+): Promise<{ ok: boolean; status: number; errText: string }> {
+  const res = await fetch(
+    `https://graph.facebook.com/${graphVersion()}/${phoneId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+  );
+  if (res.ok) return { ok: true, status: res.status, errText: "" };
+  return { ok: false, status: res.status, errText: await res.text() };
+}
+
 async function sendMeta(to: string, msgs: OutboundMessage[]): Promise<void> {
   const token = accessToken();
   const phoneId = phoneNumberId();
@@ -143,25 +187,37 @@ async function sendMeta(to: string, msgs: OutboundMessage[]): Promise<void> {
     return;
   }
 
-  const toDigits = to.replace(/\D/g, "");
+  const rawDigits = to.replace(/\D/g, "");
+  const toDigits = normalizeArgentinaMobileDigits(rawDigits);
   for (const msg of msgs) {
     // Never deliver Clerk web logout actions over WhatsApp.
     if (msg.kind === "sign_out") continue;
     const body = buildWhatsAppPayload(toDigits, msg);
-    const res = await fetch(
-      `https://graph.facebook.com/${graphVersion()}/${phoneId}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      },
-    );
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("[meta] send failed", res.status, errText);
+    let result = await postMetaMessage(phoneId, token, body);
+
+    // One alternate AR form if allowlist rejects (9 present ↔ absent).
+    if (!result.ok && isMetaRecipientNotAllowed(result.errText)) {
+      const alt = alternateArgentinaMobileDigits(toDigits);
+      if (alt && alt !== toDigits) {
+        console.error(
+          "[meta] send 131030, retrying alternate AR form",
+          { to, toDigits, alt },
+        );
+        result = await postMetaMessage(
+          phoneId,
+          token,
+          buildWhatsAppPayload(alt, msg),
+        );
+      }
+    }
+
+    if (!result.ok) {
+      // Log recipient digits for allowlist debugging; never log tokens.
+      console.error("[meta] send failed", result.status, result.errText, {
+        to,
+        toDigits,
+        rawDigits,
+      });
     }
   }
 }
