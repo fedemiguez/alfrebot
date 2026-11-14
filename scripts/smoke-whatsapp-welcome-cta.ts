@@ -77,12 +77,14 @@ function assertFullWelcome(
 }
 
 async function main() {
-  const ctaNew = "quiero armar mi tienda";
+  const ctaNew = "Hola, quiero armar mi tienda";
+  const ctaLegacyShort = "quiero armar mi tienda";
   const ctaLegacyWeb = "Hola! Quiero armar mi tienda desde la web.";
   const ctaLegacySeguir =
     "Hola! Quiero seguir armando mi tienda desde la web.";
 
   assert(isStoreCreateIntentPhrase(ctaNew), "cta new = intent");
+  assert(isStoreCreateIntentPhrase(ctaLegacyShort), "cta legacy short = intent");
   assert(isStoreCreateIntentPhrase(ctaLegacyWeb), "cta legacy web = intent");
   assert(isStoreCreateIntentPhrase(ctaLegacySeguir), "cta legacy seguir = intent");
   assert(

@@ -71,6 +71,10 @@ async function main() {
     "hola quiero armar = intent",
   );
   assert(
+    isStoreCreateIntentPhrase("Hola, quiero armar mi tienda"),
+    "cta prefill = intent",
+  );
+  assert(
     isStoreCreateIntentPhrase("quiero armar mi tienda"),
     "cta short prefill = intent",
   );
