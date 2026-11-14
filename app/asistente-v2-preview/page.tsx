@@ -38,7 +38,7 @@ async function PreviewBody() {
 
   const botDigits = metaBotNumber();
   const continueWaLink = `https://wa.me/${botDigits}?text=${encodeURIComponent(
-    "Hola! Quiero armar mi tienda desde la preview web.",
+    "quiero armar mi tienda",
   )}`;
 
   return (
