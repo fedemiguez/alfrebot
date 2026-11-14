@@ -64,25 +64,28 @@ export default function Home() {
           decís el precio por audio y tu catálogo queda listo para vender.
         </p>
 
-        <div className="fade-in mt-10 flex w-full max-w-md flex-col gap-3 [animation-delay:120ms]">
+        <div className="fade-in mt-10 flex w-full max-w-md flex-col gap-4 [animation-delay:120ms]">
           <Link
             href="/asistente"
-            className="inline-flex min-h-[54px] w-full items-center justify-center rounded-full bg-[#25D366] px-8 text-[1.125rem] font-bold text-white shadow-sm transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54]"
+            className="inline-flex min-h-[54px] w-full touch-manipulation items-center justify-center rounded-full bg-[#25D366] px-8 text-[1.125rem] font-bold text-white shadow-sm transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54]"
           >
             Empezar a hablar con el asistente 🚀
           </Link>
           <Link
             href="/ayuda"
-            className="inline-flex min-h-[52px] w-full items-center justify-center rounded-full border-2 border-[#075E54] bg-transparent px-8 text-[1.125rem] font-semibold text-[#075E54] transition-[opacity,transform,background-color] duration-200 hover:bg-[#075E54]/08 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54]"
+            className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full border-2 border-[#075E54] bg-transparent px-8 text-[1.125rem] font-semibold text-[#075E54] transition-[opacity,transform,background-color] duration-200 hover:bg-[#075E54]/08 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54]"
           >
             ¿Cómo funciona? Ver guía simple
           </Link>
-          {/* Real same-page anchor (not JS-only scroll). Tertiary weight so hero stays readable. */}
+          {/*
+            Same-page anchor (real href). Label = “mirá la sección”, no “empezá ya”
+            (eso lo dice el CTA filled del bloque → /asistente).
+          */}
           <a
             href="#cta-familia-title"
-            className="inline-flex min-h-[52px] w-full items-center justify-center rounded-full px-8 text-[1.125rem] font-semibold text-[#075E54] underline-offset-4 transition-[opacity,transform] duration-200 hover:underline active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54]"
+            className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full px-8 text-[1.125rem] font-semibold text-[#075E54] underline decoration-2 underline-offset-4 transition-[opacity,transform,background-color] duration-200 hover:bg-[#075E54]/08 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54]"
           >
-            Armarle la tienda a un familiar
+            ¿Es para un familiar? Mirá acá
           </a>
         </div>
       </section>
@@ -94,7 +97,7 @@ export default function Home() {
         <div className="mx-auto w-full max-w-2xl rounded-2xl border-2 border-[#075E54]/20 bg-[#F5EFE6] px-5 py-10 text-center sm:px-8">
           <h2
             id="cta-familia-title"
-            className="fade-in scroll-mt-6 font-[family-name:var(--font-display)] text-[1.4rem] font-semibold leading-snug text-[#075E54] sm:text-[1.65rem]"
+            className="fade-in scroll-mt-10 font-[family-name:var(--font-display)] text-[1.4rem] font-semibold leading-snug text-[#075E54] sm:text-[1.65rem]"
           >
             🎁 ¿Le querés armar la tienda a mamá, papá o un familiar?
           </h2>
@@ -123,8 +126,8 @@ export default function Home() {
           </ol>
 
           <Link
-            href="/ayuda#familia"
-            className="fade-in mt-8 inline-flex min-h-[54px] w-full items-center justify-center rounded-full bg-[#075E54] px-8 text-[1.125rem] font-bold text-white transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54] sm:w-auto [animation-delay:120ms]"
+            href="/asistente"
+            className="fade-in mt-8 inline-flex min-h-[54px] w-full touch-manipulation items-center justify-center rounded-full bg-[#075E54] px-8 text-[1.125rem] font-bold text-white transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54] sm:w-auto [animation-delay:120ms]"
           >
             Quiero armarle la tienda a un familiar
           </Link>
