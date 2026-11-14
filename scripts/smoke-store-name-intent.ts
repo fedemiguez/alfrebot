@@ -71,6 +71,16 @@ async function main() {
     "hola quiero armar = intent",
   );
   assert(
+    isStoreCreateIntentPhrase("Hola! Quiero armar mi tienda desde la web."),
+    "cta web = intent",
+  );
+  assert(
+    isStoreCreateIntentPhrase(
+      "Hola! Quiero seguir armando mi tienda desde la web.",
+    ),
+    "cta legacy seguir armando = intent",
+  );
+  assert(
     !isUsableStoreName("Hola! Quiero armar mi tienda"),
     "hola armar not usable name",
   );

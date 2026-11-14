@@ -133,8 +133,8 @@ import {
 import {
   welcomeAskNameMessage,
   helpGeneralMessage,
-  welcomeBackMessage,
   welcomeMainMessage,
+  type WelcomeClosing,
 } from "@/lib/bot/welcome-copy";
 
 export type BotState =
@@ -598,19 +598,44 @@ function matchMenuGroup(
   return null;
 }
 
-function menuMessage(
-  caps: ChannelCapabilities,
-  _from?: string,
-): OutboundMessage {
-  const options: { id: string; label: string }[] = [
+function mainMenuOptions(): { id: string; label: string }[] {
+  return [
     { id: CHOICE.MENU_GROUP_PRODUCTS, label: "Productos" },
     { id: CHOICE.MENU_GROUP_STORE, label: "Tienda" },
     { id: CHOICE.MENU_GROUP_WA, label: "WhatsApp" },
     { id: CHOICE.MENU_HELP, label: "Ayuda" },
   ];
+}
+
+function menuMessage(
+  caps: ChannelCapabilities,
+  _from?: string,
+): OutboundMessage {
   return withOptions(
     "¿Qué querés hacer?\n\nElegí del menú o mandame un audio 🎤 contándome.",
-    options,
+    mainMenuOptions(),
+    caps,
+  );
+}
+
+/**
+ * Misma copy que /asistente (welcomeMainMessage) + opciones del menú.
+ * Usado en saludo / CTA «armar mi tienda» (Meta lista → «Ver opciones»).
+ */
+function welcomeMenuMessage(
+  caps: ChannelCapabilities,
+  opts?: {
+    firstName?: string | null;
+    closing?: WelcomeClosing;
+    from?: string;
+  },
+): OutboundMessage {
+  return withOptions(
+    welcomeMainMessage({
+      firstName: opts?.firstName,
+      closing: opts?.closing ?? "owner",
+    }),
+    mainMenuOptions(),
     caps,
   );
 }
@@ -1301,7 +1326,8 @@ async function handleMessageBody(
       );
     }
 
-    // Misma dueña por el otro canal (Clerk ↔ WA vinculado) → menú, no onboarding.
+    // Misma dueña por el otro canal (Clerk ↔ WA vinculado) → welcome completo + menú
+    // (misma copy que /asistente), no el menú corto solo.
     const existingStore = await getStoreForChannelIdentity(msg.from);
     if (existingStore?.status === "active" && existingStore.slug) {
       draft = {
@@ -1315,11 +1341,13 @@ async function handleMessageBody(
         tracksQuantity: existingStore.tracksQuantity,
       };
       await setState("IDLE", draft);
-      replies.push({
-        kind: "text",
-        text: welcomeBackMessage(existingStore.ownerName),
-      });
-      replies.push(menuMessage(caps, msg.from));
+      replies.push(
+        welcomeMenuMessage(caps, {
+          firstName: existingStore.ownerName,
+          closing: "owner",
+          from: msg.from,
+        }),
+      );
       return replies;
     }
 
@@ -2185,6 +2213,19 @@ async function handleMessageBody(
     }
     if (msg.text && store && wantsContactPhoneText(msg.text)) {
       return startContactEditFlow(store, draft, setState, caps, msg);
+    }
+
+    // Saludo / CTA web («Hola! Quiero armar mi tienda…») → welcome completo
+    // como /asistente, no el menú corto «¿Qué querés hacer?».
+    if (msg.text && isStoreCreateIntentPhrase(msg.text)) {
+      replies.push(
+        welcomeMenuMessage(caps, {
+          firstName: store?.ownerName ?? draft.ownerName,
+          closing: store?.slug ? "owner" : "guest",
+          from: msg.from,
+        }),
+      );
+      return replies;
     }
 
     // Multi-intent en IDLE: logo + color + rubro + tema + frase + productos.

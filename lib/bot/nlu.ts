@@ -319,10 +319,11 @@ export function isStoreCreateIntentPhrase(text: string): boolean {
 
   if (/^(hola|buenas)(?:\s+(?:dias|tardes|noches))?$/.test(t)) return true;
 
+  // Infinitivo o gerundio («armar» / «seguir armando» deep-links viejos).
   const createVerb =
-    /\b(?:armar|crear|hacer|abrir|montar|poner)\s+(?:mi\s+)?tienda\b/;
+    /\b(?:armar|armando|crear|creando|hacer|haciendo|abrir|abriendo|montar|montando|poner|poniendo)\s+(?:mi\s+)?tienda\b/;
   const wantsCreate =
-    /^(?:hola|buenas)?(?:\s+(?:dias|tardes|noches))?\s*(?:quiero|necesito|me gustaria|vamos a)?\s*(?:armar|crear|hacer|abrir|montar|poner)\s+(?:mi\s+)?tienda\b/;
+    /^(?:hola|buenas)?(?:\s+(?:dias|tardes|noches))?\s*(?:quiero|necesito|me gustaria|vamos a)?\s*(?:seguir\s+)?(?:armar|armando|crear|creando|hacer|haciendo|abrir|abriendo|montar|montando|poner|poniendo)\s+(?:mi\s+)?tienda\b/;
 
   if (wantsCreate.test(t) || (/^(?:hola|buenas)\b/.test(t) && createVerb.test(t))) {
     return true;
