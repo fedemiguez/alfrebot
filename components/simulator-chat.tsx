@@ -88,6 +88,25 @@ function buildV2OwnerIntro(firstName?: string | null): ChatItem {
 }
 
 /**
+ * Hilo solo con el bubble de bienvenida (guest o owner).
+ * Ese mensaje es más alto que el viewport móvil: no hay que pinchar al fondo
+ * o el usuario pierde el arranque del saludo.
+ */
+function isWelcomeOnlyThread(items: ChatItem[]): boolean {
+  if (items.length !== 1) return false;
+  const id = items[0]?.id;
+  return id === V2_INTRO_ID || id === V2_OWNER_INTRO_ID;
+}
+
+function syncMessagesScroll(el: HTMLDivElement, items: ChatItem[]) {
+  if (isWelcomeOnlyThread(items)) {
+    el.scrollTop = 0;
+    return;
+  }
+  el.scrollTop = el.scrollHeight;
+}
+
+/**
  * Shell tipo WhatsApp: altura = visualViewport (iOS/Android con teclado).
  * Evita que el layout “salte” o deje el composer a mitad de pantalla.
  */
@@ -346,10 +365,11 @@ export function SimulatorChat({
 
   // Scroll solo dentro del panel de mensajes (no scrollIntoView del documento:
   // con teclado móvil empuja el shell fuera de vista).
-  useEffect(() => {
+  // Bienvenida sola → anclar arriba (primer paint + layout); luego stick-to-bottom.
+  useLayoutEffect(() => {
     const el = messagesRef.current;
     if (!el) return;
-    el.scrollTop = el.scrollHeight;
+    syncMessagesScroll(el, items);
   }, [items, error, sending, pending, uploading, recording, sendingAudio]);
 
   const storePreviewUrl = useMemo(
@@ -1293,9 +1313,12 @@ export function SimulatorChat({
             onChange={(e) => setInput(e.target.value)}
             onFocus={() => {
               // Tras abrir el teclado, re-sync scroll interno (no el documento).
+              // Con welcome solo no empujar al fondo: el usuario debe ver el inicio.
               window.requestAnimationFrame(() => {
                 const el = messagesRef.current;
-                if (el) el.scrollTop = el.scrollHeight;
+                if (!el) return;
+                if (isWelcomeOnlyThread(items)) return;
+                el.scrollTop = el.scrollHeight;
               });
             }}
             placeholder={
