@@ -21,7 +21,11 @@ import {
   iktHelperTip,
   storeMonogramInitials,
 } from "@/lib/ikt-cta";
-import { resolveStoreContactPhone } from "@/lib/phone";
+import {
+  buildWaMeUrl,
+  formatPhoneDisplay,
+  resolveStoreContactPhone,
+} from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
 import { monogramIconPath } from "@/lib/store-icon";
 import { accentStyleVars } from "@/lib/store-accent";
@@ -140,7 +144,7 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
   const isIktRubro = isRopaIkt || isComidaIkt || isArtesaniaIkt;
   const isDefaultIkt = iktShell.isDefault;
   const headerEyebrow = iktHeaderEyebrow(store.businessKind);
-  const helperTip = iktHelperTip(store.businessKind);
+  const helperTip = iktHelperTip(store.businessKind, store.ownerName);
   const themeClass =
     iktShell.ikt || iktShell.isDefault
       ? (iktShell.themeClassName ?? "")
@@ -281,9 +285,11 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
           </div>
         )}
 
-        <div className="store-secondary-notes store-secondary-notes--install">
-          <StoreInstallCta storeName={store.name} compact />
-        </div>
+        {!isIktRubro ? (
+          <div className="store-secondary-notes store-secondary-notes--install">
+            <StoreInstallCta storeName={store.name} compact />
+          </div>
+        ) : null}
 
         <NoPublicPhoneNote
           showPhone={store.showPhone}
@@ -292,15 +298,15 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
         />
 
         {isRopaIkt ? (
-          <div className="mt-8">
+          <div className="store-catalog-ikt">
             <StoreRopaCatalog products={products} store={purchase} />
           </div>
         ) : isComidaIkt ? (
-          <div className="mt-8">
+          <div className="store-catalog-ikt">
             <StoreComidasCatalog products={products} store={purchase} />
           </div>
         ) : isArtesaniaIkt ? (
-          <div className="mt-8">
+          <div className="store-catalog-ikt">
             <StoreArtesaniasCatalog products={products} store={purchase} />
           </div>
         ) : (
@@ -325,22 +331,44 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
           <p className="mt-10 text-[var(--muted)]">Todavía no hay productos publicados.</p>
         )}
 
-        <footer className="mt-16 border-t border-[var(--border)] pt-8 text-[18px] text-[var(--ink)]">
+        <footer
+          className={
+            isIktRubro
+              ? "store-footer-ikt"
+              : "mt-16 border-t border-[var(--border)] pt-8 text-[18px] text-[var(--ink)]"
+          }
+        >
           {(() => {
             const contact = resolveStoreContactPhone(store);
             if (isIktRubro && store.showPhone && contact) {
+              const owner = store.ownerName?.trim() || "el dueño";
+              const phoneLabel = formatPhoneDisplay(contact);
+              const waHref = buildWaMeUrl(
+                contact,
+                `¡Hola ${owner}! 👋 Vi tu página web${
+                  store.name ? ` (${store.name})` : ""
+                } y quería hacerte una consulta.`,
+              );
               return (
                 <div className="ikt-store-footer">
-                  <p className="ikt-store-footer__title">¿Tenés alguna consulta?</p>
-                  <p className="ikt-store-footer__body">
-                    Escribile directo a{" "}
-                    <strong>{store.ownerName || "el dueño"}</strong> y te
-                    asesora al instante.
+                  <p className="ikt-store-footer__title">
+                    ¿Tenés alguna consulta?
                   </p>
-                  <StoreContactLine
-                    ownerName={store.ownerName}
-                    phoneE164={contact}
-                  />
+                  <p className="ikt-store-footer__body">
+                    Escribile directo a <strong>{owner}</strong> al{" "}
+                    <strong>{phoneLabel}</strong> y te asesora al instante.
+                  </p>
+                  <p className="ikt-store-footer__cta">
+                    <a
+                      href={waHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-ikt-cta ikt-whatsapp-btn w-full"
+                    >
+                      <span aria-hidden="true">💬</span>
+                      <span>Escribirle a {owner} por WhatsApp</span>
+                    </a>
+                  </p>
                   <p className="ikt-store-footer__credit">
                     Tienda creada con Alfrebot · Iktweb
                   </p>

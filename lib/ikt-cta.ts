@@ -38,21 +38,42 @@ export function iktHeaderEyebrow(
 export const IKT_COMIDAS_OPEN_BANNER =
   "🟢 ABIERTO AHORA · Retiro en el local o envío a domicilio";
 
-/** Tip 💡 debajo del buscador de voz (guía +60). */
-export const IKT_HELPER_TIP: Record<IktRubro, string> = {
-  comidas:
-    "Tocá el botón verde del plato que te tiente y se arma tu pedido en WhatsApp.",
-  ropa: "Sin tablas de talles complicadas: tocá la prenda que te guste y consultale directo.",
-  artesanias:
-    "Tocá el botón en la pieza que te guste y te abre WhatsApp para encargarla.",
-};
-
+/** Tip 💡 debajo del buscador de voz (guía +60 / copy Gemini). */
 export function iktHelperTip(
   businessKind: string | null | undefined,
+  ownerName?: string | null,
 ): string | null {
   const rubro = businessKindToIktRubro(businessKind);
   if (!rubro) return null;
-  return IKT_HELPER_TIP[rubro];
+  const owner = ownerName?.trim();
+  if (rubro === "comidas") {
+    return "Tocá el botón verde del plato que te tiente y se arma tu pedido en WhatsApp.";
+  }
+  if (rubro === "ropa") {
+    return owner
+      ? `Sin tablas de talles complicadas: tocá la prenda que te guste y consultale directo a ${owner}.`
+      : "Sin tablas de talles complicadas: tocá la prenda que te guste y consultale directo.";
+  }
+  return owner
+    ? `Tocá el botón en la pieza que te guste y te abre WhatsApp para encargársela a ${owner}.`
+    : "Tocá el botón en la pieza que te guste y te abre WhatsApp para encargarla.";
+}
+
+/** Placeholder del buscador escrito (ejemplos por rubro, mock Gemini). */
+export function iktVoiceSearchPlaceholder(
+  businessKind: string | null | undefined,
+): string {
+  const rubro = businessKindToIktRubro(businessKind);
+  if (rubro === "comidas") {
+    return "O escribí acá (ej: Milanesa, Empanadas)...";
+  }
+  if (rubro === "ropa") {
+    return "O escribí acá (ej: Camisa, Jean)...";
+  }
+  if (rubro === "artesanias") {
+    return "O escribí acá (ej: Cuenco, Mate)...";
+  }
+  return "O escribí acá...";
 }
 
 /** Verbo del mensaje wa.me prearmado (spec Gemini). */

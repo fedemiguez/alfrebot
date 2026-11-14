@@ -27,6 +27,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 body {
@@ -38,6 +39,14 @@ body {
   font-family: var(--font-body), "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
   font-size: 19px;
   line-height: 1.55;
+  /* overflow visible: no romper position:sticky del buscador de voz. */
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+/* Columna de vitrina: contenedor de sticky (con .store-voice { display:contents }). */
+main.flex-1 {
+  overflow: visible;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -382,33 +391,38 @@ body {
 .product-card--ikt-ropa .product-card__title-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  align-items: baseline; /* Gemini items-baseline */
+  gap: 0.75rem; /* gap-3 */
+  margin-top: 0.625rem; /* mt-2.5 */
+  margin-bottom: 0;
 }
 
 .product-card--ikt-ropa .product-card__title {
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 800;
+  font-family: var(--font-ikt-ropa), "Cormorant Garamond", Georgia, serif;
+  font-size: 1.5rem; /* text-2xl Gemini */
+  font-weight: 700;
   letter-spacing: -0.01em;
   text-transform: none;
   line-height: 1.3;
+  color: var(--ikt-text-main, var(--ink));
 }
 
 .product-card--ikt-ropa .product-card__price {
   margin: 0;
-  font-size: 1.125rem;
+  /* Spec: Plus Jakarta Sans en precios (no serif del título). */
+  font-family: var(--font-ikt-body), "Plus Jakarta Sans", sans-serif;
+  font-size: 1.25rem; /* 20px */
   font-weight: 800;
-  color: var(--ink);
+  color: var(--ikt-primary, var(--primary));
 }
 
 .product-card--ikt-ropa .product-card__desc {
-  margin: 0 0 1rem;
-  font-size: 0.95rem;
-  line-height: 1.55;
-  color: var(--muted);
-  opacity: 0.95;
+  margin: 0.375rem 0 0; /* mt-1.5; CTA aporta mt-4 */
+  font-size: 1rem; /* text-base +60 */
+  line-height: 1.625; /* leading-relaxed */
+  color: var(--ikt-text-muted, var(--muted));
+  opacity: 1;
 }
 
 .btn-ikt-cta,
@@ -542,32 +556,38 @@ body {
 .product-card--ikt-comida .product-card__title-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-top: 0.625rem;
+  margin-bottom: 0;
 }
 
 .product-card--ikt-comida .product-card__title {
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 800;
+  font-family: var(--font-ikt-comidas), "Bricolage Grotesque", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
   letter-spacing: -0.01em;
   text-transform: none;
   line-height: 1.3;
+  color: var(--ikt-text-main, var(--ink));
 }
 
+.product-card--ikt-comida .product-card__price,
 .product-card--ikt-comida .product-card__price--primary {
   margin: 0;
-  font-size: 1.125rem;
+  /* Spec: Bricolage Grotesque en títulos y precios. */
+  font-family: var(--font-ikt-comidas), "Bricolage Grotesque", sans-serif;
+  font-size: 1.25rem;
   font-weight: 800;
   color: var(--ikt-primary, var(--primary));
 }
 
 .product-card--ikt-comida .product-card__desc {
-  margin: 0 0 0.875rem;
-  font-size: 0.95rem;
-  line-height: 1.55;
-  color: color-mix(in srgb, var(--ink) 72%, transparent);
+  margin: 0.375rem 0 0;
+  font-size: 1rem;
+  line-height: 1.625;
+  color: var(--ikt-text-muted, var(--muted));
 }
 
 /* ——— Plantilla Ikt Artesanías (Fase 4 + polish TN-103) ——— */
@@ -833,13 +853,15 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 0.75rem;
-  margin-bottom: 0.4rem;
+  gap: 0.75rem; /* gap-3 */
+  margin-top: 0.625rem; /* mt-2.5 */
+  margin-bottom: 0;
 }
 
 .product-card--ikt-artesania .product-card__title {
   margin: 0;
-  font-size: 1.25rem;
+  font-family: var(--font-ikt-artesanias), "Fraunces", Georgia, serif;
+  font-size: 1.25rem; /* text-xl Gemini */
   font-weight: 700;
   letter-spacing: -0.02em;
   text-transform: none;
@@ -849,17 +871,18 @@ body {
 
 .product-card--ikt-artesania .product-card__price {
   margin: 0;
-  font-family: var(--ikt-font-heading), "Plus Jakarta Sans", sans-serif;
-  font-size: 1.125rem;
-  font-weight: 700;
+  /* Spec: cuerpo Plus Jakarta; mock Gemini text-xl extrabold + --ikt-primary. */
+  font-family: var(--font-ikt-body), "Plus Jakarta Sans", sans-serif;
+  font-size: 1.25rem; /* 20px (rango 20–24px) */
+  font-weight: 800;
   letter-spacing: -0.01em;
   color: var(--ikt-primary, var(--primary));
 }
 
 .product-card--ikt-artesania .product-card__desc {
-  margin: 0 0 0.15rem;
-  font-size: 1rem;
-  line-height: 1.55;
+  margin: 0.375rem 0 0; /* mt-1.5 */
+  font-size: 1rem; /* text-base */
+  line-height: 1.625; /* leading-relaxed */
   color: var(--ikt-text-muted, var(--muted));
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -920,14 +943,14 @@ body {
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
 }
 
-/* Voice chrome artesanías: misma card flotante sticky Gemini. */
+/* Voice chrome artesanías: misma card flotante sticky Gemini (shadow-md). */
 .store-theme-shell[data-rubro="artesanias"] .store-voice-sticky {
   background: var(--ikt-surface);
   border-color: var(--ikt-border);
   border-radius: 1rem;
   box-shadow:
-    0 4px 6px -1px rgb(15 23 42 / 0.1),
-    0 10px 24px -4px rgb(15 23 42 / 0.12);
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
 .store-theme-shell[data-rubro="artesanias"] .store-voice-btn {
@@ -1000,8 +1023,9 @@ body {
 /* Temas de fondo (Fase C). Preservan --primary del accent_color. */
 .store-theme-shell {
   position: relative;
-  isolation: isolate;
+  /* Evitar isolation/overflow que rompan sticky del buscador de voz. */
   min-height: 100%;
+  overflow: visible;
   background:
     radial-gradient(
       ellipse at top left,
@@ -1017,9 +1041,10 @@ body {
   color: var(--ink);
 }
 
-.store-theme-shell > * {
+/* Patrón/trama (::before) debajo del contenido; no forzar stacking en hijos
+ * (antes z-index:1 en >* competía con sticky z-20 del voice chrome). */
+.store-theme-shell > *:not(.store-open-banner) {
   position: relative;
-  z-index: 1;
 }
 
 /*
@@ -1279,10 +1304,12 @@ body {
 }
 
 /* ——— Voice chrome: card flotante sticky (Gemini exacto) ———
+ * Critico: .store-voice usa display:contents para que el sticky NO quede
+ * atrapado en un padre corto (si no, no puede flotar sobre el catálogo).
  * sticky top-2 (=8px) + z-index 20 + sombra → se solapa sobre el feed.
  */
 .store-voice {
-  margin-top: 1rem;
+  display: contents;
 }
 
 .store-voice-sticky,
@@ -1290,18 +1317,22 @@ body {
   position: sticky;
   top: 8px;
   z-index: 20;
-  padding: 0.75rem;
-  border-radius: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem; /* Gemini mb-4 under sticky card */
+  padding: 0.75rem; /* p-3 */
+  border-radius: 1rem; /* rounded-2xl */
   border: 1px solid var(--ikt-border, var(--border));
   background: var(--ikt-surface, #ffffff);
+  /* Tailwind shadow-md exacto (Gemini class="shadow-md") */
   box-shadow:
-    0 4px 6px -1px rgb(15 23 42 / 0.1),
-    0 10px 24px -4px rgb(15 23 42 / 0.12);
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
 @supports (top: max(0px)) {
   .store-voice-sticky,
   .ikt-voice-card {
+    /* Spec Gemini: top: 8px. Safe-area solo suma si es mayor. */
     top: max(8px, env(safe-area-inset-top, 0px));
   }
 }
@@ -1336,11 +1367,6 @@ body {
 .store-voice-btn:disabled {
   cursor: not-allowed;
   opacity: 0.65;
-}
-
-.store-voice-btn.is-listening {
-  outline: 2px solid color-mix(in srgb, var(--ikt-primary) 55%, white);
-  outline-offset: 2px;
 }
 
 .store-voice-btn__icon {
@@ -1387,19 +1413,17 @@ body {
 }
 
 .store-voice-feedback {
-  margin-top: 0.625rem;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.625rem 0.75rem;
-  border-radius: 12px;
+  margin-top: 0.625rem; /* mt-2.5 Gemini */
+  padding: 0.625rem; /* p-2.5 */
+  border-radius: 12px; /* rounded-xl */
   border: 1px solid var(--ikt-primary);
   background: var(--ikt-bg, var(--bg));
   color: var(--ikt-text-main);
   font-family: var(--ikt-font-body), "Plus Jakarta Sans", sans-serif;
-  font-size: 0.875rem;
+  font-size: 0.875rem; /* text-sm */
   font-weight: 600;
   line-height: 1.4;
+  text-align: center;
 }
 
 .store-voice-feedback p {
@@ -1411,7 +1435,13 @@ body {
 }
 
 .store-voice-feedback.is-understood {
-  border-color: color-mix(in srgb, var(--ikt-whatsapp) 35%, var(--ikt-border));
+  /* Gemini reutiliza el mismo borde --accent-primary en listening y understood. */
+  border-color: var(--ikt-primary);
+  color: var(--ikt-text-main);
+}
+
+.store-voice-feedback em {
+  font-style: italic;
 }
 
 .store-voice-type {
@@ -1806,55 +1836,86 @@ body {
 }
 
 .ikt-helper-tip {
-  margin-top: 1.25rem;
-  margin-bottom: 0.5rem;
+  /* Gemini: sticky mb-4 + tip mb-5 (sin margin-top propio). */
+  margin-top: 0;
+  margin-bottom: 1.25rem; /* mb-5 */
   display: flex;
   align-items: flex-start;
-  gap: 0.625rem;
-  padding: 0.625rem 0.875rem;
-  border-radius: 12px;
+  gap: 0.625rem; /* gap-2.5 */
+  padding: 0.625rem 0.875rem; /* py-2.5 px-3.5 */
+  border-radius: 12px; /* rounded-xl */
   border: 1px solid var(--ikt-border);
   background: var(--ikt-surface);
   color: var(--ikt-text-main);
   font-family: var(--ikt-font-body), "Plus Jakarta Sans", sans-serif;
-  font-size: 0.875rem;
+  font-size: 0.875rem; /* text-sm */
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.375; /* leading-snug */
+}
+
+.ikt-helper-tip > span:first-child {
+  margin-top: 0.125rem; /* mt-0.5 */
+  font-size: 1.125rem; /* text-lg */
+  line-height: 1; /* leading-none */
+  flex-shrink: 0;
 }
 
 .ikt-helper-tip p {
   margin: 0;
 }
 
+.store-catalog-ikt {
+  margin-top: 0; /* el tip ya aporta mb-5; Gemini no suma mt-8 */
+}
+
+/* Footer humano Gemini — card centrada, CTA WhatsApp, crédito. */
 .ikt-store-footer {
   text-align: center;
-  padding: 1.5rem 1rem;
+  margin-top: 2rem;
+  padding: 1.5rem 1rem 1rem;
   border-radius: 1rem;
   border: 1px solid var(--ikt-border);
   background: var(--ikt-surface);
 }
 
 .ikt-store-footer__title {
-  margin: 0 0 0.375rem;
+  margin: 0 0 0.375rem; /* mb-1.5 */
   font-family: var(--ikt-font-heading);
-  font-size: 1.25rem;
+  font-size: 1.25rem; /* text-xl */
   font-weight: 700;
   color: var(--ikt-text-main);
 }
 
 .ikt-store-footer__body {
-  margin: 0 0 1rem;
-  font-size: 1rem;
-  line-height: 1.5;
+  margin: 0 0 1rem; /* mb-4 */
+  font-family: var(--ikt-font-body), "Plus Jakarta Sans", sans-serif;
+  font-size: 1rem; /* text-base */
+  line-height: 1.625; /* leading-relaxed */
   color: var(--ikt-text-muted);
+}
+
+.ikt-store-footer__body strong {
+  color: var(--ikt-text-main);
+  font-weight: 700;
+}
+
+.ikt-store-footer__cta {
+  margin: 0;
 }
 
 .ikt-store-footer__credit {
   margin: 1rem 0 0;
+  font-family: var(--ikt-font-body), "Plus Jakarta Sans", sans-serif;
   font-size: 0.75rem;
   font-weight: 500;
   opacity: 0.65;
   color: var(--ikt-text-muted);
+}
+
+footer.store-footer-ikt {
+  margin-top: 2rem;
+  border-top: none;
+  padding-top: 0;
 }
 
 .store-theme-shell[data-rubro] {
@@ -1862,16 +1923,9 @@ body {
   font-size: 1rem;
 }
 
-.store-theme-shell[data-rubro] .product-card__title {
-  font-size: clamp(1.25rem, 3vw, 1.5rem);
-}
-
-.store-theme-shell[data-rubro] .product-card__price {
-  font-size: clamp(1.25rem, 3vw, 1.5rem);
-}
-
 .store-theme-shell[data-rubro] .product-card__desc {
   font-size: 1rem;
+  font-family: var(--ikt-font-body), "Plus Jakarta Sans", sans-serif;
   color: var(--ikt-text-muted);
 }
 

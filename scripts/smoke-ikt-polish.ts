@@ -11,6 +11,7 @@ import {
 } from "../lib/store-legacy-chrome";
 import { iktShellPresentation, resolveIktTheme } from "../lib/store-ikt-theme";
 import { storePurchaseProps } from "../lib/store-purchase";
+import { iktHelperTip, iktVoiceSearchPlaceholder } from "../lib/ikt-cta";
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(`FAIL: ${msg}`);
@@ -111,5 +112,19 @@ const msgLegacy = productWantMessage({
 });
 assert(msgLegacy.includes("Vi su página web"), "legacy sin rubro");
 assert(msgLegacy.includes("Catálogo:"), "legacy link catálogo");
+
+/* ——— Tip 💡 + placeholder Gemini (+ owner) ——— */
+assert(
+  iktHelperTip("artesanal", "Nora")?.includes("encargársela a Nora"),
+  "tip artesanías con owner",
+);
+assert(
+  iktHelperTip("ropa", "Marta")?.includes("consultale directo a Marta"),
+  "tip ropa con owner",
+);
+assert(
+  iktVoiceSearchPlaceholder("artesanal").includes("Cuenco"),
+  "placeholder artesanías",
+);
 
 console.log("smoke-ikt-polish: OK");

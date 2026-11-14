@@ -22,7 +22,7 @@ import {
 } from "@/lib/voice/browser-speech";
 import { WantItButton } from "@/components/want-it-button";
 import { ProductBuyActions } from "@/components/store-purchase";
-import { iktWantCtaLabel } from "@/lib/ikt-cta";
+import { iktVoiceSearchPlaceholder, iktWantCtaLabel } from "@/lib/ikt-cta";
 
 type Props = {
   store: StorePurchaseInfo;
@@ -62,6 +62,7 @@ export function StoreVoiceAssistant({
   const chunksRef = useRef<Blob[]>([]);
   const selectedIdRef = useRef<string | null>(null);
   const ctaLabel = iktWantCtaLabel(store.businessKind);
+  const searchPlaceholder = iktVoiceSearchPlaceholder(store.businessKind);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
@@ -368,14 +369,18 @@ export function StoreVoiceAssistant({
 
   const isListening = phase === "listening" || phase === "recording";
   const primaryBusy = phase === "transcribing";
-  const primaryLabel =
-    isListening
-      ? phase === "recording"
-        ? "Listo"
-        : LISTENING_LABEL
-      : primaryBusy
-        ? "Escuchando…"
-        : IDLE_LABEL;
+  /* Mock Gemini: durante listening el botón dice "Escuchando tu voz...";
+   * el segundo toque corta (WebSpeech stop / MediaRecorder stop). */
+  const primaryLabel = isListening
+    ? LISTENING_LABEL
+    : primaryBusy
+      ? LISTENING_LABEL
+      : IDLE_LABEL;
+  const primaryAriaLabel = isListening
+    ? `${LISTENING_LABEL} Tocá de nuevo para cortar.`
+    : primaryBusy
+      ? LISTENING_LABEL
+      : IDLE_LABEL;
 
   const showUnderstood =
     Boolean(understoodPhrase) && phase === "done" && !isListening;
@@ -399,7 +404,7 @@ export function StoreVoiceAssistant({
           disabled={primaryBusy}
           className={`store-voice-btn ikt-voice-btn${isListening ? " is-listening" : ""}`}
           aria-pressed={isListening}
-          aria-label={primaryLabel}
+          aria-label={primaryAriaLabel}
         >
           <span className="store-voice-btn__icon" aria-hidden="true">
             <span
@@ -412,9 +417,8 @@ export function StoreVoiceAssistant({
 
         {showListeningHint ? (
           <div className="store-voice-feedback is-listening" role="status">
-            <span aria-hidden="true">🎙️</span>
             <p>
-              Escuchando… Probá decir:{" "}
+              🎙️ Escuchando... Probá decir:{" "}
               <em>&ldquo;{voiceExample}&rdquo;</em>
             </p>
           </div>
@@ -422,9 +426,8 @@ export function StoreVoiceAssistant({
 
         {showUnderstood && understoodPhrase ? (
           <div className="store-voice-feedback is-understood" role="status">
-            <span aria-hidden="true">✅</span>
             <p>
-              Entendí: <strong>&ldquo;{understoodPhrase}&rdquo;</strong>
+              ✅ Entendí: <strong>&ldquo;{understoodPhrase}&rdquo;</strong>
             </p>
           </div>
         ) : null}
@@ -448,7 +451,7 @@ export function StoreVoiceAssistant({
                 setUnderstoodPhrase(null);
               }
             }}
-            placeholder="O escribí acá..."
+            placeholder={searchPlaceholder}
             className="store-voice-input"
           />
           {typedQuery.trim() ? (
