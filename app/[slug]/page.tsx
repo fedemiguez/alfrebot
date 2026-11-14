@@ -10,7 +10,6 @@ import {
 } from "@/components/store-purchase";
 import { StoreContactLine } from "@/components/store-contact";
 import { StoreInstallCta } from "@/components/store-install-cta";
-import { ArtesaniaTitleFlourish } from "@/components/artesania-title-flourish";
 import { StoreArtesaniasCatalog } from "@/components/store-artesanias-catalog";
 import { StoreComidasCatalog } from "@/components/store-comidas-catalog";
 import { StoreRopaCatalog } from "@/components/store-ropa-catalog";
@@ -19,9 +18,14 @@ import { hasTranscriptionConfigured } from "@/lib/bot/transcribe";
 import {
   IKT_COMIDAS_OPEN_BANNER,
   iktHeaderEyebrow,
+  iktHelperTip,
   storeMonogramInitials,
 } from "@/lib/ikt-cta";
-import { resolveStoreContactPhone } from "@/lib/phone";
+import {
+  buildWaMeUrl,
+  formatPhoneDisplay,
+  resolveStoreContactPhone,
+} from "@/lib/phone";
 import { storePurchaseProps } from "@/lib/store-purchase";
 import { monogramIconPath } from "@/lib/store-icon";
 import { accentStyleVars } from "@/lib/store-accent";
@@ -77,6 +81,45 @@ export async function generateMetadata({
   };
 }
 
+function StoreLogoAvatar({
+  rubro,
+  iconSrc,
+  monogram,
+  storeName,
+  hasIcon,
+}: {
+  rubro: "comidas" | "ropa" | "artesanias";
+  iconSrc: string;
+  monogram: string;
+  storeName: string;
+  hasIcon: boolean;
+}) {
+  const size = rubro === "artesanias" ? 76 : 74;
+  if (hasIcon) {
+    return (
+      <div className={`ikt-store-logo-wrap ikt-store-logo-wrap--${rubro}`}>
+        <Image
+          src={iconSrc}
+          alt={`Logo de ${storeName}`}
+          width={size}
+          height={size}
+          className="ikt-store-logo"
+          priority
+          unoptimized={iconSrc.startsWith("/") || iconSrc.startsWith("data:")}
+        />
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`ikt-store-logo ikt-store-logo--monogram ikt-store-logo-wrap--${rubro}`}
+      aria-hidden="true"
+    >
+      {monogram}
+    </div>
+  );
+}
+
 async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] }) {
   const { slug } = await params;
   const { store, products } = await getCachedStore(slug);
@@ -88,7 +131,6 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
   const iconSrc = store.icon192Url || monogramIconPath(slug, 192);
 
   const iktShell = iktShellPresentation(store);
-  // Ikt (rubro o default): tokens vía styleVars. Legacy accent solo si algo falla.
   const accentVars =
     iktShell.ikt || iktShell.isDefault
       ? iktShell.styleVars
@@ -99,20 +141,28 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
   const isRopaIkt = kind === "ropa";
   const isComidaIkt = kind === "comida";
   const isArtesaniaIkt = kind === "artesanal";
+  const isIktRubro = isRopaIkt || isComidaIkt || isArtesaniaIkt;
   const isDefaultIkt = iktShell.isDefault;
   const headerEyebrow = iktHeaderEyebrow(store.businessKind);
-  // Con Ikt (rubro o default): theme claro/crema/oscuro ignorado.
+  const helperTip = iktHelperTip(store.businessKind, store.ownerName);
   const themeClass =
     iktShell.ikt || iktShell.isDefault
       ? (iktShell.themeClassName ?? "")
       : storeThemeClassName(store.theme);
-  // Marcos/trama archivados (PR7); helper centraliza la decisión.
   const patternClass = shouldShowStorePattern(store.businessKind)
     ? storePatternClassName(store.businessKind)
     : "";
   const welcome = normalizeWelcomeMessage(store.welcomeMessage);
   const monogram = storeMonogramInitials(store.name);
   const showOpenBanner = isComidaIkt && Boolean(store.openNow);
+  const hasIcon = Boolean(store.icon192Url);
+  const rubroKey = isComidaIkt
+    ? "comidas"
+    : isRopaIkt
+      ? "ropa"
+      : isArtesaniaIkt
+        ? "artesanias"
+        : null;
 
   return (
     <StorePurchaseProvider store={purchase}>
@@ -123,111 +173,37 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
         style={accentVars as CSSProperties}
       >
       {showOpenBanner ? (
-        <div
-          className="store-open-banner"
-          role="status"
-        >
+        <div className="store-open-banner" role="status">
           {IKT_COMIDAS_OPEN_BANNER}
         </div>
       ) : null}
       <div
         className={`mx-auto w-full max-w-5xl px-5 ${isComidaIkt ? "py-6" : "py-10"} ${kindClass}`}
       >
-        {isRopaIkt ? (
-          <header className="store-header-ropa flex items-center justify-between gap-4 border-b-2 border-[color-mix(in_srgb,var(--ink)_12%,transparent)] pb-3">
-            <div className="min-w-0">
-              {headerEyebrow ? (
-                <p className="store-header-ropa__eyebrow text-xs font-bold uppercase tracking-wider text-[var(--ink)] opacity-80">
-                  {headerEyebrow}
-                </p>
-              ) : null}
-              <h1 className="store-header-ropa__name font-[family-name:var(--font-display)] text-2xl font-extrabold tracking-tight text-[var(--ink)] sm:text-3xl">
-                {store.name}
-              </h1>
-              {welcome ? (
-                <p className="store-welcome mt-1 text-[0.95rem]">{welcome}</p>
-              ) : null}
-            </div>
-            {store.icon192Url ? (
-              <Image
-                src={iconSrc}
-                alt=""
-                width={44}
-                height={44}
-                className="store-header-ropa__avatar size-11 shrink-0 rounded-full object-cover shadow-sm ring-1 ring-[color-mix(in_srgb,var(--ink)_10%,transparent)]"
-                priority
-                unoptimized={
-                  iconSrc.startsWith("/") || iconSrc.startsWith("data:")
-                }
-              />
-            ) : (
-              <div
-                className="store-header-ropa__avatar flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-extrabold shadow-sm"
-                style={{
-                  backgroundColor: "var(--primary)",
-                  color: "var(--primary-fg)",
-                }}
-                aria-hidden="true"
-              >
-                {monogram}
-              </div>
-            )}
-          </header>
-        ) : isArtesaniaIkt ? (
-          <header className="store-header-artesanias text-center">
+        {isIktRubro && rubroKey ? (
+          <header className={`store-header-ikt store-header-ikt--${rubroKey}`}>
+            <StoreLogoAvatar
+              rubro={rubroKey}
+              iconSrc={iconSrc}
+              monogram={monogram}
+              storeName={store.name}
+              hasIcon={hasIcon}
+            />
             {headerEyebrow ? (
-              <p className="store-header-artesanias__eyebrow">
-                {headerEyebrow}
-              </p>
+              <p className="store-header-ikt__kicker">{headerEyebrow}</p>
             ) : null}
-            <div className="store-header-artesanias__title-row">
-              <ArtesaniaTitleFlourish className="store-header-artesanias__flourish" />
-              <h1 className="store-header-artesanias__name">{store.name}</h1>
-              <ArtesaniaTitleFlourish className="store-header-artesanias__flourish store-header-artesanias__flourish--mirror" />
-            </div>
-            <div className="store-header-artesanias__rule" aria-hidden="true">
-              <span className="store-header-artesanias__rule-mark" />
-            </div>
-            {welcome ? (
-              <p className="store-header-artesanias__welcome">{welcome}</p>
+            <h1 className="store-header-ikt__name">{store.name}</h1>
+            {isRopaIkt ? (
+              <div className="ikt-editorial-divider" aria-hidden="true" />
             ) : null}
-          </header>
-        ) : isComidaIkt ? (
-          <header className="store-header-comidas flex items-center gap-3">
-            {store.icon192Url ? (
-              <Image
-                src={iconSrc}
-                alt=""
-                width={48}
-                height={48}
-                className="store-header-comidas__logo size-12 shrink-0 rounded-2xl object-cover shadow-sm ring-1 ring-[color-mix(in_srgb,var(--ink)_10%,transparent)]"
-                priority
-                unoptimized={
-                  iconSrc.startsWith("/") || iconSrc.startsWith("data:")
-                }
-              />
-            ) : (
-              <div
-                className="store-header-comidas__logo flex size-12 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold shadow-sm"
-                style={{
-                  backgroundColor: "var(--primary)",
-                  color: "var(--primary-fg)",
-                }}
-                aria-hidden="true"
-              >
-                {monogram}
+            {isArtesaniaIkt ? (
+              <div className="ikt-editorial-divider" aria-hidden="true">
+                <span />
               </div>
-            )}
-            <div className="min-w-0">
-              <h1 className="store-header-comidas__name font-[family-name:var(--font-display)] text-xl font-extrabold leading-tight tracking-tight text-[var(--ink)] sm:text-2xl">
-                {store.name}
-              </h1>
-              {welcome ? (
-                <p className="store-welcome mt-0.5 text-xs font-bold opacity-80">
-                  {welcome}
-                </p>
-              ) : null}
-            </div>
+            ) : null}
+            {welcome ? (
+              <p className="store-header-ikt__welcome">{welcome}</p>
+            ) : null}
           </header>
         ) : (
           <header className="store-header-default flex items-center gap-4 border-b-2 border-[color-mix(in_srgb,var(--ink)_10%,transparent)] pb-3">
@@ -298,10 +274,22 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
           cloudSttAvailable={hasTranscriptionConfigured()}
         />
 
-        <div className="store-secondary-notes">
-          <HowToOrderNote checkoutMode={purchase.checkoutMode} compact />
-          <StoreInstallCta storeName={store.name} compact />
-        </div>
+        {helperTip ? (
+          <div className="ikt-helper-tip" role="note">
+            <span aria-hidden="true">💡</span>
+            <p>{helperTip}</p>
+          </div>
+        ) : (
+          <div className="store-secondary-notes">
+            <HowToOrderNote checkoutMode={purchase.checkoutMode} compact />
+          </div>
+        )}
+
+        {!isIktRubro ? (
+          <div className="store-secondary-notes store-secondary-notes--install">
+            <StoreInstallCta storeName={store.name} compact />
+          </div>
+        ) : null}
 
         <NoPublicPhoneNote
           showPhone={store.showPhone}
@@ -310,15 +298,15 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
         />
 
         {isRopaIkt ? (
-          <div className="mt-8">
+          <div className="store-catalog-ikt">
             <StoreRopaCatalog products={products} store={purchase} />
           </div>
         ) : isComidaIkt ? (
-          <div className="mt-8">
+          <div className="store-catalog-ikt">
             <StoreComidasCatalog products={products} store={purchase} />
           </div>
         ) : isArtesaniaIkt ? (
-          <div className="mt-8">
+          <div className="store-catalog-ikt">
             <StoreArtesaniasCatalog products={products} store={purchase} />
           </div>
         ) : (
@@ -343,9 +331,50 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
           <p className="mt-10 text-[var(--muted)]">Todavía no hay productos publicados.</p>
         )}
 
-        <footer className="mt-16 border-t border-[var(--border)] pt-8 text-[18px] text-[var(--ink)]">
+        <footer
+          className={
+            isIktRubro
+              ? "store-footer-ikt"
+              : "mt-16 border-t border-[var(--border)] pt-8 text-[18px] text-[var(--ink)]"
+          }
+        >
           {(() => {
             const contact = resolveStoreContactPhone(store);
+            if (isIktRubro && store.showPhone && contact) {
+              const owner = store.ownerName?.trim() || "el dueño";
+              const phoneLabel = formatPhoneDisplay(contact);
+              const waHref = buildWaMeUrl(
+                contact,
+                `¡Hola ${owner}! 👋 Vi tu página web${
+                  store.name ? ` (${store.name})` : ""
+                } y quería hacerte una consulta.`,
+              );
+              return (
+                <div className="ikt-store-footer">
+                  <p className="ikt-store-footer__title">
+                    ¿Tenés alguna consulta?
+                  </p>
+                  <p className="ikt-store-footer__body">
+                    Escribile directo a <strong>{owner}</strong> al{" "}
+                    <strong>{phoneLabel}</strong> y te asesora al instante.
+                  </p>
+                  <p className="ikt-store-footer__cta">
+                    <a
+                      href={waHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-ikt-cta ikt-whatsapp-btn w-full"
+                    >
+                      <span aria-hidden="true">💬</span>
+                      <span>Escribirle a {owner} por WhatsApp</span>
+                    </a>
+                  </p>
+                  <p className="ikt-store-footer__credit">
+                    Tienda creada con Alfrebot · Iktweb
+                  </p>
+                </div>
+              );
+            }
             if (store.showPhone && contact) {
               return (
                 <StoreContactLine

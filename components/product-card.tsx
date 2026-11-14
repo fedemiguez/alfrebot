@@ -90,11 +90,6 @@ export function ProductCard({
           {showFrame && kind ? (
             <ProductImageFrame kind={kind} frameId={product.id} />
           ) : null}
-          {materialBadge ? (
-            <span className="product-card__material-badge">
-              {materialBadge}
-            </span>
-          ) : null}
           {!product.inStock && (
             <span
               className={`absolute bottom-3 left-3 z-[3] px-3 py-1 text-[15px] font-medium ${
@@ -107,13 +102,18 @@ export function ProductCard({
             </span>
           )}
         </div>
+        {materialBadge ? (
+          <span className="product-card__material-badge product-card__material-badge--below">
+            {materialBadge}
+          </span>
+        ) : null}
         {isRopaIkt ? (
           <div className="product-card__body product-card__body--ikt-ropa">
             <div className="product-card__title-row">
-              <h2 className="product-card__title font-[family-name:var(--font-display)] font-extrabold leading-snug text-[var(--ink)]">
+              <h2 className="product-card__title leading-snug">
                 {product.title}
               </h2>
-              <span className="product-card__price font-[family-name:var(--font-display)] font-extrabold whitespace-nowrap text-[var(--ink)]">
+              <span className="product-card__price whitespace-nowrap">
                 {price}
               </span>
             </div>
@@ -124,10 +124,10 @@ export function ProductCard({
         ) : isComidaIkt ? (
           <div className="product-card__body product-card__body--ikt-comida">
             <div className="product-card__title-row">
-              <h2 className="product-card__title font-[family-name:var(--font-display)] font-extrabold leading-snug text-[var(--ink)]">
+              <h2 className="product-card__title leading-snug">
                 {product.title}
               </h2>
-              <span className="product-card__price product-card__price--primary font-[family-name:var(--font-display)] font-extrabold whitespace-nowrap">
+              <span className="product-card__price product-card__price--primary whitespace-nowrap">
                 {price}
               </span>
             </div>
@@ -138,10 +138,10 @@ export function ProductCard({
         ) : isArtesaniaIkt ? (
           <div className="product-card__body product-card__body--ikt-artesania">
             <div className="product-card__title-row">
-              <h2 className="product-card__title product-card__title--serif font-bold leading-snug text-[var(--ink)]">
+              <h2 className="product-card__title product-card__title--serif leading-snug">
                 {product.title}
               </h2>
-              <span className="product-card__price font-[family-name:var(--font-display)] font-extrabold whitespace-nowrap text-[var(--ink)]">
+              <span className="product-card__price whitespace-nowrap">
                 {price}
               </span>
             </div>

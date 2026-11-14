@@ -1,6 +1,6 @@
 /**
- * Tema visual Iktweb (Fase 0): rubro + paleta desde business_kind + accent_color.
- * Sin schema nuevo — solo presentación en vitrina pública.
+ * Tema visual Iktweb: rubro + paleta desde business_kind + accent_color.
+ * Tokens alineados a spec +60 / vista previa Gemini editorial.
  */
 
 import { normalizeAccentHex } from "@/lib/store-accent";
@@ -27,11 +27,13 @@ export type IktThemeResolved = {
   palette: IktPaletteId;
   /** Hex primario de la paleta elegida (también alimenta --primary). */
   primary: string;
+  whatsapp: string;
 };
 
 type PaletteDef = {
   id: IktPaletteId;
   primary: string;
+  whatsapp: string;
 };
 
 const RUBRO_BY_KIND: Record<BusinessKind, IktRubro> = {
@@ -40,21 +42,22 @@ const RUBRO_BY_KIND: Record<BusinessKind, IktRubro> = {
   artesanal: "artesanias",
 };
 
+/** Primarios exactos de la spec Gemini (+60). */
 const PALETTES_BY_RUBRO: Record<IktRubro, readonly PaletteDef[]> = {
   ropa: [
-    { id: "lino-arena", primary: "#a65e38" },
-    { id: "monochrome-noir", primary: "#111111" },
-    { id: "botanical-sage", primary: "#2f4f2e" },
+    { id: "lino-arena", primary: "#9A5B36", whatsapp: "#2B4C3F" },
+    { id: "monochrome-noir", primary: "#111827", whatsapp: "#1F2937" },
+    { id: "botanical-sage", primary: "#354F3B", whatsapp: "#2B4C3F" },
   ],
   comidas: [
-    { id: "brasa-fuego", primary: "#d84315" },
-    { id: "trattoria-rustica", primary: "#b45309" },
-    { id: "cafe-matcha", primary: "#4d6b18" },
+    { id: "brasa-fuego", primary: "#D84315", whatsapp: "#1B5E20" },
+    { id: "trattoria-rustica", primary: "#7F1D1D", whatsapp: "#2D4A3E" },
+    { id: "cafe-matcha", primary: "#2E5A36", whatsapp: "#2B4C3F" },
   ],
   artesanias: [
-    { id: "arcilla-sol", primary: "#9c5a25" },
-    { id: "bosque-nogal", primary: "#385950" },
-    { id: "indigo-telar", primary: "#c92a37" },
+    { id: "arcilla-sol", primary: "#9C4A2B", whatsapp: "#2B4C3F" },
+    { id: "bosque-nogal", primary: "#3E634D", whatsapp: "#233D3B" },
+    { id: "indigo-telar", primary: "#B83B44", whatsapp: "#1D3557" },
   ],
 };
 
@@ -133,13 +136,14 @@ export function resolveIktTheme(store: {
     rubro,
     palette: palette.id,
     primary: palette.primary,
+    whatsapp: palette.whatsapp,
   };
 }
 
 /**
  * Props de presentación para el shell público.
  * - Con rubro Ikt: ignora theme claro/crema/oscuro; --primary desde la paleta.
- * - Sin rubro (Fase 6): tokens neutros Ikt + shell limpio (sin theme legacy).
+ * - Sin rubro: tokens neutros Ikt + shell limpio (sin theme legacy).
  */
 export function iktShellPresentation(store: {
   businessKind?: string | null;
@@ -167,6 +171,8 @@ export function iktShellPresentation(store: {
         "--store-accent": primary,
         "--ikt-primary": primary,
         "--ikt-primary-text": "#ffffff",
+        "--ikt-whatsapp": "#128c7e",
+        "--wa": "#128c7e",
       },
     };
   }
@@ -179,6 +185,10 @@ export function iktShellPresentation(store: {
       "--primary": ikt.primary,
       "--primary-fg": "#ffffff",
       "--store-accent": ikt.primary,
+      "--ikt-primary": ikt.primary,
+      "--ikt-primary-text": "#ffffff",
+      "--ikt-whatsapp": ikt.whatsapp,
+      "--wa": ikt.whatsapp,
     },
   };
 }

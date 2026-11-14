@@ -339,13 +339,18 @@ export function ProductBuyActions({
     layout === "inline"
       ? "mt-3 flex flex-wrap items-center gap-2"
       : "mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap";
+  /* Gemini product CTA: mt-4 (1rem) bajo descripción. */
   const iktWrap = ctaLabel
     ? layout === "inline"
-      ? "mt-3 flex w-full"
+      ? "mt-4 flex w-full"
       : "mt-4 flex w-full"
     : wrap;
 
-  if (store.checkoutMode === "cart") {
+  // Spec +60 / Ikt: con microcopy de rubro, siempre CTA WhatsApp directo
+  // (sin carrito multipaso ni selectores de variantes).
+  const forceWhatsApp = Boolean(ctaLabel);
+
+  if (store.checkoutMode === "cart" && !forceWhatsApp) {
     return (
       <div className={wrap}>
         <AddToCartButton store={store} product={product} />
@@ -370,6 +375,7 @@ export function ProductBuyActions({
         storeName={store.storeName}
         storeSlug={store.storeSlug}
         ownerName={store.ownerName}
+        businessKind={store.businessKind}
         disabled={!product.inStock}
         label={ctaLabel}
         className={`${ctaLabel ? "w-full" : ""} ${!product.inStock ? "opacity-50" : ""}`.trim()}

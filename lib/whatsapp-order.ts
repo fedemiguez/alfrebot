@@ -1,5 +1,6 @@
 import { formatPriceArs } from "@/lib/format";
 import { appBaseUrl } from "@/lib/env";
+import { iktWaAction } from "@/lib/ikt-cta";
 import {
   buildWaMeUrl,
   phoneToWaDigits,
@@ -15,7 +16,8 @@ export function storeCatalogUrl(slug: string | null | undefined): string | null 
 
 /**
  * Texto prefill de wa.me (mismo flujo / buildWaMeUrl).
- * Tono alineado a spec Gemini Ikt — sin cambiar el canal ni el CTA.
+ * Con rubro Ikt: mensaje Gemini (owner + acción por rubro + disponibilidad).
+ * Sin rubro: tono genérico amable + link catálogo.
  */
 export function productWantMessage(input: {
   productTitle: string;
@@ -23,12 +25,21 @@ export function productWantMessage(input: {
   storeName?: string | null;
   storeSlug?: string | null;
   ownerName?: string | null;
+  /** business_kind de la tienda — activa copy Ikt por rubro. */
+  businessKind?: string | null;
 }): string {
   const price = formatPriceArs(input.priceCents);
-  const who =
-    input.storeName?.trim() ||
-    input.ownerName?.trim() ||
-    null;
+  const action = iktWaAction(input.businessKind);
+  const owner = input.ownerName?.trim() || null;
+  const store = input.storeName?.trim() || null;
+
+  if (action) {
+    const who = owner || store || "hola";
+    const storeBit = store ? ` (${store})` : "";
+    return `¡Hola ${who}! 👋 Vi tu página web${storeBit}. Me gustaría ${action}: *${input.productTitle}* (${price}). ¿Me podrías confirmar disponibilidad?`;
+  }
+
+  const who = store || owner || null;
   const greeting = who ? `¡Hola ${who}! 👋` : "¡Hola! 👋";
   const lines = [
     greeting,

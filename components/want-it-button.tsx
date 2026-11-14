@@ -14,6 +14,7 @@ type Props = {
   storeName?: string | null;
   storeSlug?: string | null;
   ownerName?: string | null;
+  businessKind?: string | null;
   className?: string;
   disabled?: boolean;
   /** Microcopy Ikt por rubro; default “Lo quiero”. */
@@ -30,6 +31,7 @@ export function WantItButton({
   storeName,
   storeSlug,
   ownerName,
+  businessKind,
   className = "",
   disabled = false,
   label = null,
@@ -47,6 +49,7 @@ export function WantItButton({
       storeName,
       storeSlug,
       ownerName,
+      businessKind,
     }),
   );
 
@@ -58,7 +61,7 @@ export function WantItButton({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`btn gap-2 ${ikt ? "btn-ikt-cta" : "btn-wa"} ${disabled ? "pointer-events-none opacity-50" : ""} ${className}`}
+      className={`btn gap-2 ${ikt ? "btn-ikt-cta ikt-whatsapp-btn" : "btn-wa"} ${disabled ? "pointer-events-none opacity-50" : ""} ${className}`}
       aria-disabled={disabled || undefined}
     >
       {!hideIcon && !ikt ? <WhatsAppIcon className="size-6 shrink-0" /> : null}

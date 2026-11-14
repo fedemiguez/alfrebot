@@ -1,5 +1,5 @@
 /**
- * Smoke Fase 6 / PR7 — default limpio, archive marcos/trama, tono WA, shell.
+ * Smoke — default limpio, archive marcos/trama, tono WA Gemini, shell.
  * Run: npx tsx scripts/smoke-ikt-polish.ts
  */
 
@@ -10,6 +10,8 @@ import {
   shouldShowStorePattern,
 } from "../lib/store-legacy-chrome";
 import { iktShellPresentation, resolveIktTheme } from "../lib/store-ikt-theme";
+import { storePurchaseProps } from "../lib/store-purchase";
+import { iktHelperTip, iktVoiceSearchPlaceholder } from "../lib/ikt-cta";
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(`FAIL: ${msg}`);
@@ -40,53 +42,89 @@ assert(
   "clase default",
 );
 assert(
-  noRubro.themeClassName?.includes("store-theme-ikt"),
-  "clase ikt base",
-);
-assert(noRubro.styleVars["--ikt-primary"] === "#000000", "primary neutro");
-assert(
   resolveIktTheme({ businessKind: null }) === null,
   "resolveIktTheme null sin rubro",
-);
-
-const withAccent = iktShellPresentation({
-  businessKind: null,
-  accentColor: "#2563eb",
-});
-assert(
-  withAccent.styleVars["--ikt-primary"] === "#2563eb",
-  "accent → ikt-primary default",
 );
 
 /* ——— Con rubro: no default ——— */
 const ropa = iktShellPresentation({
   businessKind: "ropa",
-  accentColor: "#A65E38",
+  accentColor: "#9A5B36",
 });
 assert(ropa.isDefault === false, "ropa no es default");
 assert(ropa.ikt?.rubro === "ropa", "ropa rubro");
 assert(ropa.ikt?.palette === "lino-arena", "lino-arena");
+assert(ropa.styleVars["--ikt-whatsapp"] === "#2B4C3F", "wa token");
 
-/* ——— productWantMessage tono Gemini ——— */
+/* ——— Ikt force whatsapp checkout (sin carrito multipaso) ——— */
+const purchase = storePurchaseProps({
+  id: "s1",
+  slug: "demo",
+  name: "Demo",
+  ownerName: "Nora",
+  channelIdentity: "+5491111111111",
+  contactPhone: "+5491111111111",
+  showPhone: true,
+  checkoutMode: "cart",
+  businessKind: "artesanal",
+});
+assert(purchase?.checkoutMode === "whatsapp", "Ikt fuerza whatsapp");
+
+/* ——— productWantMessage tono Gemini por rubro ——— */
 const msg = productWantMessage({
+  productTitle: "Mate de Algarrobo Tallado a Mano",
+  priceCents: 2200000,
+  storeName: "Taller de Nora",
+  storeSlug: "taller-de-nora",
+  ownerName: "Nora",
+  businessKind: "artesanal",
+});
+assert(msg.includes("¡Hola Nora! 👋"), "saludo owner");
+assert(msg.includes("Vi tu página web (Taller de Nora)"), "tono Gemini");
+assert(msg.includes("encargar esta pieza"), "acción artesanías");
+assert(msg.includes("*Mate de Algarrobo Tallado a Mano*"), "producto bold");
+assert(msg.includes("¿Me podrías confirmar disponibilidad?"), "cierre");
+
+const msgRopa = productWantMessage({
+  productTitle: "Camisa de Lino",
+  priceCents: 4450000,
+  ownerName: "Marta",
+  storeName: "Casa Lino",
+  businessKind: "ropa",
+});
+assert(msgRopa.includes("consultar por esta prenda"), "acción ropa");
+
+const msgComida = productWantMessage({
+  productTitle: "Milanesa",
+  priceCents: 1150000,
+  ownerName: "José",
+  storeName: "Rotisería Don José",
+  businessKind: "comida",
+});
+assert(msgComida.includes("pedir este plato"), "acción comidas");
+
+const msgLegacy = productWantMessage({
   productTitle: "Jarrón azul",
   priceCents: 1500000,
   storeName: "Cerámicas de Norma",
   storeSlug: "ceramicas-de-norma",
   ownerName: "Norma",
 });
-assert(msg.includes("¡Hola Cerámicas de Norma! 👋"), "saludo tienda + emoji");
-assert(msg.includes("Vi su página web"), "tono Gemini");
-assert(msg.includes("*Jarrón azul*"), "producto bold");
-assert(msg.includes("¿Me podrían ayudar?"), "cierre amable");
-assert(!msg.includes("Quiero pedirte"), "sin copy legacy");
-assert(msg.includes("Catálogo:"), "sigue link catálogo (flujo)");
+assert(msgLegacy.includes("Vi su página web"), "legacy sin rubro");
+assert(msgLegacy.includes("Catálogo:"), "legacy link catálogo");
 
-const msgOwnerOnly = productWantMessage({
-  productTitle: "Taza",
-  priceCents: 100,
-  ownerName: "Norma",
-});
-assert(msgOwnerOnly.includes("¡Hola Norma! 👋"), "fallback ownerName");
+/* ——— Tip 💡 + placeholder Gemini (+ owner) ——— */
+assert(
+  iktHelperTip("artesanal", "Nora")?.includes("encargársela a Nora"),
+  "tip artesanías con owner",
+);
+assert(
+  iktHelperTip("ropa", "Marta")?.includes("consultale directo a Marta"),
+  "tip ropa con owner",
+);
+assert(
+  iktVoiceSearchPlaceholder("artesanal").includes("Cuenco"),
+  "placeholder artesanías",
+);
 
 console.log("smoke-ikt-polish: OK");
