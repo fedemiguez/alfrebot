@@ -58,7 +58,7 @@ export function ProductCard({
           className={`product-card__media relative overflow-hidden${
             showFrame
               ? " product-card__media--framed"
-              : isDefaultIkt
+              : isDefaultIkt || isArtesaniaIkt
                 ? ""
                 : " border border-[var(--border)]"
           }`}
@@ -96,7 +96,13 @@ export function ProductCard({
             </span>
           ) : null}
           {!product.inStock && (
-            <span className="absolute bottom-3 left-3 z-[3] bg-[var(--soldout-bg)] px-3 py-1 text-[15px] font-medium text-[var(--soldout)]">
+            <span
+              className={`absolute bottom-3 left-3 z-[3] px-3 py-1 text-[15px] font-medium ${
+                isArtesaniaIkt
+                  ? "product-card__soldout-badge"
+                  : "bg-[var(--soldout-bg)] text-[var(--soldout)]"
+              }`}
+            >
               Agotado
             </span>
           )}

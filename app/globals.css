@@ -624,36 +624,58 @@ body {
   color: var(--ikt-text-muted, var(--muted));
 }
 
+/*
+ * Pieza en vitrina: galería de taller (foto a sangre + ficha abajo).
+ * Editorial/minimal — la foto es el ancla; sin borde SaaS.
+ */
 .product-card--ikt-artesania {
-  padding: 0.875rem;
-  border-radius: var(--ikt-radius-card);
-  border: 1px solid color-mix(in srgb, var(--ikt-text-main) 14%, transparent);
+  padding: 0 0 1.05rem;
+  overflow: hidden;
+  border-radius: calc(var(--ikt-radius-card) + 2px);
+  border: 1px solid color-mix(in srgb, var(--ikt-text-main) 12%, transparent);
   background: var(--ikt-surface, var(--card));
   box-shadow:
-    0 1px 2px color-mix(in srgb, var(--ikt-text-main) 5%, transparent),
-    0 4px 14px color-mix(in srgb, var(--ikt-text-main) 6%, transparent);
+    0 1px 2px color-mix(in srgb, var(--ikt-text-main) 4%, transparent),
+    0 6px 18px color-mix(in srgb, var(--ikt-text-main) 7%, transparent);
   transition:
-    box-shadow 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s ease;
+    box-shadow 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .product-card--ikt-artesania:hover {
-    border-color: color-mix(in srgb, var(--ikt-primary) 40%, var(--ikt-border));
+    border-color: color-mix(in srgb, var(--ikt-primary) 32%, var(--ikt-border));
     box-shadow:
-      0 2px 4px color-mix(in srgb, var(--ikt-text-main) 6%, transparent),
-      0 10px 24px color-mix(in srgb, var(--ikt-text-main) 10%, transparent);
-    transform: translateY(-2px);
+      0 2px 4px color-mix(in srgb, var(--ikt-text-main) 5%, transparent),
+      0 14px 28px color-mix(in srgb, var(--ikt-text-main) 11%, transparent);
+    transform: translateY(-3px);
   }
 }
 
 .product-card--ikt-artesania .product-card__media {
   aspect-ratio: 16 / 11;
-  margin-bottom: 0.85rem;
-  border-radius: 0.625rem;
+  margin: 0;
+  border-radius: 0;
   border: none;
-  background: color-mix(in srgb, var(--ikt-text-muted) 12%, var(--ikt-surface));
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--ikt-bg) 70%, var(--ikt-surface)),
+      color-mix(in srgb, var(--ikt-text-muted) 10%, var(--ikt-surface))
+    );
+}
+
+/* Viñeta suave + marco interior de atelier (sin sticker clutter). */
+.product-card--ikt-artesania .product-card__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ikt-text-main) 8%, transparent),
+    inset 0 -2.5rem 2.25rem -1.25rem color-mix(in srgb, var(--ikt-text-main) 18%, transparent);
 }
 
 .product-card--ikt-artesania .product-card__photo-wrap {
@@ -663,87 +685,166 @@ body {
 .product-card--ikt-artesania .product-card__photo {
   object-fit: cover;
   object-position: center;
+  transition: transform 0.45s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-card--ikt-artesania:hover .product-card__photo {
+    transform: scale(1.035);
+  }
+}
+
+.product-card--ikt-artesania .product-card__photo-empty {
+  font-family: var(--ikt-font-body), Inter, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--ikt-text-muted, var(--muted));
+  background: color-mix(in srgb, var(--ikt-bg) 55%, var(--ikt-surface));
 }
 
 .product-card--ikt-artesania .product-card__material-badge {
   position: absolute;
-  top: 0.55rem;
-  right: 0.55rem;
+  top: 0.7rem;
+  left: 0.7rem;
+  right: auto;
   z-index: 3;
-  max-width: calc(100% - 1.1rem);
-  padding: 0.35rem 0.7rem;
-  border-radius: 0.4rem;
-  border: 1px solid color-mix(in srgb, var(--ikt-text-main) 12%, transparent);
-  background: color-mix(in srgb, var(--ikt-surface) 88%, var(--ikt-bg));
+  max-width: calc(100% - 1.4rem);
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--ikt-text-main) 14%, transparent);
+  background: color-mix(in srgb, var(--ikt-surface) 92%, transparent);
   color: var(--ikt-text-main, var(--ink));
   font-family: var(--ikt-font-body, var(--font-body));
   font-size: 0.8125rem;
   font-weight: 700;
   line-height: 1.3;
-  box-shadow: 0 1px 3px color-mix(in srgb, var(--ikt-text-main) 10%, transparent);
+  letter-spacing: 0.01em;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--ikt-text-main) 12%, transparent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  backdrop-filter: blur(6px);
+}
+
+.product-card--ikt-artesania .product-card__soldout-badge {
+  border-radius: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--ikt-text-main) 18%, transparent);
+  background: color-mix(in srgb, var(--ikt-surface) 94%, transparent);
+  color: var(--ikt-text-main, var(--ink));
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(6px);
 }
 
 .product-card--ikt-artesania .product-card__body--ikt-artesania {
-  padding: 0;
+  padding: 1rem 1.1rem 0;
+}
+
+.product-card--ikt-artesania > div {
+  padding-left: 1.1rem;
+  padding-right: 1.1rem;
 }
 
 .product-card--ikt-artesania .product-card__title-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.65rem;
-  margin-bottom: 0.35rem;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
 }
 
 .product-card--ikt-artesania .product-card__title {
   margin: 0;
-  font-size: 1.1875rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   text-transform: none;
-  line-height: 1.3;
+  line-height: 1.28;
   color: var(--ikt-text-main, var(--ink));
 }
 
 .product-card--ikt-artesania .product-card__price {
   margin: 0;
-  font-size: 1.1875rem;
-  font-weight: 800;
-  color: var(--ikt-text-main, var(--ink));
+  font-family: var(--ikt-font-heading), "Plus Jakarta Sans", sans-serif;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ikt-primary, var(--primary));
 }
 
 .product-card--ikt-artesania .product-card__desc {
-  margin: 0 0 1rem;
+  margin: 0 0 0.15rem;
   font-size: 1rem;
   line-height: 1.55;
   color: var(--ikt-text-muted, var(--muted));
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.store-theme-shell[data-rubro="artesanias"] .store-artesanias-grid {
+  gap: 1.75rem;
 }
 
 .store-theme-shell[data-rubro="artesanias"] .store-category-chips {
   justify-content: center;
-  gap: 0.625rem;
+  gap: 0.65rem;
+  padding-bottom: 0.35rem;
 }
 
 .store-theme-shell[data-rubro="artesanias"] .store-category-chip {
+  min-height: 48px;
+  padding: 0.55rem 1.15rem;
+  border-width: 1.5px;
+  border-color: color-mix(in srgb, var(--ikt-text-main) 18%, transparent);
+  background: color-mix(in srgb, var(--ikt-surface) 80%, transparent);
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
   transition:
     background-color 0.2s ease,
     border-color 0.2s ease,
-    color 0.2s ease;
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .store-theme-shell[data-rubro="artesanias"] .store-category-chip:hover:not(.is-active) {
+    border-color: color-mix(in srgb, var(--ikt-primary) 45%, transparent);
+    box-shadow: 0 1px 4px color-mix(in srgb, var(--ikt-text-main) 8%, transparent);
+  }
 }
 
 .store-theme-shell[data-rubro="artesanias"] .store-category-chip.is-active {
   background: var(--ikt-text-main, var(--ink));
   color: var(--ikt-bg, var(--bg));
   border-color: transparent;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--ikt-text-main) 22%, transparent);
 }
 
-/* CTA artesanías: sombra natural, no “SaaS glow”. */
+/*
+ * CTA artesanías: botón de taller — volumen suave, tracking contenido,
+ * sin glow SaaS ni uppercase agresivo de app genérica.
+ */
 .store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta {
-  font-size: 0.95rem;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--ikt-primary) 28%, transparent);
+  min-height: 54px;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ikt-primary) 86%, white) 0%,
+      var(--ikt-primary) 48%,
+      color-mix(in srgb, var(--ikt-primary) 86%, #1a0a0a) 100%
+    );
+  color: var(--ikt-primary-text, #ffffff);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, white 22%, transparent) inset,
+    0 2px 10px color-mix(in srgb, var(--ikt-primary) 30%, transparent);
   transition:
     transform 0.15s ease,
     box-shadow 0.2s ease,
@@ -751,25 +852,79 @@ body {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta:hover:not(:disabled) {
-    filter: brightness(1.05);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--ikt-primary) 34%, transparent);
+  .store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta:hover:not(:disabled):not([aria-disabled="true"]) {
+    filter: brightness(1.04);
+    box-shadow:
+      0 1px 0 color-mix(in srgb, white 26%, transparent) inset,
+      0 4px 14px color-mix(in srgb, var(--ikt-primary) 38%, transparent);
   }
 }
 
-.store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta:active:not(:disabled) {
-  transform: scale(0.98);
+.store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: scale(0.985);
+  filter: brightness(0.97);
 }
 
 /* Voice chrome: superficie de taller, borde primario claro. */
 .store-theme-shell[data-rubro="artesanias"] .store-voice-sticky {
   background: var(--ikt-surface);
   border-color: var(--ikt-primary);
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--ikt-text-main) 8%, transparent);
+  border-radius: calc(var(--ikt-radius-card) + 2px);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--ikt-text-main) 9%, transparent);
+}
+
+.store-theme-shell[data-rubro="artesanias"] .store-voice-btn {
+  border-radius: 12px;
+  min-height: 54px;
+  letter-spacing: 0.03em;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ikt-primary) 86%, white) 0%,
+      var(--ikt-primary) 48%,
+      color-mix(in srgb, var(--ikt-primary) 86%, #1a0a0a) 100%
+    );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, white 22%, transparent) inset,
+    0 2px 8px color-mix(in srgb, var(--ikt-primary) 26%, transparent);
+}
+
+.store-theme-shell[data-rubro="artesanias"] .store-voice-type {
+  border-radius: 12px;
+  border-color: color-mix(in srgb, var(--ikt-text-main) 16%, transparent);
+  background: color-mix(in srgb, var(--ikt-bg) 55%, white);
+  min-height: 50px;
+}
+
+/* PDP: misma lectura de galería / pieza. */
+.store-theme-shell[data-rubro="artesanias"] .store-pdp-media--ikt {
+  overflow: hidden;
+  border-radius: calc(var(--ikt-radius-card) + 2px);
+  border: 1px solid color-mix(in srgb, var(--ikt-text-main) 12%, transparent);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--ikt-text-main) 4%, transparent),
+    0 8px 22px color-mix(in srgb, var(--ikt-text-main) 8%, transparent);
+}
+
+.store-theme-shell[data-rubro="artesanias"] .store-pdp-media--ikt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ikt-text-main) 8%, transparent),
+    inset 0 -3rem 2.5rem -1.5rem color-mix(in srgb, var(--ikt-text-main) 16%, transparent);
+}
+
+.store-theme-shell[data-rubro="artesanias"] .store-pdp-title--serif {
+  letter-spacing: -0.025em;
+  line-height: 1.2;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .product-card--ikt-artesania,
+  .product-card--ikt-artesania .product-card__photo,
   .store-theme-shell[data-rubro="artesanias"] .store-category-chip,
   .store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta {
     transition: none !important;
@@ -779,7 +934,11 @@ body {
     transform: none !important;
   }
 
-  .store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta:active:not(:disabled) {
+  .product-card--ikt-artesania:hover .product-card__photo {
+    transform: none !important;
+  }
+
+  .store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta:active:not(:disabled):not([aria-disabled="true"]) {
     transform: none !important;
   }
 }
