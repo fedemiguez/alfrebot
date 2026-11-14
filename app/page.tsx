@@ -78,14 +78,14 @@ export default function Home() {
             ¿Cómo funciona? Ver guía simple
           </Link>
           {/*
-            Same-page anchor (real href). Tertiary weight vs Gemini primary/secondary:
-            always-visible underline (no hover-only affordance), ≥52px, touch-manipulation.
+            Same-page anchor (real href). Label = “mirá la sección”, no “empezá ya”
+            (eso lo dice el CTA filled del bloque → /asistente).
           */}
           <a
             href="#cta-familia-title"
             className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full px-8 text-[1.125rem] font-semibold text-[#075E54] underline decoration-2 underline-offset-4 transition-[opacity,transform,background-color] duration-200 hover:bg-[#075E54]/08 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54]"
           >
-            Armarle la tienda a un familiar
+            ¿Es para un familiar? Mirá acá
           </a>
         </div>
       </section>
