@@ -556,7 +556,31 @@ body {
   color: color-mix(in srgb, var(--ink) 72%, transparent);
 }
 
-/* ——— Plantilla Ikt Artesanías (Fase 4) ——— */
+/* ——— Plantilla Ikt Artesanías (Fase 4 + polish TN-103) ——— */
+/*
+ * Atmósfera de taller (Nature Distilled / Soft UI Evolution via ui-ux-pro-max):
+ * luz de taller + profundidad suave — sin flat genérico ni morado/crema IA.
+ */
+.store-theme-shell[data-rubro="artesanias"] {
+  background:
+    radial-gradient(
+      ellipse 95% 50% at 50% -8%,
+      color-mix(in srgb, var(--ikt-primary) 14%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 65% 42% at 100% 100%,
+      color-mix(in srgb, var(--ikt-text-main) 7%, transparent),
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse 50% 35% at 0% 70%,
+      color-mix(in srgb, var(--ikt-primary) 6%, transparent),
+      transparent 48%
+    ),
+    var(--ikt-bg);
+}
+
 /* Spec: Playfair en nombre del taller + títulos de pieza (gana a h1/h2 Ikt). */
 .store-theme-shell[data-rubro="artesanias"] .store-header-artesanias__name,
 .store-theme-shell[data-rubro="artesanias"]
@@ -566,20 +590,70 @@ body {
   font-family: var(--font-ikt-serif), "Playfair Display", Georgia, serif;
 }
 
+/* Header: marca hero, un solo trabajo, tipografía +60 (≥16px cuerpo). */
+.store-header-artesanias {
+  padding: 0.35rem 0 0.25rem;
+}
+
+.store-header-artesanias__eyebrow {
+  margin: 0;
+  font-family: var(--ikt-font-body), Inter, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ikt-text-muted, var(--muted));
+}
+
+.store-header-artesanias__name {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.75rem, 5.2vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--ikt-text-main, var(--ink));
+}
+
+.store-header-artesanias__welcome {
+  margin: 0.55rem auto 0;
+  max-width: 28rem;
+  font-family: var(--ikt-font-body), Inter, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--ikt-text-muted, var(--muted));
+}
+
 .product-card--ikt-artesania {
   padding: 0.875rem;
   border-radius: var(--ikt-radius-card);
-  border: 2px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ikt-text-main) 14%, transparent);
   background: var(--ikt-surface, var(--card));
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--ikt-text-main) 5%, transparent),
+    0 4px 14px color-mix(in srgb, var(--ikt-text-main) 6%, transparent);
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-card--ikt-artesania:hover {
+    border-color: color-mix(in srgb, var(--ikt-primary) 40%, var(--ikt-border));
+    box-shadow:
+      0 2px 4px color-mix(in srgb, var(--ikt-text-main) 6%, transparent),
+      0 10px 24px color-mix(in srgb, var(--ikt-text-main) 10%, transparent);
+    transform: translateY(-2px);
+  }
 }
 
 .product-card--ikt-artesania .product-card__media {
   aspect-ratio: 16 / 11;
-  margin-bottom: 0.75rem;
-  border-radius: 0.5rem;
+  margin-bottom: 0.85rem;
+  border-radius: 0.625rem;
   border: none;
-  background: color-mix(in srgb, var(--muted) 18%, var(--card));
+  background: color-mix(in srgb, var(--ikt-text-muted) 12%, var(--ikt-surface));
 }
 
 .product-card--ikt-artesania .product-card__photo-wrap {
@@ -593,19 +667,20 @@ body {
 
 .product-card--ikt-artesania .product-card__material-badge {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  top: 0.55rem;
+  right: 0.55rem;
   z-index: 3;
-  max-width: calc(100% - 1rem);
-  padding: 0.25rem 0.625rem;
-  border-radius: 0.375rem;
-  background: var(--ikt-bg, var(--bg));
+  max-width: calc(100% - 1.1rem);
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--ikt-text-main) 12%, transparent);
+  background: color-mix(in srgb, var(--ikt-surface) 88%, var(--ikt-bg));
   color: var(--ikt-text-main, var(--ink));
   font-family: var(--ikt-font-body, var(--font-body));
-  font-size: 0.75rem;
-  font-weight: 800;
-  line-height: 1.25;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.3;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ikt-text-main) 10%, transparent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -619,42 +694,94 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  gap: 0.65rem;
+  margin-bottom: 0.35rem;
 }
 
 .product-card--ikt-artesania .product-card__title {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1.1875rem;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   text-transform: none;
   line-height: 1.3;
+  color: var(--ikt-text-main, var(--ink));
 }
 
 .product-card--ikt-artesania .product-card__price {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1.1875rem;
   font-weight: 800;
-  color: var(--ink);
+  color: var(--ikt-text-main, var(--ink));
 }
 
 .product-card--ikt-artesania .product-card__desc {
   margin: 0 0 1rem;
-  font-size: 0.95rem;
+  font-size: 1rem;
   line-height: 1.55;
-  color: var(--muted);
-  opacity: 0.95;
+  color: var(--ikt-text-muted, var(--muted));
 }
 
 .store-theme-shell[data-rubro="artesanias"] .store-category-chips {
   justify-content: center;
+  gap: 0.625rem;
+}
+
+.store-theme-shell[data-rubro="artesanias"] .store-category-chip {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .store-theme-shell[data-rubro="artesanias"] .store-category-chip.is-active {
-  background: var(--ink);
+  background: var(--ikt-text-main, var(--ink));
   color: var(--ikt-bg, var(--bg));
   border-color: transparent;
+}
+
+/* CTA artesanías: sombra natural, no “SaaS glow”. */
+.store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta {
+  font-size: 0.95rem;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--ikt-primary) 28%, transparent);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta:hover:not(:disabled) {
+    filter: brightness(1.05);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--ikt-primary) 34%, transparent);
+  }
+}
+
+.store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Voice chrome: superficie de taller, borde primario claro. */
+.store-theme-shell[data-rubro="artesanias"] .store-voice-sticky {
+  background: var(--ikt-surface);
+  border-color: var(--ikt-primary);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--ikt-text-main) 8%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-card--ikt-artesania,
+  .store-theme-shell[data-rubro="artesanias"] .store-category-chip,
+  .store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta {
+    transition: none !important;
+  }
+
+  .product-card--ikt-artesania:hover {
+    transform: none !important;
+  }
+
+  .store-theme-shell[data-rubro="artesanias"] .btn-ikt-cta:active:not(:disabled) {
+    transform: none !important;
+  }
 }
 
 .store-kind-label {
@@ -886,35 +1013,40 @@ body {
   --ikt-border: #e4d8c8;
 }
 
-/* Artesanías */
+/*
+ * Artesanías — paletas afinadas (TN-103):
+ * mismos primarios / identidad de preset; fondos con atmósfera de material
+ * (arcilla, madera, lino indigo) en lugar de flat mint/SaaS.
+ */
 .store-theme-shell[data-rubro="artesanias"][data-palette="arcilla-sol"] {
-  --ikt-bg: #faedcd;
-  --ikt-surface: #fffdf5;
-  --ikt-text-main: #4a2e1b;
-  --ikt-text-muted: #6b4a35;
+  --ikt-bg: #f3e4c4;
+  --ikt-surface: #fffdf6;
+  --ikt-text-main: #3f2616;
+  --ikt-text-muted: #5c3f2c;
   --ikt-primary: #9c5a25;
   --ikt-primary-text: #ffffff;
-  --ikt-border: #e5d4a8;
+  --ikt-border: #dfc99a;
 }
 
 .store-theme-shell[data-rubro="artesanias"][data-palette="bosque-nogal"] {
-  --ikt-bg: #cad2c5;
-  --ikt-surface: #f4f7f2;
-  --ikt-text-main: #1f2d33;
-  --ikt-text-muted: #3a4a50;
+  --ikt-bg: #c4cec0;
+  --ikt-surface: #f5f7f2;
+  --ikt-text-main: #1a272c;
+  --ikt-text-muted: #34454c;
   --ikt-primary: #385950;
   --ikt-primary-text: #ffffff;
-  --ikt-border: #a8b5a6;
+  --ikt-border: #9fafa0;
 }
 
+/* iktweb usa indigo-telar: lino teñido (no mint farmacia #f1faee). */
 .store-theme-shell[data-rubro="artesanias"][data-palette="indigo-telar"] {
-  --ikt-bg: #f1faee;
-  --ikt-surface: #ffffff;
-  --ikt-text-main: #162942;
-  --ikt-text-muted: #334a63;
+  --ikt-bg: #e8ecf1;
+  --ikt-surface: #fffcf9;
+  --ikt-text-main: #132338;
+  --ikt-text-muted: #3a5068;
   --ikt-primary: #c92a37;
   --ikt-primary-text: #ffffff;
-  --ikt-border: #c5d6c8;
+  --ikt-border: #c2ccd6;
 }
 
 /* ——— Voice chrome sticky (Fase 1 + polish PR7) ——— */
@@ -1206,6 +1338,15 @@ body {
   font-size: 0.85rem;
   font-weight: 700;
   line-height: 1.2;
+}
+
+.store-theme-shell[data-rubro="artesanias"] .store-pdp-material-badge {
+  border-radius: 0.4rem;
+  border-color: color-mix(in srgb, var(--ikt-text-main) 14%, transparent);
+  background: color-mix(in srgb, var(--ikt-surface) 90%, var(--ikt-bg));
+  font-size: 0.875rem;
+  padding: 0.4rem 0.75rem;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ikt-text-main) 10%, transparent);
 }
 
 /* Focus rings visibles (teclado) en shell Ikt */

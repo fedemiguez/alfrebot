@@ -62,7 +62,7 @@ export function StoreArtesaniasCatalog({
       </div>
 
       {filtered.length === 0 && (
-        <p className="mt-8 text-[var(--muted)]">
+        <p className="mt-8 text-base leading-relaxed text-[var(--ikt-text-muted,var(--muted))]">
           No hay piezas en esta categoría.
         </p>
       )}
