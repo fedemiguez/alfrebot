@@ -77,6 +77,13 @@ export default function Home() {
           >
             ¿Cómo funciona? Ver guía simple
           </Link>
+          {/* Real same-page anchor (not JS-only scroll). Tertiary weight so hero stays readable. */}
+          <a
+            href="#cta-familia-title"
+            className="inline-flex min-h-[52px] w-full items-center justify-center rounded-full px-8 text-[1.125rem] font-semibold text-[#075E54] underline-offset-4 transition-[opacity,transform] duration-200 hover:underline active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075E54]"
+          >
+            Armarle la tienda a un familiar
+          </a>
         </div>
       </section>
 
@@ -87,7 +94,7 @@ export default function Home() {
         <div className="mx-auto w-full max-w-2xl rounded-2xl border-2 border-[#075E54]/20 bg-[#F5EFE6] px-5 py-10 text-center sm:px-8">
           <h2
             id="cta-familia-title"
-            className="fade-in font-[family-name:var(--font-display)] text-[1.4rem] font-semibold leading-snug text-[#075E54] sm:text-[1.65rem]"
+            className="fade-in scroll-mt-6 font-[family-name:var(--font-display)] text-[1.4rem] font-semibold leading-snug text-[#075E54] sm:text-[1.65rem]"
           >
             🎁 ¿Le querés armar la tienda a mamá, papá o un familiar?
           </h2>
