@@ -10,6 +10,7 @@ import {
 } from "@/components/store-purchase";
 import { StoreContactLine } from "@/components/store-contact";
 import { StoreInstallCta } from "@/components/store-install-cta";
+import { ArtesaniaTitleFlourish } from "@/components/artesania-title-flourish";
 import { StoreArtesaniasCatalog } from "@/components/store-artesanias-catalog";
 import { StoreComidasCatalog } from "@/components/store-comidas-catalog";
 import { StoreRopaCatalog } from "@/components/store-ropa-catalog";
@@ -179,7 +180,14 @@ async function StoreBody({ params }: { params: PageProps<"/[slug]">["params"] })
                 {headerEyebrow}
               </p>
             ) : null}
-            <h1 className="store-header-artesanias__name">{store.name}</h1>
+            <div className="store-header-artesanias__title-row">
+              <ArtesaniaTitleFlourish className="store-header-artesanias__flourish" />
+              <h1 className="store-header-artesanias__name">{store.name}</h1>
+              <ArtesaniaTitleFlourish className="store-header-artesanias__flourish store-header-artesanias__flourish--mirror" />
+            </div>
+            <div className="store-header-artesanias__rule" aria-hidden="true">
+              <span className="store-header-artesanias__rule-mark" />
+            </div>
             {welcome ? (
               <p className="store-header-artesanias__welcome">{welcome}</p>
             ) : null}
